@@ -186,14 +186,14 @@ Run multiple AI agents as an organized team: a **Leader** agent receives your in
 
 Other AI apps give you a chatbox with your API key. **AionUi gives you a full Cowork agent.**
 
-| Your API Key                            | What You Get                                |
-| :-------------------------------------- | :------------------------------------------ |
-| Gemini API Key (or Google login — free) | Gemini-powered Cowork Agent                 |
-| OpenAI API Key                          | GPT-powered Cowork Agent                    |
-| Anthropic API Key                       | Claude-powered Cowork Agent                 |
-| AWS Bedrock credentials                 | Bedrock-powered Agent via Aion CLI (aionrs) |
-| Ollama / LM Studio (local)              | Local model Cowork Agent                    |
-| NewAPI Gateway                          | Unified access to 20+ models                |
+| Your API Key                                     | What You Get                                |
+| :----------------------------------------------- | :------------------------------------------ |
+| Gemini API Key (or Google login — free)          | Gemini-powered Cowork Agent                 |
+| OpenAI API Key                                   | GPT-powered Cowork Agent                    |
+| Anthropic API Key                                | Claude-powered Cowork Agent                 |
+| AWS Bedrock credentials                          | Bedrock-powered Agent via Aion CLI (aionrs) |
+| Ollama / LM Studio / Docker Model Runner (local) | Local model Cowork Agent                    |
+| NewAPI Gateway                                   | Unified access to 20+ models                |
 
 Same agent capabilities — file read/write, web search, image generation, tool use — regardless of which model powers it. AionUi supports **20+ AI platforms** including cloud services and local deployments.
 
@@ -212,7 +212,18 @@ Same agent capabilities — file read/write, web search, image generation, tool 
 - **Cloud Providers** — AWS Bedrock, New API (unified AI model gateway)
 - **Chinese Platforms** — Dashscope (Qwen), Zhipu, Moonshot (Kimi), Qianfan (Baidu), Hunyuan (Tencent), Lingyi, ModelScope, InfiniAI, Ctyun, StepFun
 - **International Platforms** — DeepSeek, MiniMax, OpenRouter, SiliconFlow, xAI, Ark (Volcengine), Poe
-- **Local Models** — Ollama, LM Studio (via Custom platform with local API endpoint)
+- **Local Models** — Ollama, LM Studio, and Docker Model Runner via local OpenAI-compatible endpoints
+
+### MainStore Local Models
+
+AionUi includes first-class local presets for MainStore-backed models:
+
+- **Ollama (MainStore)** — `http://localhost:11434/v1`, API key optional
+- **Docker Model Runner (MainStore)** — `http://localhost:12434/engines/v1`, API key optional
+
+Use `npm run mainstore:check` to verify the expected MainStore layout and `npm run mainstore:env` to print the Ollama, Hugging Face cache, and local API environment variables. Use `npm run mainstore:link-docker-dmr` to point Docker Model Runner storage at `MainStore/DockerDMR/models`. Windows 11 is supported with `node scripts/mainstore-local-ai.mjs check --mainstore D:\MainStore`.
+
+See [MainStore Local AI Setup](./docs/guides/mainstore-local-ai.md) for macOS and Windows 11 setup details.
 
 AionUi also supports [NewAPI](https://github.com/QuantumNous/new-api) gateway service — a unified AI model hub that aggregates and distributes various LLMs. Flexibly switch between different models in the same interface to meet various task requirements.
 

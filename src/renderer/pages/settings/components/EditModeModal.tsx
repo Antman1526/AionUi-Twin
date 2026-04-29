@@ -7,6 +7,7 @@ import AionModal from '@/renderer/components/base/AionModal';
 import { LinkCloud } from '@icon-park/react';
 import { ipcBridge } from '@/common';
 import useModeModeList from '@renderer/hooks/agent/useModeModeList';
+import { getLocalProviderApiKey, isLocalModelProviderBaseUrl } from '@/common/utils/localModelProviders';
 
 // Provider Logo imports
 import GeminiLogo from '@/renderer/assets/logos/ai-major/gemini.svg';
@@ -113,6 +114,8 @@ const EditModeModal = ModalHOC<{ data?: IProvider; onChange(data: IProvider): vo
     // Watch bedrockAuthMethod only for UI conditional rendering (not for auto-refresh)
     const bedrockAuthMethod = Form.useWatch('bedrockAuthMethod', form);
     const isBedrock = data?.platform === 'bedrock';
+    const isLocalNoAuthProvider = isLocalModelProviderBaseUrl(data?.baseUrl);
+    const requiresApiKey = !isBedrock && !isLocalNoAuthProvider;
 
     // 获取供应商 Logo / Get provider logo
     const providerLogo = useMemo(() => {
@@ -156,6 +159,7 @@ const EditModeModal = ModalHOC<{ data?: IProvider; onChange(data: IProvider): vo
             const updatedProvider: IProvider = {
               ...data,
               ...values,
+              apiKey: values.apiKey || getLocalProviderApiKey(values.baseUrl) || '',
               // Ensure model is always an array
               model: Array.isArray(values.model) ? values.model : [values.model],
             };
@@ -218,8 +222,8 @@ const EditModeModal = ModalHOC<{ data?: IProvider; onChange(data: IProvider): vo
             <Form.Item
               hidden={isBedrock}
               label={t('settings.apiKey')}
-              required={!isBedrock}
-              rules={[{ required: !isBedrock }]}
+              required={requiresApiKey}
+              rules={[{ required: requiresApiKey }]}
               field={'apiKey'}
               extra={<div className='text-11px text-t-secondary mt-2'>💡 {t('settings.multiApiKeyEditTip')}</div>}
             >
