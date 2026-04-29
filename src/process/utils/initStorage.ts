@@ -37,6 +37,9 @@ import {
   BUILTIN_IMAGE_GEN_ID,
   BUILTIN_IMAGE_GEN_LEGACY_NAMES,
   BUILTIN_IMAGE_GEN_NAME,
+  OPENCHRONICLE_MCP_ID,
+  OPENCHRONICLE_MCP_NAME,
+  OPENCHRONICLE_MCP_URL,
 } from '../resources/builtinMcp/constants';
 // Platform and architecture types (moved from deleted updateConfig)
 type PlatformType = 'win32' | 'darwin' | 'linux';
@@ -774,6 +777,68 @@ const ensureBuiltinMcpServers = async (): Promise<void> => {
         originalJson: buildOriginalJson(scriptPath, env),
       };
       mcpServers.push(newServer);
+      changed = true;
+    }
+
+    const openChronicleOriginalJson = JSON.stringify(
+      {
+        mcpServers: {
+          [OPENCHRONICLE_MCP_NAME]: {
+            type: 'streamable_http',
+            url: OPENCHRONICLE_MCP_URL,
+          },
+        },
+      },
+      null,
+      2
+    );
+    const openChronicleIdx = mcpServers.findIndex(
+      (server) => server.id === OPENCHRONICLE_MCP_ID || server.name === OPENCHRONICLE_MCP_NAME
+    );
+    const shouldManageOpenChronicle = process.platform === 'darwin' || openChronicleIdx >= 0;
+
+    if (shouldManageOpenChronicle && openChronicleIdx >= 0) {
+      const existing = mcpServers[openChronicleIdx];
+      const needsOpenChronicleUpdate =
+        existing.id !== OPENCHRONICLE_MCP_ID ||
+        existing.name !== OPENCHRONICLE_MCP_NAME ||
+        existing.builtin !== true ||
+        existing.transport.type !== 'streamable_http' ||
+        existing.transport.url !== OPENCHRONICLE_MCP_URL;
+
+      if (needsOpenChronicleUpdate) {
+        mcpServers[openChronicleIdx] = {
+          ...existing,
+          id: OPENCHRONICLE_MCP_ID,
+          name: OPENCHRONICLE_MCP_NAME,
+          description: 'Local project and agent memory from OpenChronicle. Requires OpenChronicle running on macOS.',
+          builtin: true,
+          transport: {
+            type: 'streamable_http',
+            url: OPENCHRONICLE_MCP_URL,
+          },
+          originalJson: openChronicleOriginalJson,
+          updatedAt: now,
+        };
+        changed = true;
+      }
+    } else if (shouldManageOpenChronicle) {
+      const openChronicleServer: IMcpServer = {
+        id: OPENCHRONICLE_MCP_ID,
+        name: OPENCHRONICLE_MCP_NAME,
+        description: 'Local project and agent memory from OpenChronicle. Requires OpenChronicle running on macOS.',
+        enabled: false,
+        builtin: true,
+        status: 'disconnected',
+        transport: {
+          type: 'streamable_http',
+          url: OPENCHRONICLE_MCP_URL,
+        },
+        createdAt: now,
+        updatedAt: now,
+        originalJson: openChronicleOriginalJson,
+      };
+      mcpServers.push(openChronicleServer);
       changed = true;
     }
 

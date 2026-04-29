@@ -225,6 +225,12 @@ Use `npm run mainstore:check` to verify the expected MainStore layout and `npm r
 
 See [MainStore Local AI Setup](./docs/guides/mainstore-local-ai.md) for macOS and Windows 11 setup details.
 
+### OpenChronicle Memory
+
+On macOS, AionUi auto-registers a disabled managed MCP entry for **OpenChronicle Memory** at `http://127.0.0.1:8742/mcp`. Enable and sync it from **Settings > Tools > MCP** after OpenChronicle is running. Windows 11 remains supported; the OpenChronicle entry is not auto-created there because OpenChronicle capture is currently macOS-focused.
+
+See [OpenChronicle Memory](./docs/guides/openchronicle-memory.md) for setup details.
+
 AionUi also supports [NewAPI](https://github.com/QuantumNous/new-api) gateway service — a unified AI model hub that aggregates and distributes various LLMs. Flexibly switch between different models in the same interface to meet various task requirements.
 
 </details>

@@ -9,6 +9,9 @@
 export const BUILTIN_IMAGE_GEN_ID = 'builtin-image-gen';
 export const BUILTIN_IMAGE_GEN_NAME = 'aionui-image-generation';
 export const BUILTIN_IMAGE_GEN_LEGACY_NAMES = ['AionUi Image Generation', BUILTIN_IMAGE_GEN_ID] as const;
+export const OPENCHRONICLE_MCP_ID = 'openchronicle-memory';
+export const OPENCHRONICLE_MCP_NAME = 'OpenChronicle Memory';
+export const OPENCHRONICLE_MCP_URL = 'http://127.0.0.1:8742/mcp';
 
 export function isBuiltinImageGenName(name?: string | null): boolean {
   if (!name) return false;

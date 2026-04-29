@@ -224,7 +224,7 @@ electronDownload:
 
 publish:
   provider: github
-  owner: iOfficeAI
-  repo: AionUi
+  owner: Antman1526
+  repo: AionUi-Twin
   publishAutoUpdate: true
   releaseType: release

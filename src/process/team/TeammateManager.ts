@@ -413,6 +413,15 @@ export class TeammateManager extends EventEmitter {
       this.setStatus(agent.slotId, 'idle');
     }
 
+    const pendingSelfMessages = await this.mailbox.peekUnread(this.teamId, agent.slotId);
+    if (pendingSelfMessages.length > 0) {
+      console.log(
+        `[TeammateManager] finalizeTurn(${agent.agentName}): draining ${pendingSelfMessages.length} queued mailbox message(s)`
+      );
+      void this.wake(agent.slotId);
+      return;
+    }
+
     // Auto-send idle notification to leader.
     // Must run AFTER setStatus(idle) so maybeWakeLeaderWhenAllIdle sees the updated state.
     if (agent.role !== 'leader') {

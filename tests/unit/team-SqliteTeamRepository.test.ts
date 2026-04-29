@@ -1,5 +1,5 @@
 // tests/unit/team-SqliteTeamRepository.test.ts
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CURRENT_DB_VERSION, initSchema } from '@process/services/database/schema';
 import { runMigrations } from '@process/services/database/migrations';
 import { BetterSqlite3Driver } from '@process/services/database/drivers/BetterSqlite3Driver';
@@ -62,6 +62,7 @@ describeOrSkip('SqliteTeamRepository', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     driver.close();
   });
 
@@ -165,6 +166,22 @@ describeOrSkip('SqliteTeamRepository', () => {
       expect(result).toHaveLength(1);
       // Empty array serializes to '[]', deserializes back to []
       expect(result[0].files).toEqual([]);
+    });
+
+    it('cleans up only read messages older than the retention window', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-04-29T12:00:00Z'));
+
+      await repo.writeMessage({ ...msg('old-read', true), createdAt: Date.now() - 8 * 24 * 60 * 60 * 1000 });
+      await repo.writeMessage({ ...msg('recent-read', true), createdAt: Date.now() - 60_000 });
+      await repo.writeMessage({ ...msg('old-unread', false), createdAt: Date.now() - 8 * 24 * 60 * 60 * 1000 });
+
+      const deleted = await repo.cleanupReadMessages(7 * 24 * 60 * 60 * 1000);
+
+      expect(deleted).toBe(1);
+      expect(await repo.getMailboxHistory('team-1', 'agent-a', 10)).toHaveLength(2);
+
+      vi.useRealTimers();
     });
   });
 

@@ -21,6 +21,7 @@ export const MAX_QUEUED_COMMANDS = 20;
 export const MAX_QUEUED_COMMAND_INPUT_LENGTH = 20_000;
 export const MAX_QUEUED_COMMAND_FILES = 50;
 export const MAX_QUEUED_COMMAND_STATE_BYTES = 256 * 1024;
+export const MAX_QUEUE_STORE_CONVERSATIONS = 50;
 
 export type QueueValidationFailureReason =
   | 'emptyInput'
@@ -63,6 +64,19 @@ const createDefaultQueueState = (): ConversationCommandQueueState => ({
 });
 
 const queueStore = new Map<string, ConversationCommandQueueState>();
+
+const setQueueStore = (conversationId: string, state: ConversationCommandQueueState): void => {
+  queueStore.delete(conversationId);
+  queueStore.set(conversationId, state);
+
+  while (queueStore.size > MAX_QUEUE_STORE_CONVERSATIONS) {
+    const oldestKey = queueStore.keys().next().value as string | undefined;
+    if (!oldestKey) {
+      break;
+    }
+    queueStore.delete(oldestKey);
+  }
+};
 
 const getStorageKey = (conversationId: string): string => `conversation-command-queue/${conversationId}`;
 const measureQueueStateBytes = (state: ConversationCommandQueueState): number =>
@@ -211,7 +225,7 @@ const readPersistedQueueState = (conversationId: string): ConversationCommandQue
 
     const parsed = JSON.parse(stored) as unknown;
     const normalized = normalizeQueueState(parsed);
-    queueStore.set(conversationId, normalized);
+    setQueueStore(conversationId, normalized);
     logCommandQueue(conversationId, 'restored', {
       itemCount: normalized.items.length,
       isPaused: normalized.isPaused,
@@ -242,7 +256,7 @@ const persistQueueState = (conversationId: string, state: ConversationCommandQue
     return;
   }
 
-  queueStore.set(conversationId, normalized);
+  setQueueStore(conversationId, normalized);
   if (typeof window !== 'undefined') {
     try {
       window.sessionStorage.setItem(getStorageKey(conversationId), JSON.stringify(normalized));
