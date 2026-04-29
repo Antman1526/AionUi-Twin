@@ -174,6 +174,19 @@ describe('Mailbox', () => {
     });
   });
 
+  describe('peekUnread', () => {
+    it('returns unread messages without marking them read', async () => {
+      const messages = [makeMessage({ id: 'msg-1' })];
+      vi.mocked(repo.readUnread).mockResolvedValue(messages);
+
+      const result = await mailbox.peekUnread('team-1', 'slot-2');
+
+      expect(result).toEqual(messages);
+      expect(repo.readUnread).toHaveBeenCalledWith('team-1', 'slot-2');
+      expect(repo.readUnreadAndMark).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getHistory', () => {
     it('delegates to repo.getMailboxHistory with teamId and agentId', async () => {
       const history = [makeMessage({ read: true })];

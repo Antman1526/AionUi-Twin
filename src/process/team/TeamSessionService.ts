@@ -25,16 +25,43 @@ import path from 'path';
 import { resolveLocaleKey } from '@/common/utils';
 import { hasGeminiOauthCreds } from './googleAuthCheck';
 
+const READ_MAILBOX_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const READ_MAILBOX_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+
 export class TeamSessionService {
   private readonly sessions: Map<string, TeamSession> = new Map();
   /** Per-team mutex to serialize addAgent calls, preventing read-modify-write race conditions */
   private readonly addAgentLocks: Map<string, Promise<unknown>> = new Map();
+  private readonly mailboxCleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly repo: ITeamRepository,
     private readonly workerTaskManager: IWorkerTaskManager,
     private readonly conversationService: IConversationService
-  ) {}
+  ) {
+    if (this.repo.cleanupReadMessages) {
+      void this.cleanupReadMailboxMessages();
+      this.mailboxCleanupTimer = setInterval(() => {
+        void this.cleanupReadMailboxMessages();
+      }, READ_MAILBOX_CLEANUP_INTERVAL_MS);
+      this.mailboxCleanupTimer.unref?.();
+    }
+  }
+
+  private async cleanupReadMailboxMessages(): Promise<void> {
+    if (!this.repo.cleanupReadMessages) {
+      return;
+    }
+
+    try {
+      const deleted = await this.repo.cleanupReadMessages(READ_MAILBOX_RETENTION_MS);
+      if (deleted > 0) {
+        console.log(`[TeamSessionService] Cleaned up ${deleted} read mailbox message(s)`);
+      }
+    } catch (error) {
+      console.warn('[TeamSessionService] Failed to clean up read mailbox messages:', error);
+    }
+  }
 
   /**
    * Returns the workspace path as-is, or empty string when not specified.
@@ -838,6 +865,9 @@ export class TeamSessionService {
   }
 
   async stopAllSessions(): Promise<void> {
+    if (this.mailboxCleanupTimer) {
+      clearInterval(this.mailboxCleanupTimer);
+    }
     await Promise.all(Array.from(this.sessions.keys()).map((id) => this.stopSession(id)));
   }
 }

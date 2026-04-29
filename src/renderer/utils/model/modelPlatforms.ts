@@ -37,6 +37,7 @@ import MiniMaxLogo from '@/renderer/assets/logos/ai-china/minimax.png';
 import NewApiLogo from '@/renderer/assets/logos/ai-cloud/newapi.svg';
 import NovitaLogo from '@/renderer/assets/logos/ai-cloud/novita.svg';
 import PPIOLogo from '@/renderer/assets/logos/ai-cloud/ppio.svg';
+import { DOCKER_MODEL_RUNNER_OPENAI_BASE_URL, LOCAL_OLLAMA_OPENAI_BASE_URL } from '@/common/utils/localModelProviders';
 
 /**
  * 平台类型
@@ -59,6 +60,10 @@ export interface PlatformConfig {
   platform: PlatformType;
   /** Base URL（预设供应商使用） / Base URL (for preset providers) */
   baseUrl?: string;
+  /** API key is optional for local no-auth providers such as Ollama and Docker Model Runner. */
+  authOptional?: boolean;
+  /** Default API key value stored when the selected provider does not require real credentials. */
+  apiKeyDefault?: string;
   /** 国际化 key（可选，用于需要翻译的平台名称） / i18n key (optional, for platform names that need translation) */
   i18nKey?: string;
 }
@@ -89,6 +94,26 @@ export const MODEL_PLATFORMS: PlatformConfig[] = [
     baseUrl: 'https://generativelanguage.googleapis.com',
   },
   { name: 'Gemini (Vertex AI)', value: 'gemini-vertex-ai', logo: GeminiLogo, platform: 'gemini-vertex-ai' },
+
+  // 本地模型 / Local models
+  {
+    name: 'Ollama (MainStore)',
+    value: 'ollama-mainstore',
+    logo: null,
+    platform: 'custom',
+    baseUrl: LOCAL_OLLAMA_OPENAI_BASE_URL,
+    authOptional: true,
+    apiKeyDefault: 'ollama',
+  },
+  {
+    name: 'Docker Model Runner (MainStore)',
+    value: 'docker-model-runner-mainstore',
+    logo: null,
+    platform: 'custom',
+    baseUrl: DOCKER_MODEL_RUNNER_OPENAI_BASE_URL,
+    authOptional: true,
+    apiKeyDefault: 'not-needed',
+  },
 
   // 预设供应商（按字母顺序排列）
   { name: 'OpenAI', value: 'OpenAI', logo: OpenAILogo, platform: 'custom', baseUrl: 'https://api.openai.com/v1' },

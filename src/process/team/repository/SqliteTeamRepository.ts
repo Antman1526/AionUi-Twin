@@ -261,6 +261,13 @@ export class SqliteTeamRepository implements ITeamRepository {
     return rows.map(rowToMailbox);
   }
 
+  async cleanupReadMessages(olderThanMs: number): Promise<number> {
+    const db = await this.getDb();
+    const cutoff = Date.now() - olderThanMs;
+    const result = db.prepare('DELETE FROM mailbox WHERE read = 1 AND created_at < ?').run(cutoff);
+    return Number(result.changes ?? 0);
+  }
+
   // -------------------------------------------------------------------------
   // Task operations
   // -------------------------------------------------------------------------

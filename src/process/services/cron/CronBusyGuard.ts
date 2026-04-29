@@ -111,6 +111,7 @@ export class CronBusyGuard {
       // Only clean up idle conversations
       if (!state.isProcessing && now - state.lastActiveAt > olderThanMs) {
         this.states.delete(id);
+        this.idleCallbacks.delete(id);
       }
     }
   }
@@ -121,6 +122,7 @@ export class CronBusyGuard {
    */
   remove(conversationId: string): void {
     this.states.delete(conversationId);
+    this.idleCallbacks.delete(conversationId);
   }
 
   /**
@@ -128,6 +130,7 @@ export class CronBusyGuard {
    */
   clear(): void {
     this.states.clear();
+    this.idleCallbacks.clear();
   }
 }
 

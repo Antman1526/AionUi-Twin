@@ -20,6 +20,7 @@ export interface IMailboxRepository {
   readUnreadAndMark(teamId: string, toAgentId: string): Promise<MailboxMessage[]>;
   markRead(messageId: string): Promise<void>;
   getMailboxHistory(teamId: string, toAgentId: string, limit?: number): Promise<MailboxMessage[]>;
+  cleanupReadMessages?(olderThanMs: number): Promise<number>;
 }
 
 /** Task board persistence */

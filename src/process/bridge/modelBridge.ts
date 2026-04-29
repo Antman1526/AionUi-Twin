@@ -20,6 +20,7 @@ import {
   getProtocolDisplayName,
 } from '@/common/utils/protocolDetector';
 import { isGoogleApisHost } from '@/common/utils/urlValidation';
+import { getLocalProviderApiKey } from '@/common/utils/localModelProviders';
 import OpenAI from 'openai';
 import { isNewApiPlatform } from '@/common/utils/platformConstants';
 import { ipcBridge } from '@/common';
@@ -425,14 +426,16 @@ export function initModelBridge(): void {
     }
 
     // Validate API key before creating OpenAI client to avoid unhandled 'Missing credentials' error
-    if (!actualApiKey) {
+    const effectiveApiKey = actualApiKey || getLocalProviderApiKey(base_url);
+
+    if (!effectiveApiKey) {
       return { success: false, msg: 'API key is required. Please configure your API key in settings.' };
     }
 
     try {
       const openai = new OpenAI({
         baseURL: base_url,
-        apiKey: actualApiKey,
+        apiKey: effectiveApiKey,
         // 使用自定义 User-Agent，避免某些 API 中转站（如 packyapi）拦截 OpenAI SDK 默认的 User-Agent
         // Use custom User-Agent to avoid some API proxies (like packyapi) blocking OpenAI SDK's default User-Agent
         defaultHeaders: {

@@ -233,6 +233,7 @@ const AddPlatformModal = ModalHOC<{
   const isBedrock = platform === 'bedrock';
   const isGemini = isGeminiPlatform(platform);
   const isNewApi = isNewApiPlatform(platform);
+  const isAuthOptional = selectedPlatform?.authOptional === true;
 
   // new-api 每模型协议选择状态 / new-api per-model protocol selection state
   const [modelProtocol, setModelProtocol] = useState<string>('openai');
@@ -349,7 +350,7 @@ const AddPlatformModal = ModalHOC<{
           // 优先使用用户输入的 baseUrl，否则使用平台预设值
           // Prefer user input baseUrl, fallback to platform preset
           baseUrl: isBedrock ? '' : values.baseUrl || selectedPlatform?.baseUrl || '',
-          apiKey: isBedrock ? '' : values.apiKey,
+          apiKey: isBedrock ? '' : values.apiKey || selectedPlatform?.apiKeyDefault || '',
           model: [values.model],
         };
 
@@ -458,8 +459,8 @@ const AddPlatformModal = ModalHOC<{
           <Form.Item
             hidden={isBedrock}
             label={t('settings.apiKey')}
-            required={!isBedrock}
-            rules={[{ required: !isBedrock }]}
+            required={!isBedrock && !isAuthOptional}
+            rules={[{ required: !isBedrock && !isAuthOptional }]}
             field={'apiKey'}
             extra={
               <div className='space-y-2px'>
@@ -640,7 +641,7 @@ const AddPlatformModal = ModalHOC<{
                       return;
                     }
                     // For Gemini, no apiKey check needed
-                    if (!isGemini && !apiKey) {
+                    if (!isGemini && !isAuthOptional && !apiKey) {
                       message.warning(t('settings.pleaseEnterApiKey'));
                       return;
                     }

@@ -44,6 +44,15 @@ export class Mailbox {
   }
 
   /**
+   * Peek unread messages without marking them read.
+   * Used to decide whether an agent should drain queued mailbox work before
+   * reporting idle to the team leader.
+   */
+  async peekUnread(teamId: string, agentId: string): Promise<MailboxMessage[]> {
+    return this.repo.readUnread(teamId, agentId);
+  }
+
+  /**
    * Get message history for an agent (newest first).
    */
   async getHistory(teamId: string, agentId: string, limit?: number): Promise<MailboxMessage[]> {
