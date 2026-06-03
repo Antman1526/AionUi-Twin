@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import AionModal from '@/renderer/components/base/AionModal';
 import { LinkCloud } from '@icon-park/react';
 import { ipcBridge } from '@/common';
+import { supportsNoApiKeyForOpenAICompatibleProvider } from '@/common/utils/localModelProviders';
 import useModeModeList from '@renderer/hooks/agent/useModeModeList';
 
 // Provider Logo imports
@@ -113,6 +114,7 @@ const EditModeModal = ModalHOC<{ data?: IProvider; onChange(data: IProvider): vo
     // Watch bedrockAuthMethod only for UI conditional rendering (not for auto-refresh)
     const bedrockAuthMethod = Form.useWatch('bedrockAuthMethod', form);
     const isBedrock = data?.platform === 'bedrock';
+    const requiresApiKey = !isBedrock && !supportsNoApiKeyForOpenAICompatibleProvider(data?.baseUrl);
 
     // 获取供应商 Logo / Get provider logo
     const providerLogo = useMemo(() => {
@@ -218,8 +220,8 @@ const EditModeModal = ModalHOC<{ data?: IProvider; onChange(data: IProvider): vo
             <Form.Item
               hidden={isBedrock}
               label={t('settings.apiKey')}
-              required={!isBedrock}
-              rules={[{ required: !isBedrock }]}
+              required={requiresApiKey}
+              rules={[{ required: requiresApiKey }]}
               field={'apiKey'}
               extra={<div className='text-11px text-t-secondary mt-2'>💡 {t('settings.multiApiKeyEditTip')}</div>}
             >

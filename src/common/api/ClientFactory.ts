@@ -12,6 +12,7 @@ import { AnthropicRotatingClient, type AnthropicClientConfig } from './Anthropic
 import type { RotatingApiClientOptions } from './RotatingApiClient';
 import { getProviderAuthType } from '../utils/platformAuthType';
 import { isNewApiPlatform } from '../utils/platformConstants';
+import { getApiKeysForOpenAICompatibleClient } from '../utils/localModelProviders';
 
 export interface ClientOptions {
   timeout?: number;
@@ -89,7 +90,11 @@ export class ClientFactory {
           clientConfig.httpAgent = new HttpsProxyAgent(options.proxy);
         }
 
-        return new OpenAIRotatingClient(provider.apiKey, clientConfig, rotatingOptions);
+        return new OpenAIRotatingClient(
+          getApiKeysForOpenAICompatibleClient(provider.apiKey, baseUrl),
+          clientConfig,
+          rotatingOptions
+        );
       }
 
       case AuthType.USE_GEMINI: {
@@ -141,7 +146,11 @@ export class ClientFactory {
           clientConfig.httpAgent = new HttpsProxyAgent(options.proxy);
         }
 
-        return new OpenAIRotatingClient(provider.apiKey, clientConfig, rotatingOptions);
+        return new OpenAIRotatingClient(
+          getApiKeysForOpenAICompatibleClient(provider.apiKey, baseUrl),
+          clientConfig,
+          rotatingOptions
+        );
       }
     }
   }

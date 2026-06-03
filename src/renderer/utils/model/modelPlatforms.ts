@@ -80,6 +80,10 @@ export const MODEL_PLATFORMS: PlatformConfig[] = [
   // New API 多模型网关 / New API multi-model gateway
   { name: 'New API', value: 'new-api', logo: NewApiLogo, platform: 'new-api', i18nKey: 'settings.platformNewApi' },
 
+  // 本地 OpenAI 兼容模型服务 / Local OpenAI-compatible model servers
+  { name: 'Ollama', value: 'Ollama', logo: null, platform: 'custom', baseUrl: 'http://localhost:11434/v1' },
+  { name: 'LM Studio', value: 'LM-Studio', logo: null, platform: 'custom', baseUrl: 'http://localhost:1234/v1' },
+
   // 官方 Gemini 平台
   {
     name: 'Gemini',

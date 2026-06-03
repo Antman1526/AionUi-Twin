@@ -21,10 +21,11 @@ type FetchModelListResponse = {
   data?: { mode: Array<string | { id: string; name: string }>; fix_base_url?: string };
 };
 
-const { handlers, mockModelsList } = vi.hoisted(() => {
+const { handlers, mockModelsList, mockOpenAIConstructor } = vi.hoisted(() => {
   return {
     handlers: {} as Record<string, Handler>,
     mockModelsList: vi.fn(),
+    mockOpenAIConstructor: vi.fn(),
   };
 });
 
@@ -51,7 +52,8 @@ vi.mock('@/common', () => ({
 
 vi.mock('openai', () => ({
   default: class MockOpenAI {
-    constructor(config: { apiKey?: string }) {
+    constructor(config: { apiKey?: string; baseURL?: string }) {
+      mockOpenAIConstructor(config);
       // Simulate real OpenAI SDK behavior: throw when apiKey is undefined or whitespace-only
       const key = config.apiKey;
       if (key === undefined || key.trim() === '') {
@@ -99,6 +101,7 @@ describe('modelBridge fetchModelList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockModelsList.mockReset();
+    mockOpenAIConstructor.mockClear();
     initModelBridge();
   });
 
@@ -206,6 +209,33 @@ describe('modelBridge fetchModelList', () => {
       success: true,
       data: {
         mode: ['gpt-4o-mini'],
+      },
+    });
+  });
+
+  it('fetches local Ollama models without requiring an API key', async () => {
+    mockModelsList.mockResolvedValue({
+      data: [{ id: 'llama3.2:latest' }],
+    });
+
+    const fetchModelList = getFetchModelListHandler();
+    const result = await fetchModelList({
+      base_url: 'http://localhost:11434/v1',
+      api_key: '',
+      try_fix: false,
+      platform: 'custom',
+    });
+
+    expect(mockOpenAIConstructor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: 'http://localhost:11434/v1',
+        apiKey: expect.any(String),
+      })
+    );
+    expect(result).toEqual({
+      success: true,
+      data: {
+        mode: ['llama3.2:latest'],
       },
     });
   });

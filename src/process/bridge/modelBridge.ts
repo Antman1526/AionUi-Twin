@@ -22,6 +22,7 @@ import {
 import { isGoogleApisHost } from '@/common/utils/urlValidation';
 import OpenAI from 'openai';
 import { isNewApiPlatform } from '@/common/utils/platformConstants';
+import { getApiKeyForModelList, getFirstApiKey } from '@/common/utils/localModelProviders';
 import { ipcBridge } from '@/common';
 import { ProcessConfig } from '@process/utils/initStorage';
 import { ExtensionRegistry } from '@process/extensions';
@@ -149,10 +150,7 @@ export function initModelBridge(): void {
   }> {
     // 如果是多key（包含逗号或回车），只取第一个key来获取模型列表
     // If multiple keys (comma or newline separated), use only the first one
-    let actualApiKey = api_key?.trim();
-    if (actualApiKey && (actualApiKey.includes(',') || actualApiKey.includes('\n'))) {
-      actualApiKey = actualApiKey.split(/[,\n]/)[0].trim();
-    }
+    const actualApiKey = getFirstApiKey(api_key);
 
     // 如果是 Vertex AI 平台，直接返回 Vertex AI 支持的模型列表
     // For Vertex AI platform, return the supported model list directly
@@ -424,15 +422,18 @@ export function initModelBridge(): void {
       }
     }
 
-    // Validate API key before creating OpenAI client to avoid unhandled 'Missing credentials' error
-    if (!actualApiKey) {
+    const openAICompatibleApiKey = getApiKeyForModelList(api_key, base_url);
+
+    // Validate API key before creating OpenAI client to avoid unhandled 'Missing credentials' error.
+    // Local OpenAI-compatible servers such as Ollama and LM Studio commonly run without auth.
+    if (!openAICompatibleApiKey) {
       return { success: false, msg: 'API key is required. Please configure your API key in settings.' };
     }
 
     try {
       const openai = new OpenAI({
         baseURL: base_url,
-        apiKey: actualApiKey,
+        apiKey: openAICompatibleApiKey,
         // 使用自定义 User-Agent，避免某些 API 中转站（如 packyapi）拦截 OpenAI SDK 默认的 User-Agent
         // Use custom User-Agent to avoid some API proxies (like packyapi) blocking OpenAI SDK's default User-Agent
         defaultHeaders: {

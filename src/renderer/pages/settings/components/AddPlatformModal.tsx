@@ -2,6 +2,7 @@ import type { IProvider } from '@/common/config/storage';
 import type { ProtocolDetectionResponse, ProtocolType } from '@/common/utils/protocolDetector';
 import { ipcBridge } from '@/common';
 import { uuid } from '@/common/utils';
+import { supportsNoApiKeyForOpenAICompatibleProvider } from '@/common/utils/localModelProviders';
 import { isGoogleApisHost } from '@/common/utils/urlValidation';
 import ModalHOC from '@/renderer/utils/ui/ModalHOC';
 import { Form, Input, Message, Select } from '@arco-design/web-react';
@@ -250,6 +251,7 @@ const AddPlatformModal = ModalHOC<{
     if (baseUrl) return baseUrl;
     return selectedPlatform?.baseUrl || '';
   }, [baseUrl, selectedPlatform?.baseUrl]);
+  const requiresApiKey = !isBedrock && !supportsNoApiKeyForOpenAICompatibleProvider(actualBaseUrl);
 
   // For Bedrock, don't pass bedrockConfig to avoid auto-refresh on input changes
   // We'll build it dynamically in onFocus
@@ -458,8 +460,8 @@ const AddPlatformModal = ModalHOC<{
           <Form.Item
             hidden={isBedrock}
             label={t('settings.apiKey')}
-            required={!isBedrock}
-            rules={[{ required: !isBedrock }]}
+            required={requiresApiKey}
+            rules={[{ required: requiresApiKey }]}
             field={'apiKey'}
             extra={
               <div className='space-y-2px'>
@@ -639,8 +641,8 @@ const AddPlatformModal = ModalHOC<{
                       }
                       return;
                     }
-                    // For Gemini, no apiKey check needed
-                    if (!isGemini && !apiKey) {
+                    // For Gemini and no-auth local OpenAI-compatible endpoints, no API key is needed.
+                    if (!isGemini && requiresApiKey && !apiKey) {
                       message.warning(t('settings.pleaseEnterApiKey'));
                       return;
                     }
