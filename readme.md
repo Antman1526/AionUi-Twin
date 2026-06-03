@@ -1,111 +1,90 @@
 # AionUi Twin
 
-AionUi Twin is an Electron, React, and TypeScript desktop application that turns command-line and API-backed AI agents into a modern chat, workspace, team, automation, WebUI, and extension platform. It includes a local desktop app, an optional browser-accessible WebUI server, remote messaging channels, built-in assistants/skills, and a companion Expo mobile app.
-
-This repository is a source-grounded twin/documentation copy intended for reconstruction, audit, optimization, and future development.
-
-## Core Capabilities
-
-- Desktop AI chat interface for ACP agents, Aion CLI, Gemini, Nanobot, and remote agents.
-- Persistent conversations, messages, users, teams, mailbox entries, tasks, providers, channels, and settings in SQLite.
-- WebUI server with JWT cookie auth, QR login, file uploads, speech-to-text upload, WebSocket traffic, extension routes, and static renderer serving.
-- Team mode for multi-agent collaboration with shared workspaces, mailbox routing, and task tracking.
-- Extension registry and channel plugins for remote integrations such as Telegram, DingTalk, Weixin, and WeCom.
-- Built-in skills and assistants packaged with the app.
-- Expo/React Native mobile app under `mobile/`.
+AionUi Twin is an Electron desktop and optional WebUI application that turns command-line and API-based AI agents into a modern chat/workspace interface. It supports ACP-compatible agents, Gemini/Codex/AionRS-style workflows, local OpenAI-compatible model servers, cloud model providers, team sessions, scheduled prompts, MCP tools, extension contributions, desktop pet confirmations, and remote assistant channels.
 
 ## Tech Stack
 
-- Desktop: Electron 37, electron-vite, electron-builder.
-- Frontend: React 19, Arco Design, UnoCSS, React Router, i18next.
-- Backend/runtime: Node.js, Bun, Express 5, WebSocket, SQLite via better-sqlite3.
-- AI integrations: OpenAI-compatible APIs, Anthropic, Gemini/Vertex, AWS Bedrock, ACP, MCP, Aion CLI.
-- Testing: Vitest, Playwright, Testing Library, Jest Expo.
-- Mobile: Expo 55, React Native 0.83, Expo Router.
+- Electron ^37.10.3 + electron-vite ^5.0.0
+- React ^19.1.0, React Router ^7.8.0, Arco Design ^2.66.1, UnoCSS ^66.3.3
+- TypeScript ^5.8.3, Bun, Vite ^6.4.1
+- SQLite via better-sqlite3 ^12.4.1 or Bun SQLite
+- Express ^5.1.0 + ws ^8.18.3 for WebUI mode
+- OpenAI ^5.12.2, Anthropic ^0.71.2, Google GenAI ^1.16.0, ACP SDK ^0.18.2, MCP SDK ^1.20.0
 
-## Repository Layout
+## Local LLM Support
 
-```text
-src/common      shared config, types, adapters, provider clients, utilities
-src/preload     Electron contextBridge entry points
-src/process     Electron main process, database, webserver, agents, channels, teams, IPC bridges
-src/renderer    React renderer app, pages, components, hooks, styles, PWA support
-mobile          Expo companion app
-docs            architecture notes, guides, PRDs, specs, generated Twin docs
-scripts         build, release, benchmark, i18n, and automation scripts
-resources       app icons, bundled runtimes, installer files, README media
-public          static renderer/PWA/pet assets
-tests           unit, integration, regression, E2E, and benchmark tests
-```
+AionUi Twin includes no-key support for local OpenAI-compatible servers. Add one of these providers in Settings -> Model Providers:
 
-## Quick Start
+| Provider  | Base URL                    | API key     |
+| --------- | --------------------------- | ----------- |
+| Ollama    | `http://localhost:11434/v1` | Leave empty |
+| LM Studio | `http://localhost:1234/v1`  | Leave empty |
+
+Only loopback hosts are allowed to skip API keys. Cloud providers still require real credentials.
+
+## Development
 
 ```bash
 cd /Users/Antman/Desktop/AionUi_TWIN/AionUi-Twin-main
 bun install
-bun run i18n:types
+bun run start
+```
+
+Useful commands:
+
+```bash
 bunx tsc --noEmit
-bun run test
-bun run start
-```
-
-WebUI development:
-
-```bash
-bun run webui
-bun run webui:remote
-```
-
-Mobile development:
-
-```bash
-cd mobile
-bun install
-bun run start
-```
-
-## Build Commands
-
-```bash
-bun run package        # electron-vite build
-bun run dist           # electron-builder via scripts/build-with-builder.js
-bun run dist:mac
-bun run dist:win
-bun run dist:linux
-bun run build:renderer:web
-bun run build:server
-```
-
-## Quality Checks
-
-```bash
 bun run lint
-bun run format:check
-bunx tsc --noEmit
-bun run i18n:types
-node scripts/check-i18n.js
 bun run test
-bun run test:e2e
+bun run webui
+bun run server:start
 ```
+
+## Packaging
+
+macOS ARM64 build:
+
+```bash
+CSC_IDENTITY_AUTO_DISCOVERY=false bun run build-mac:arm64
+```
+
+Recent verified artifact:
+
+- `/Users/Antman/Downloads/AionUi-1.9.22-mac-arm64.dmg`
+- Size: 250M
+- SHA-256: `c07600e622bdb1e3f40ffa619bd79c90fd9ff6643ddfc7ec2bafa602d91c6806`
+- Ad-hoc signed, not notarized
+
+## Architecture
+
+- `src/index.ts`: Electron app entry, windows, tray, protocols, WebUI mode, updates, single-instance behavior.
+- `src/process`: main process services, bridges, database, agents, extensions, channels, WebUI server, workers.
+- `src/preload`: contextBridge APIs for main UI and desktop pet windows.
+- `src/renderer`: React UI, settings, chat, teams, scheduled tasks, pet pages.
+- `src/common`: shared bridge contracts, config models, API clients, chat/message types, utilities.
+- `tests`: Vitest unit/integration tests and Playwright e2e helpers.
+- `docs/ai-reconstruction`: generated technical reconstruction and audit documentation.
 
 ## Documentation
 
-The requested reconstruction and audit set lives in [`docs/twin/`](docs/twin/README.md):
+The generated reconstruction manual is in `docs/ai-reconstruction/` and mirrored locally to:
 
-- 15 detailed technical reconstruction documents.
-- 3-page AI review pack for optimization/refactoring prompts.
-- Exhaustive technology audit.
+`/Users/Antman/Desktop/AionUi_TWIN/AionUi-Twin-technical-docs`
 
-Start here: [`docs/twin/README.md`](docs/twin/README.md).
+Start with:
 
-## Security Notes
+- `docs/ai-reconstruction/00-ai-audit-brief.md`
+- `docs/ai-reconstruction/00-technology-inventory.md`
+- `docs/ai-reconstruction/01-architecture/01-project-overview-architecture.md`
 
-- Do not commit real credentials, API keys, tokens, private keys, or `.env` files.
-- WebUI auth uses JWT cookies and bcrypt password hashes.
-- Upload paths are validated against conversation workspaces.
-- Extension routes and static assets are path-checked against extension roots.
-- Extension API execution and generic IPC payloads are identified in the docs as areas for further hardening.
+## Verification
 
-## License
+Before committing release work, run:
 
-Apache-2.0. See [`LICENSE`](LICENSE).
+```bash
+bunx tsc --noEmit
+bun run lint
+bun run test
+```
+
+Repo policy also recommends `prek run --from-ref origin/main --to-ref HEAD` before PRs.
