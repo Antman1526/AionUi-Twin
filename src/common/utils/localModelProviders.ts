@@ -18,6 +18,32 @@ export const DEFAULT_LOCAL_MODEL_DIRECTORIES = [
   '/Users/Antman/Desktop/AI_Models',
 ] as const;
 
+/**
+ * Normalize a user-provided list of model directories: trim, drop empties, and
+ * de-duplicate while preserving order. Returns an empty array for invalid input.
+ */
+export function normalizeModelDirectories(directories?: readonly string[]): string[] {
+  if (!Array.isArray(directories)) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const entry of directories) {
+    const trimmed = typeof entry === 'string' ? entry.trim() : '';
+    if (trimmed.length === 0 || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
+}
+
+/**
+ * Resolve the effective local model directories: the user's configured list when
+ * it has any valid entries, otherwise the built-in defaults.
+ */
+export function resolveModelDirectories(configured?: readonly string[]): string[] {
+  const normalized = normalizeModelDirectories(configured);
+  return normalized.length > 0 ? normalized : [...DEFAULT_LOCAL_MODEL_DIRECTORIES];
+}
+
 export function getFirstApiKey(apiKeys?: string): string {
   return (
     apiKeys

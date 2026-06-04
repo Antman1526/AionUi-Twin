@@ -22,6 +22,26 @@ AionUi Twin includes no-key support for local OpenAI-compatible servers. Add one
 
 Only loopback hosts are allowed to skip API keys. Cloud providers still require real credentials.
 
+### Seamless local GGUF models
+
+Settings -> Model Providers also includes a **Local GGUF Models** section that
+discovers `.gguf` files in your local model directories and loads them with one
+click — no manual server setup. Selecting **Load** spawns a managed
+`llama-server` (llama.cpp) bound to a free loopback port, waits for it to become
+healthy, and auto-registers it as an OpenAI-compatible provider so the model is
+usable in chat and teams immediately. **Unload** stops the server.
+
+- Requires `llama-server` on your PATH (`brew install llama.cpp`). It is resolved
+  at runtime, not bundled in the installer.
+- One model is served at a time; loading another swaps it out.
+- Scanned directories are editable in the same section (**Add folder** / remove).
+  They default to `DEFAULT_LOCAL_MODEL_DIRECTORIES` when none are configured:
+  - `/Volumes/MainStore/Development/AI_Models`
+  - `/Users/Antman/Desktop/AI_Models`
+- Adding a folder also authorizes loading models from it (the launch path is
+  restricted to the configured directories).
+- An unmounted directory (e.g. an external volume) is skipped gracefully.
+
 ## Development
 
 ```bash

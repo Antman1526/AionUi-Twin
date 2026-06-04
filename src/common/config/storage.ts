@@ -74,6 +74,8 @@ export interface IConfigStorageRefer {
   // Cached modes per ACP backend for Guid page / AgentModeSelector
   'acp.cachedModes'?: Record<string, import('@/common/types/acpTypes').AcpSessionModes>;
   'model.config': IProvider[];
+  /** User-configured directories scanned for local GGUF/STT/TTS model files. Empty/unset → built-in defaults. */
+  'localModel.directories'?: string[];
   'mcp.config': IMcpServer[];
   'mcp.agentInstallStatus': Record<string, string[]>;
   language: string;
