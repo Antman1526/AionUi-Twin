@@ -6,12 +6,13 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_LOCAL_MODEL_DIRECTORIES,
   getApiKeyForModelList,
   getApiKeysForOpenAICompatibleClient,
   getFirstApiKey,
   isLocalBaseUrl,
   LOCAL_OPENAI_COMPATIBLE_API_KEY,
+  normalizeModelDirectories,
+  resolveModelDirectories,
 } from '../../src/common/utils/localModelProviders';
 
 describe('localModelProviders', () => {
@@ -34,8 +35,11 @@ describe('localModelProviders', () => {
     );
   });
 
-  it('keeps Antman local model directories available as discovery hints', () => {
-    expect(DEFAULT_LOCAL_MODEL_DIRECTORIES).toContain('/Volumes/MainStore/Development/AI_Models');
-    expect(DEFAULT_LOCAL_MODEL_DIRECTORIES).toContain('/Users/Antman/Desktop/AI_Models');
+  it('normalizes and resolves model directories without hardcoded machine paths', () => {
+    expect(normalizeModelDirectories([' /a ', '/a', '', '   ', '/b'])).toEqual(['/a', '/b']);
+    // Configured list wins; otherwise the caller-provided defaults are used.
+    expect(resolveModelDirectories(['/custom'], ['/default'])).toEqual(['/custom']);
+    expect(resolveModelDirectories([], ['/default'])).toEqual(['/default']);
+    expect(resolveModelDirectories(undefined, undefined)).toEqual([]);
   });
 });

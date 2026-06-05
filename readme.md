@@ -122,11 +122,24 @@ credentials.
 ### Editable model folders
 
 The same panel lets you **add or remove the folders** that get scanned for
-models (native folder picker). When none are configured, sensible defaults are
-used. Adding a folder also **authorizes** loading from it — the launch path is
-restricted to your configured directories, so a stray request can't run an
-arbitrary file. Unmounted volumes (e.g. an external drive that's offline) are
-skipped gracefully.
+models (native folder picker). Adding a folder also **authorizes** loading from
+it — the launch path is restricted to your configured directories, so a stray
+request can't run an arbitrary file. Unmounted volumes (e.g. an external drive
+that's offline) are skipped gracefully.
+
+When you haven't configured any folders, AionUi Twin scans standard,
+machine-agnostic locations that exist on your system:
+
+- `~/AI_Models`, `~/Models`, `~/Desktop/AI_Models`
+- `~/.ollama/models`, `~/.cache/lm-studio/models`, `~/.lmstudio/models`
+- the llama.cpp cache (`~/Library/Caches/llama.cpp` on macOS, `~/.cache/llama.cpp` elsewhere)
+
+To scan extra folders without opening Settings (e.g. an external volume), set the
+`AIONUI_MODEL_DIRS` environment variable to a path-delimited list:
+
+```bash
+export AIONUI_MODEL_DIRS="/Volumes/MyDrive/AI_Models:$HOME/work/models"
+```
 
 ## 📦 Install (macOS)
 

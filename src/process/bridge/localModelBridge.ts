@@ -8,6 +8,7 @@ import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeStatus } from '@/common/adapter/ipcBridge';
 import type { IProvider } from '@/common/config/storage';
 import { normalizeModelDirectories, resolveModelDirectories } from '@/common/utils/localModelProviders';
+import { getDefaultLocalModelDirectories } from '@process/services/localModels/defaultModelDirectories';
 import { ProcessConfig } from '@process/utils/initStorage';
 import { scanLocalModelDirectories } from '@process/services/localModels/LocalModelDiscoveryService';
 import {
@@ -19,9 +20,9 @@ import {
   type ManagedServerHandle,
 } from '@process/services/localModels/LocalModelRuntimeService';
 
-/** Effective scan directories: the user's configured list, or built-in defaults. */
+/** Effective scan directories: the user's configured list, or derived defaults. */
 async function getModelDirectories(): Promise<string[]> {
-  return resolveModelDirectories(await ProcessConfig.get('localModel.directories'));
+  return resolveModelDirectories(await ProcessConfig.get('localModel.directories'), getDefaultLocalModelDirectories());
 }
 
 function toStatus(handle: ManagedServerHandle | null): LocalModelRuntimeStatus {
