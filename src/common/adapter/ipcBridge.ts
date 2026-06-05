@@ -8,6 +8,7 @@ import type { IConfirmation } from '@/common/chat/chatLib';
 import { bridge } from '@office-ai/platform';
 import type { OpenDialogOptions } from 'electron';
 import type { McpSource } from '../../process/services/mcpServices/McpProtocol';
+import type { LocalModelScanResult } from '../../process/services/localModels/LocalModelDiscoveryService';
 import type { AgentBackend, AcpModelInfo } from '../types/acpTypes';
 import type { SlashCommandItem } from '../chat/slash/types';
 import type { IMcpServer, IProvider, TChatConversation, TProviderWithModel, ICssTheme } from '../config/storage';
@@ -445,6 +446,37 @@ export const mode = {
   detectProtocol: bridge.buildProvider<IBridgeResponse<ProtocolDetectionResponse>, ProtocolDetectionRequest>(
     'mode.detect-protocol'
   ),
+};
+
+/**
+ * Runtime status of the single managed local llama-server.
+ * `running: false` with no other fields means no model is currently served.
+ */
+export type LocalModelRuntimeStatus = {
+  running: boolean;
+  modelPath?: string;
+  name?: string;
+  port?: number;
+  baseUrl?: string;
+};
+
+/**
+ * Local GGUF model management — discover on-disk models and launch/stop a
+ * managed llama-server that is auto-registered as an OpenAI-compatible provider.
+ */
+export const localModel = {
+  /** Scan the configured local model directories for on-disk model assets. */
+  listModels: bridge.buildProvider<IBridgeResponse<LocalModelScanResult>, void>('local-model.list'),
+  /** Launch (or swap to) a managed llama-server for the given GGUF model path. */
+  start: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeStatus>, { modelPath: string }>('local-model.start'),
+  /** Stop the managed llama-server and disable its provider. */
+  stop: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeStatus>, void>('local-model.stop'),
+  /** Current managed-server status. */
+  getStatus: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeStatus>, void>('local-model.status'),
+  /** Effective list of scanned model directories (configured, or built-in defaults). */
+  getDirectories: bridge.buildProvider<IBridgeResponse<string[]>, void>('local-model.get-directories'),
+  /** Persist the scanned model directories; returns the resolved effective list. */
+  setDirectories: bridge.buildProvider<IBridgeResponse<string[]>, { directories: string[] }>('local-model.set-directories'),
 };
 
 // ACP对话相关接口 - 复用统一的conversation接口

@@ -762,6 +762,14 @@ app.on('before-quit', async () => {
     } catch {
       /* not initialized */
     }
+
+    // Stop the managed local llama-server, if running
+    try {
+      const { stopLocalModelServer } = await import('@process/bridge/localModelBridge');
+      await stopLocalModelServer();
+    } catch {
+      /* not initialized */
+    }
   };
 
   // Master timeout: force quit if cleanup hangs

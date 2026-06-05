@@ -1,5 +1,24 @@
 {
   "title": "Settings",
+  "localGguf": {
+    "title": "Local GGUF Models",
+    "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
+    "refresh": "Rescan",
+    "load": "Load",
+    "unload": "Unload",
+    "loadingState": "Loading model…",
+    "ready": "Ready",
+    "running": "Running",
+    "noModels": "No .gguf models found in your local model folders.",
+    "folderMissing": "{{path}} — not available (volume not mounted)",
+    "loadFailed": "Failed to load model",
+    "loadedMessage": "{{name}} is ready to use",
+    "unloadedMessage": "Local model stopped",
+    "serverHint": "Requires llama-server. Install with: brew install llama.cpp",
+    "foldersTitle": "Scanned folders",
+    "addFolder": "Add folder",
+    "removeFolder": "Remove folder"
+  },
   "skillsHub": {
     "title": "Skills Hub",
     "description": "Centrally manage AI agent skills. Install once, use across all assistants.",
