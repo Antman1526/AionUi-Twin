@@ -54,9 +54,10 @@ llama-server --help | head
 ```
 
 Configured model roots are stored in `localModel.directories`; default discovery
-also checks common folders such as `~/AI_Models`, `~/Models`,
+also checks common folders such as `~/AI_Models/GGUF`, `~/AI_Models`,
+`~/Models/GGUF`, `~/Models`, `~/Desktop/AI_Models/GGUF`,
 `~/Desktop/AI_Models`, Ollama/LM Studio caches, and llama.cpp caches when they
-exist. For Antman's test machine, the important root is:
+exist. For Antman's test machine, the primary root is:
 
 ```text
 /Users/Antman/Desktop/AI_Models/GGUF

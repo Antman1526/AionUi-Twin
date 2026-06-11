@@ -19,8 +19,11 @@ export const MODEL_DIRS_ENV = 'AIONUI_MODEL_DIRS';
  */
 function standardModelDirectories(home: string): string[] {
   const dirs = [
+    path.join(home, 'AI_Models', 'GGUF'),
     path.join(home, 'AI_Models'),
+    path.join(home, 'Models', 'GGUF'),
     path.join(home, 'Models'),
+    path.join(home, 'Desktop', 'AI_Models', 'GGUF'),
     path.join(home, 'Desktop', 'AI_Models'),
     path.join(home, '.ollama', 'models'),
     path.join(home, '.cache', 'lm-studio', 'models'),
