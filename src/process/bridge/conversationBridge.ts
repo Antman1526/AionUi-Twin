@@ -147,7 +147,7 @@ export function initConversationBridge(
           enabledSkills?: string[];
           excludeBuiltinSkills?: string[];
         };
-        const skillManager = AcpSkillManager.getInstance(extra.enabledSkills);
+        const skillManager = AcpSkillManager.getInstance(extra.enabledSkills, extra.excludeBuiltinSkills);
         await skillManager.discoverSkills(extra.enabledSkills, extra.excludeBuiltinSkills);
         const excludeSet = new Set(extra.excludeBuiltinSkills ?? []);
         // Filter out excluded builtin skills — the singleton cache may not reflect excludeBuiltinSkills

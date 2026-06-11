@@ -7,7 +7,7 @@
 import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeOptions } from '@/common/config/storage';
 import { ConfigStorage } from '@/common/config/storage';
-import { Button, InputNumber, Message, Select, Tag, Tooltip } from '@arco-design/web-react';
+import { Alert, Button, InputNumber, Message, Select, Tag, Tooltip } from '@arco-design/web-react';
 import { Close, FolderOpen, Info, Play, Plus, Power, Refresh, SettingTwo } from '@icon-park/react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -52,9 +52,15 @@ const LocalGgufModels: React.FC = () => {
   const [busyPath, setBusyPath] = useState<string | null>(null);
   const [expandedOptionsPath, setExpandedOptionsPath] = useState<string | null>(null);
 
-  const { data: scan, mutate: mutateScan } = useSWR('local-model.list', () =>
-    ipcBridge.localModel.listModels.invoke().then((res) => res.data ?? { roots: [], models: [] })
-  );
+  const {
+    data: scan,
+    error: scanError,
+    mutate: mutateScan,
+  } = useSWR('local-model.list', async () => {
+    const res = await ipcBridge.localModel.listModels.invoke();
+    if (!res.success) throw new Error(res.msg || t('settings.localGguf.loadFailed'));
+    return res.data ?? { roots: [], models: [] };
+  });
   const { data: status, mutate: mutateStatus } = useSWR('local-model.status', () =>
     ipcBridge.localModel.getStatus.invoke().then((res) => res.data)
   );
@@ -126,7 +132,6 @@ const LocalGgufModels: React.FC = () => {
     await Promise.all([
       ConfigStorage.set('guid.lastSelectedAgent', 'aionrs'),
       ConfigStorage.set('aionrs.defaultModel', modelRef),
-      ConfigStorage.set('gemini.defaultModel', modelRef),
     ]);
     message.success?.(t('settings.localGguf.useInChatReady'));
     void navigate('/guid');
@@ -325,9 +330,17 @@ const LocalGgufModels: React.FC = () => {
         </div>
       ))}
 
-      {llmModels.length === 0 ? (
+      {scanError ? (
+        <Alert
+          type='error'
+          className='mb-8px'
+          content={scanError instanceof Error ? scanError.message : String(scanError)}
+        />
+      ) : null}
+
+      {!scanError && llmModels.length === 0 ? (
         <div className='text-12px text-t-secondary py-8px'>{t('settings.localGguf.noModels')}</div>
-      ) : (
+      ) : !scanError ? (
         <div className='flex flex-col gap-6px'>
           {llmModels.map((model) => {
             const isRunning = runningPath === model.path;
@@ -393,7 +406,7 @@ const LocalGgufModels: React.FC = () => {
             );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

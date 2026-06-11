@@ -237,7 +237,7 @@ export class WorkerTaskManagerJobExecutor implements ICronJobExecutor {
     // Persist loaded skills snapshot so ConversationSkillsIndicator can display them
     try {
       const excludeBuiltinSkills = (params.extra as { excludeBuiltinSkills?: string[] })?.excludeBuiltinSkills;
-      const skillManager = AcpSkillManager.getInstance();
+      const skillManager = AcpSkillManager.getInstance(undefined, excludeBuiltinSkills);
       await skillManager.discoverSkills(undefined, excludeBuiltinSkills);
       const excludeSet = new Set(excludeBuiltinSkills ?? []);
       const loadedSkills = skillManager.getSkillsIndex().filter((s) => !excludeSet.has(s.name));

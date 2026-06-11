@@ -252,6 +252,10 @@ const createWindow = ({ showOnReady = true }: { showOnReady?: boolean } = {}): v
       : { frame: false }),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
       webviewTag: true, // 启用 webview 标签用于 HTML 预览 / Enable webview tag for HTML preview
     },
   });

@@ -79,6 +79,7 @@ type ManagedSession = ManagedServerHandle & { process: ChildProcess };
 let currentSession: ManagedSession | null = null;
 
 const DEFAULT_EXECUTABLE_CANDIDATES = ['llama-server', '/opt/homebrew/bin/llama-server', '/usr/local/bin/llama-server'];
+const MAX_CAPTURED_STDERR = 12_000;
 
 export function buildLlamaServerArgs({
   modelPath,
@@ -187,6 +188,12 @@ function resolveExecutable(candidates: readonly string[]): string | null {
   return null;
 }
 
+function withCapturedStderr(message: string, stderrTail: string, cause?: Error): Error {
+  const stderr = stderrTail.trim();
+  const fullMessage = stderr ? `${message}\nllama-server stderr:\n${stderr}` : message;
+  return cause ? new Error(fullMessage, { cause }) : new Error(fullMessage);
+}
+
 /**
  * Stop the currently managed llama-server, if any.
  */
@@ -256,6 +263,11 @@ export async function startManagedLlamaServer({
     stdio: ['ignore', 'ignore', 'pipe'],
     env: getEnhancedEnv(),
   });
+  let stderrTail = '';
+  child.stderr?.setEncoding('utf-8');
+  child.stderr?.on('data', (chunk: string | Buffer) => {
+    stderrTail = (stderrTail + String(chunk)).slice(-MAX_CAPTURED_STDERR);
+  });
 
   const session: ManagedSession = {
     process: child,
@@ -267,22 +279,35 @@ export async function startManagedLlamaServer({
   };
   currentSession = session;
 
-  let spawnError: Error | null = null;
-  child.on('error', (err) => {
-    spawnError = err instanceof Error ? err : new Error(String(err));
-  });
   child.on('exit', () => {
     if (currentSession === session) currentSession = null;
   });
 
+  let rejectStartup: (error: Error) => void = () => {};
+  const onStartupError = (err: Error): void => {
+    rejectStartup(withCapturedStderr(`Failed to launch llama-server: ${err.message}`, stderrTail, err));
+  };
+  const onStartupExit = (code: number | null, signal: NodeJS.Signals | null): void => {
+    const reason = signal ? `signal ${signal}` : `code ${code ?? 'unknown'}`;
+    rejectStartup(withCapturedStderr(`llama-server exited before becoming healthy (${reason})`, stderrTail));
+  };
+  const processFailure = new Promise<never>((_resolve, reject) => {
+    rejectStartup = reject;
+    child.once('error', onStartupError);
+    child.once('exit', onStartupExit);
+  });
+
   try {
-    await waitForHealthy(port, readinessTimeoutMs);
+    await Promise.race([waitForHealthy(port, readinessTimeoutMs), processFailure]);
+    child.off('error', onStartupError);
+    child.off('exit', onStartupExit);
   } catch (err) {
+    child.off('error', onStartupError);
+    child.off('exit', onStartupExit);
     stopManagedLlamaServer();
-    if (spawnError) {
-      throw new Error(`Failed to launch llama-server: ${spawnError.message}`, { cause: spawnError });
-    }
-    throw err;
+    if (err instanceof Error && err.message.includes('llama-server stderr:')) throw err;
+    if (err instanceof Error) throw withCapturedStderr(err.message, stderrTail, err);
+    throw withCapturedStderr(String(err), stderrTail);
   }
 
   const { process: _process, ...handle } = session;

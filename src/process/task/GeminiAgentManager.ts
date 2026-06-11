@@ -222,8 +222,8 @@ export class GeminiAgentManager extends BaseAgentManager<
 
         // Merge builtin skill names into enabledSkills for the worker's skill discovery
         // 将内置 skill 名称合并到 enabledSkills，使 worker 的 SkillManager 能找到它们
-        const skillManager = AcpSkillManager.getInstance(this.enabledSkills);
-        await skillManager.discoverSkills(this.enabledSkills);
+        const skillManager = AcpSkillManager.getInstance(this.enabledSkills, this.excludeBuiltinSkills);
+        await skillManager.discoverSkills(this.enabledSkills, this.excludeBuiltinSkills);
         const excludeSet = new Set(this.excludeBuiltinSkills ?? []);
         const builtinSkillNames = skillManager
           .getBuiltinSkillsIndex()
@@ -934,8 +934,8 @@ export class GeminiAgentManager extends BaseAgentManager<
       if (textContent) {
         const skillRequests = detectSkillLoadRequest(textContent);
         if (skillRequests.length > 0) {
-          const skillManager = AcpSkillManager.getInstance(this.enabledSkills);
-          await skillManager.discoverSkills(this.enabledSkills);
+          const skillManager = AcpSkillManager.getInstance(this.enabledSkills, this.excludeBuiltinSkills);
+          await skillManager.discoverSkills(this.enabledSkills, this.excludeBuiltinSkills);
           const skills = await skillManager.getSkills(skillRequests);
           if (skills.length > 0) {
             const skillContent = buildSkillContentText(skills);

@@ -1,6 +1,6 @@
 ---
 name: skillopt-sleep
-description: Mandatory Microsoft SkillOpt-inspired sleep-cycle workflow for improving agent skills and long-term project memory with validation-gated, reviewable edits. Use when optimizing AionUi skills, recurring workflows, agent instructions, or repeated task failures.
+description: Mandatory Microsoft SkillOpt-inspired sleep-cycle workflow for improving agent skills and long-term project memory with validation-gated, reviewable edits. Must be loaded when optimizing AionUi skills, recurring workflows, agent instructions, or repeated task failures.
 ---
 
 # SkillOpt Sleep for AionUi
@@ -15,7 +15,7 @@ Do not blindly rewrite a skill because a single session went poorly. Propose sma
 
 ## When To Use
 
-Use this skill when the user asks to:
+You must use this skill when the user asks to:
 
 - Improve AionUi skills, agent behavior, prompts, or project memory.
 - Diagnose repeated agent failures across similar tasks.

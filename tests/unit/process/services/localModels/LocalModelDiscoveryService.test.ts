@@ -2,7 +2,10 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { scanLocalModelDirectories } from '../../../../../src/process/services/localModels/LocalModelDiscoveryService';
+import {
+  LOCAL_MODEL_SCAN_MAX_DEPTH,
+  scanLocalModelDirectories,
+} from '../../../../../src/process/services/localModels/LocalModelDiscoveryService';
 
 describe('LocalModelDiscoveryService', () => {
   const tempRoots: string[] = [];
@@ -67,6 +70,19 @@ describe('LocalModelDiscoveryService', () => {
     const result = await scanLocalModelDirectories({ roots: [missingRoot] });
 
     expect(result.roots).toEqual([{ path: missingRoot, exists: false }]);
+    expect(result.models).toEqual([]);
+  });
+
+  it('stops recursive discovery after the configured depth limit', async () => {
+    const root = createRoot();
+    const tooDeepPath = Array.from({ length: LOCAL_MODEL_SCAN_MAX_DEPTH + 1 }, (_, index) => `level-${index}`).join(
+      path.sep
+    );
+    writeFile(root, path.join(tooDeepPath, 'too-deep.gguf'), 16);
+
+    const result = await scanLocalModelDirectories({ roots: [root] });
+
+    expect(result.roots).toEqual([{ path: root, exists: true }]);
     expect(result.models).toEqual([]);
   });
 });

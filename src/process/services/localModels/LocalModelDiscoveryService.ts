@@ -46,6 +46,9 @@ export type LocalModelScanResult = {
   models: LocalModelAsset[];
 };
 
+export const LOCAL_MODEL_SCAN_MAX_DEPTH = 8;
+export const LOCAL_MODEL_SCAN_MAX_FILES = 2_000;
+
 type FormatRule = {
   format: LocalModelFormat;
   kind: LocalModelKind;
@@ -96,7 +99,18 @@ async function classifyFile(fullPath: string, fileName: string): Promise<LocalMo
  * directory cannot be read (missing / unmounted volume), so the caller can
  * report `exists: false` without throwing.
  */
-async function scanRoot(root: string): Promise<LocalModelAsset[] | null> {
+async function scanRoot(
+  root: string,
+  {
+    depth,
+    fileBudget,
+  }: {
+    depth: number;
+    fileBudget: { remaining: number };
+  }
+): Promise<LocalModelAsset[] | null> {
+  if (depth > LOCAL_MODEL_SCAN_MAX_DEPTH || fileBudget.remaining <= 0) return [];
+
   let entries: import('node:fs').Dirent[];
   try {
     entries = await fs.readdir(root, { withFileTypes: true });
@@ -104,17 +118,24 @@ async function scanRoot(root: string): Promise<LocalModelAsset[] | null> {
     return null;
   }
 
-  const nested = await Promise.all(
-    entries.map(async (entry) => {
-      const fullPath = path.join(root, entry.name);
-      if (entry.isDirectory()) return (await scanRoot(fullPath)) ?? [];
-      if (!entry.isFile()) return [];
-      const asset = await classifyFile(fullPath, entry.name);
-      return asset ? [asset] : [];
-    })
-  );
+  const assets: LocalModelAsset[] = [];
+  for (const entry of entries) {
+    if (fileBudget.remaining <= 0) break;
 
-  return nested.flat();
+    const fullPath = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      const childAssets = await scanRoot(fullPath, { depth: depth + 1, fileBudget });
+      if (childAssets) assets.push(...childAssets);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+
+    fileBudget.remaining -= 1;
+    const asset = await classifyFile(fullPath, entry.name);
+    if (asset) assets.push(asset);
+  }
+
+  return assets;
 }
 
 /**
@@ -130,7 +151,7 @@ export async function scanLocalModelDirectories({
 }): Promise<LocalModelScanResult> {
   const scanned = await Promise.all(
     roots.map(async (root) => {
-      const assets = await scanRoot(root);
+      const assets = await scanRoot(root, { depth: 0, fileBudget: { remaining: LOCAL_MODEL_SCAN_MAX_FILES } });
       return { path: root, exists: assets !== null, assets: assets ?? [] };
     })
   );

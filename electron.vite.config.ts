@@ -1,10 +1,21 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import { execSync } from 'child_process';
-import { resolve } from 'path';
+import { dirname, relative, resolve } from 'path';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import UnoCSS from 'unocss/vite';
 import unoConfig from './uno.config.ts';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+
+function copyToPackageRoot(sourceRoot: string, outputPrefix: string) {
+  const absoluteSourceRoot = resolve(__dirname, sourceRoot);
+  const absoluteProjectRoot = resolve(__dirname);
+  return (_fileName: string, _fileExtension: string, fullPath: string): string => {
+    const sourceRelativePath = relative(absoluteSourceRoot, fullPath).replace(/\\/g, '/');
+    const matchedDir = relative(absoluteProjectRoot, dirname(fullPath)).replace(/\\/g, '/');
+    const goUp = matchedDir ? '../'.repeat(matchedDir.split('/').length) : '';
+    return `${goUp}${outputPrefix}/${sourceRelativePath}`;
+  };
+}
 
 // Build builtin MCP servers after main process bundle so they survive out/main/ cleanup.
 function buildMcpServersPlugin() {
@@ -93,16 +104,25 @@ export default defineConfig(({ mode }) => {
         ...(!isDevelopment
           ? [
               viteStaticCopy({
-                structured: false,
                 // electron-vite builds main process as SSR; viteStaticCopy defaults
                 // to environment: "client" and silently skips non-client environments.
                 environment: 'ssr',
                 targets: [
-                  // Use single * glob to copy top-level items (directories) with their contents intact.
-                  // Using ** would flatten all nested files into the dest root.
-                  { src: 'src/process/resources/skills/*', dest: 'skills' },
-                  { src: 'src/process/resources/assistant/*', dest: 'assistant' },
-                  { src: 'src/renderer/assets/logos/*', dest: 'static/images' },
+                  {
+                    src: 'src/process/resources/skills/**/*',
+                    dest: '.',
+                    rename: copyToPackageRoot('src/process/resources/skills', 'skills'),
+                  },
+                  {
+                    src: 'src/process/resources/assistant/**/*',
+                    dest: '.',
+                    rename: copyToPackageRoot('src/process/resources/assistant', 'assistant'),
+                  },
+                  {
+                    src: 'src/renderer/assets/logos/**/*',
+                    dest: '.',
+                    rename: copyToPackageRoot('src/renderer/assets/logos', 'static/images'),
+                  },
                 ],
               }),
             ]

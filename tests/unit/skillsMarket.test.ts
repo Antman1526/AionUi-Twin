@@ -136,6 +136,12 @@ describe('Skills Market - Enable/Disable flow', () => {
 });
 
 describe('Skills Market - AcpSkillManager integration', () => {
+  afterEach(async () => {
+    const { AcpSkillManager } = await import('../../src/process/task/AcpSkillManager');
+    AcpSkillManager.resetInstance();
+    await fs.rm('/tmp/aionui-test', { recursive: true, force: true });
+  });
+
   it('resetInstance clears the singleton so new discoveries happen', async () => {
     const { AcpSkillManager } = await import('../../src/process/task/AcpSkillManager');
 
@@ -156,5 +162,24 @@ describe('Skills Market - AcpSkillManager integration', () => {
 
     // Cleanup
     AcpSkillManager.resetInstance();
+  });
+
+  it('does not expose excluded builtin skills through on-demand loading', async () => {
+    const { AcpSkillManager } = await import('../../src/process/task/AcpSkillManager');
+    const skillDir = path.join('/tmp/aionui-test', 'skills', '_builtin', 'cron');
+    await fs.mkdir(skillDir, { recursive: true });
+    await fs.writeFile(
+      path.join(skillDir, 'SKILL.md'),
+      ['---', 'name: cron', 'description: Schedule recurring tasks.', '---', '', '# Cron'].join('\n'),
+      'utf-8'
+    );
+
+    AcpSkillManager.resetInstance();
+    const manager = AcpSkillManager.getInstance(undefined, ['cron']);
+    await manager.discoverSkills(undefined, ['cron']);
+
+    expect(manager.getSkillsIndex().some((skill) => skill.name === 'cron')).toBe(false);
+    expect(manager.hasSkill('cron')).toBe(false);
+    await expect(manager.getSkill('cron')).resolves.toBeNull();
   });
 });

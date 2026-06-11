@@ -120,7 +120,7 @@ export async function prepareFirstMessageWithSkillsIndex(
   // 2. 加载 skills 索引（包括内置 skills + 可选 skills）
   // Load skills INDEX (including builtin skills + optional skills)
   // 使用单例模式避免重复文件系统扫描 / Use singleton to avoid repeated filesystem scans
-  const skillManager = AcpSkillManager.getInstance(config.enabledSkills);
+  const skillManager = AcpSkillManager.getInstance(config.enabledSkills, config.excludeBuiltinSkills);
   // discoverSkills 会自动先加载内置 skills / discoverSkills auto-loads builtin skills first
   await skillManager.discoverSkills(config.enabledSkills, config.excludeBuiltinSkills);
 
@@ -150,6 +150,9 @@ Skills are stored in three locations:
 
 Each skill has a SKILL.md file containing detailed instructions.
 To use a skill, read its SKILL.md file when needed.
+
+Mandatory workflow:
+- For skill, prompt, memory, workflow, or agent-behavior improvements, repeated task failures, or sleep/reflection/retrospective work, load and follow skillopt-sleep before proposing edits.
 
 For example:
 - Builtin "cron" skill: ${builtinSkillsDir}/cron/SKILL.md
@@ -201,7 +204,7 @@ export async function buildSystemInstructionsWithSkillsIndex(config: FirstMessag
 
   // 加载 skills 索引（包括内置 skills + 可选 skills）
   // Load skills INDEX (including builtin skills + optional skills)
-  const skillManager = AcpSkillManager.getInstance(config.enabledSkills);
+  const skillManager = AcpSkillManager.getInstance(config.enabledSkills, config.excludeBuiltinSkills);
   await skillManager.discoverSkills(config.enabledSkills, config.excludeBuiltinSkills);
 
   if (skillManager.hasAnySkills()) {
@@ -209,7 +212,10 @@ export async function buildSystemInstructionsWithSkillsIndex(config: FirstMessag
     const skillsIndex = skillManager.getSkillsIndex().filter((s) => !excludeSet.has(s.name));
     if (skillsIndex.length > 0) {
       const indexText = buildSkillsIndexText(skillsIndex);
-      instructions.push(indexText);
+      instructions.push(`${indexText}
+
+Mandatory workflow:
+- For skill, prompt, memory, workflow, or agent-behavior improvements, repeated task failures, or sleep/reflection/retrospective work, output [LOAD_SKILL: skillopt-sleep] and follow it before proposing edits.`);
     }
   }
 

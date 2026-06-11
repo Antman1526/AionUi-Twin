@@ -60,6 +60,23 @@ describe('LocalModelRuntimeService', () => {
     fs.rmSync(modelPath, { force: true });
   });
 
+  it('fails promptly when the llama-server executable cannot launch', async () => {
+    const root = createRoot();
+    const modelPath = path.join(root, 'model.gguf');
+    fs.writeFileSync(modelPath, Buffer.alloc(1));
+
+    const startedAt = Date.now();
+    await expect(
+      startManagedLlamaServer({
+        modelPath,
+        allowedRoots: [root],
+        executableCandidates: ['aionui-definitely-missing-llama-server'],
+        readinessTimeoutMs: 60_000,
+      })
+    ).rejects.toThrow('Failed to launch llama-server');
+    expect(Date.now() - startedAt).toBeLessThan(5_000);
+  });
+
   it('adds reasoning flags only when the model runtime option is set', () => {
     const base = {
       modelPath: '/models/qwen.gguf',

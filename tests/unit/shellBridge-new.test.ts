@@ -123,7 +123,7 @@ describe('shellBridge with actual providers', () => {
     it('calls shell.openExternal for valid URL', async () => {
       await registeredProviders['openExternal']('https://example.com');
 
-      expect(shell.openExternal).toHaveBeenCalledWith('https://example.com');
+      expect(shell.openExternal).toHaveBeenCalledWith('https://example.com/');
     });
 
     it('rejects invalid URLs without calling shell.openExternal', async () => {
@@ -142,6 +142,16 @@ describe('shellBridge with actual providers', () => {
       await registeredProviders['openExternal']('');
 
       expect(shell.openExternal).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('rejects unsafe URL protocols without calling shell.openExternal', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await registeredProviders['openExternal']('file:///etc/passwd');
+
+      expect(shell.openExternal).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid URL'));
       warnSpy.mockRestore();
     });
   });

@@ -605,7 +605,7 @@ const HTMLRenderer: React.FC<HTMLRendererProps> = ({
               bottom: 0,
               height: '100%',
             }}
-            webpreferences='allowRunningInsecureContent, javascript=yes'
+            webpreferences='contextIsolation=yes, nodeIntegration=no, sandbox=yes, webSecurity=yes, allowRunningInsecureContent=no, javascript=yes'
           />
         </>
       ) : (

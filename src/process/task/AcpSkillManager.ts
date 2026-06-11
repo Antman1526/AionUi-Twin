@@ -102,13 +102,15 @@ export class AcpSkillManager {
   private extensionSkills: Map<string, SkillDefinition> = new Map();
   private skillsDir: string;
   private autoSkillsDir: string;
+  private excludedBuiltinSkills: Set<string>;
   private initialized: boolean = false;
   private autoInitialized: boolean = false;
   private extensionInitialized: boolean = false;
 
-  constructor(skillsDir?: string) {
+  constructor(skillsDir?: string, excludeBuiltinSkills?: string[]) {
     this.skillsDir = skillsDir || getSkillsDir();
     this.autoSkillsDir = getAutoSkillsDir();
+    this.excludedBuiltinSkills = new Set(excludeBuiltinSkills ?? []);
   }
 
   /**
@@ -131,7 +133,7 @@ export class AcpSkillManager {
     }
 
     // 创建新实例
-    AcpSkillManager.instance = new AcpSkillManager();
+    AcpSkillManager.instance = new AcpSkillManager(undefined, excludeBuiltinSkills);
     AcpSkillManager.instanceKey = cacheKey;
     return AcpSkillManager.instance;
   }
@@ -161,7 +163,7 @@ export class AcpSkillManager {
       return;
     }
 
-    const excludeSet = new Set(excludeSkills ?? []);
+    const excludeSet = new Set([...this.excludedBuiltinSkills, ...(excludeSkills ?? [])]);
 
     try {
       const entries = await fs.readdir(builtinDir, { withFileTypes: true });
@@ -401,7 +403,7 @@ export class AcpSkillManager {
     // Check optional skills first (explicitly configured for this assistant)
     let skill = this.skills.get(name);
     // 再查找内置 skills / Then search builtin skills
-    if (!skill) {
+    if (!skill && !this.excludedBuiltinSkills.has(name)) {
       skill = this.autoSkills.get(name);
     }
     // 最后查找扩展 skills / Then search extension skills
@@ -444,7 +446,8 @@ export class AcpSkillManager {
    * Check if a skill exists (including builtin and optional)
    */
   hasSkill(name: string): boolean {
-    return this.autoSkills.has(name) || this.skills.has(name) || this.extensionSkills.has(name);
+    const hasBuiltin = !this.excludedBuiltinSkills.has(name) && this.autoSkills.has(name);
+    return hasBuiltin || this.skills.has(name) || this.extensionSkills.has(name);
   }
 
   /**

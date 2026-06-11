@@ -85,7 +85,7 @@ describe('shellBridgeStandalone', () => {
 
     it('openExternal calls open with the URL', async () => {
       await openExternalProvider.fn!('https://example.com');
-      expect(execFileMock).toHaveBeenCalledWith('open', ['https://example.com'], expect.any(Function));
+      expect(execFileMock).toHaveBeenCalledWith('open', ['https://example.com/'], expect.any(Function));
     });
   });
 
@@ -143,7 +143,15 @@ describe('shellBridgeStandalone', () => {
 
     it('allows valid URLs through to execFile', async () => {
       await openExternalProvider.fn!('https://example.com');
-      expect(execFileMock).toHaveBeenCalledWith('open', ['https://example.com'], expect.any(Function));
+      expect(execFileMock).toHaveBeenCalledWith('open', ['https://example.com/'], expect.any(Function));
+    });
+
+    it('rejects unsafe URL protocols without calling execFile', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await openExternalProvider.fn!('file:///etc/passwd');
+      expect(execFileMock).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid URL'));
+      warnSpy.mockRestore();
     });
   });
 

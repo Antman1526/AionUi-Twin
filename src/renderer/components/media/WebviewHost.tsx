@@ -475,7 +475,8 @@ const WebviewHost: React.FC<WebviewHostProps> = ({
   // Build webview attributes
   const webviewAttrs: Record<string, string> = {
     allowpopups: 'false',
-    webpreferences: 'contextIsolation=no, nodeIntegration=no, nativeWindowOpen=no',
+    webpreferences:
+      'contextIsolation=yes, nodeIntegration=no, nativeWindowOpen=no, sandbox=yes, webSecurity=yes, allowRunningInsecureContent=no',
   };
   if (partition) {
     webviewAttrs.partition = partition;

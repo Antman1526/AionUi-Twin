@@ -15,6 +15,17 @@ import { ipcBridge } from '@/common';
 import { execFile } from 'node:child_process';
 import path from 'node:path';
 
+const SAFE_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
+
+function parseSafeExternalUrl(url: string): URL | null {
+  try {
+    const parsed = new URL(url);
+    return SAFE_EXTERNAL_PROTOCOLS.has(parsed.protocol) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function runOpen(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const [cmd, ...rest] =
@@ -36,12 +47,11 @@ export function initShellBridgeStandalone(): void {
   ipcBridge.shell.showItemInFolder.provider((filePath) => runOpen([path.dirname(filePath)]));
 
   ipcBridge.shell.openExternal.provider((url) => {
-    try {
-      new URL(url);
-    } catch {
+    const parsed = parseSafeExternalUrl(url);
+    if (!parsed) {
       console.warn(`[shellBridge] Invalid URL passed to openExternal: ${url}`);
       return Promise.resolve();
     }
-    return runOpen([url]);
+    return runOpen([parsed.toString()]);
   });
 }
