@@ -6,12 +6,12 @@ These notes are source-grounded documentation for `/Users/Antman/Desktop/AionUi_
 
 OpenAI-compatible providers use `openai`; Anthropic uses `@anthropic-ai/sdk`; Gemini/Vertex uses `@google/genai`; Bedrock uses `@aws-sdk/client-bedrock`; New API gateways use provider normalization. ACP uses `@agentclientprotocol/sdk`; MCP uses `@modelcontextprotocol/sdk`; Aion CLI uses `@office-ai/aioncli-core` and `@office-ai/platform`.
 
-Microsoft SkillOpt is integrated at the AionUi skill-workflow layer through
-`src/process/resources/skills/skillopt-sleep/SKILL.md`. The repository does not
-vendor SkillOpt's Python runtime into the desktop bundle; instead, the bundled
-skill teaches agents to run validation-gated sleep-cycle reviews over AionUi
-skills, project memory, and repeated failures. Additional architecture notes are
-in `docs/integrations/skillopt.md`.
+Microsoft SkillOpt is integrated at the mandatory built-in AionUi skill-workflow
+layer through `src/process/resources/skills/_builtin/skillopt-sleep/SKILL.md`.
+The repository does not vendor SkillOpt's Python runtime into the desktop
+bundle; instead, the bundled skill teaches agents to run validation-gated
+sleep-cycle reviews over AionUi skills, project memory, and repeated failures.
+Additional architecture notes are in `docs/integrations/skillopt.md`.
 
 Local GGUF integration is implemented as a local OpenAI-compatible provider. The
 managed process is llama.cpp `llama-server`; once healthy it is registered with

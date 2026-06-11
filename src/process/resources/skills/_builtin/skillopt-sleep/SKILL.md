@@ -1,11 +1,11 @@
 ---
 name: skillopt-sleep
-description: Use Microsoft SkillOpt-inspired sleep cycles to improve agent skills and long-term project memory with validation-gated, reviewable edits. Use when optimizing AionUi skills, recurring workflows, agent instructions, or repeated task failures.
+description: Mandatory Microsoft SkillOpt-inspired sleep-cycle workflow for improving agent skills and long-term project memory with validation-gated, reviewable edits. Use when optimizing AionUi skills, recurring workflows, agent instructions, or repeated task failures.
 ---
 
 # SkillOpt Sleep for AionUi
 
-This skill adapts the workflow from Microsoft SkillOpt and SkillOpt-Sleep to AionUi's bundled skill system. Treat skill files, agent instructions, and project memory as trainable text artifacts, but only accept changes after evidence shows they improve held-out tasks.
+This mandatory built-in skill adapts the workflow from Microsoft SkillOpt and SkillOpt-Sleep to AionUi's bundled skill system. Treat skill files, agent instructions, and project memory as trainable text artifacts, but only accept changes after evidence shows they improve held-out tasks.
 
 Source project: https://github.com/microsoft/SkillOpt
 
@@ -54,7 +54,7 @@ AionUi skills are packaged under `src/process/resources/skills/<skill-name>/SKIL
 
 For large or high-risk guidance:
 
-- Keep it as an optional skill instead of auto-injecting it from `_builtin`.
+- Keep mandatory guidance concise because `_builtin` skills are auto-discovered for every ACP agent.
 - Use frontmatter with a concise `name` and high-signal `description`.
 - Keep tool installation commands optional and clearly separate from the default workflow.
 - Add project documentation under `docs/` when future maintainers need architecture context.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-AionUi Twin integrates Microsoft SkillOpt at the workflow layer through the bundled `skillopt-sleep` skill. The goal is to improve agent reliability by applying SkillOpt's core idea to AionUi skills and project memory: treat instruction files as trainable artifacts, update them with small bounded edits, and accept changes only after a validation gate.
+AionUi Twin integrates Microsoft SkillOpt at the workflow layer through the mandatory built-in `skillopt-sleep` skill. The goal is to improve agent reliability by applying SkillOpt's core idea to AionUi skills and project memory: treat instruction files as trainable artifacts, update them with small bounded edits, and accept changes only after a validation gate.
 
 Upstream: https://github.com/microsoft/SkillOpt  
 License: MIT for upstream SkillOpt. AionUi Twin remains governed by this repository's license.
@@ -14,19 +14,19 @@ The integration is intentionally additive and does not vendor the upstream Pytho
 Implemented artifact:
 
 ```text
-src/process/resources/skills/skillopt-sleep/SKILL.md
+src/process/resources/skills/_builtin/skillopt-sleep/SKILL.md
 ```
 
-At build time, `electron.vite.config.ts` copies `src/process/resources/skills/*` into packaged resources. During app startup, `src/process/utils/initStorage.ts` copies bundled skills into the user's built-in skills directory. `src/process/task/AcpSkillManager.ts` then discovers optional skills when an assistant enables them through `enabledSkills`.
+At build time, `electron.vite.config.ts` copies `src/process/resources/skills/*` into packaged resources. During app startup, `src/process/utils/initStorage.ts` copies bundled skills into the user's built-in skills directory. `src/process/task/AcpSkillManager.ts` discovers `_builtin` skills through `discoverAutoSkills()`, so `skillopt-sleep` is available to every ACP agent without per-assistant `enabledSkills` configuration.
 
-This means `skillopt-sleep` is available like other bundled optional skills, but it does not add prompt overhead to every conversation by living under `_builtin`.
+This makes `skillopt-sleep` mandatory at the skill-index layer. Agents still load the full body on demand through the existing `[LOAD_SKILL: skillopt-sleep]` flow, which keeps the always-present index small while making the workflow impossible to miss.
 
 ## Why Not Bundle the Full Python Runtime Yet
 
 SkillOpt's Python runtime is useful for offline experiments, but bundling it directly into AionUi would add several product obligations:
 
 - Python 3.10+ runtime discovery or embedding.
-- Dependency installation and update policy for the SkillOpt package and its optional WebUI stack.
+- Dependency installation and update policy for the SkillOpt package and its WebUI stack.
 - API-key and transcript privacy controls for optimizer runs.
 - Cost controls for replaying historical sessions through external models.
 - A UI for staging, reviewing, accepting, and rolling back generated skill edits.
@@ -83,7 +83,7 @@ The next deeper integration should be a native AionUi "Sleep Review" feature:
 
 ## Areas for Review
 
-- Should `skillopt-sleep` become a default skill for the Cowork assistant, or remain opt-in for lower prompt overhead?
+- Should the mandatory `skillopt-sleep` index entry be made shorter if prompt overhead becomes measurable?
 - Should AionUi store held-out validation prompts in the project workspace or in application config?
 - Should sleep-cycle replay use local GGUF models by default and cloud models only after explicit opt-in?
 - What minimum validation score or check count should be required before a generated skill edit can be accepted?

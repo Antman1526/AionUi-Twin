@@ -46,4 +46,4 @@ security boundaries.
 
 For agent skill optimization behavior, read document 8, document 10, and
 `docs/integrations/skillopt.md` together. The packaged `skillopt-sleep` skill is
-an optional workflow skill, not a vendored Python runtime.
+a mandatory built-in workflow skill, not a vendored Python runtime.
