@@ -28,8 +28,34 @@ Team model resolution checks saved Gemini defaults, enabled providers, Google OA
 
 Extension routing, upload workspace validation, and channel plugin initialization are key business rules that protect runtime boundaries.
 
+## Managed GGUF Runtime Algorithm
+
+`startManagedLlamaServer` implements the local model lifecycle:
+
+1. Resolve and validate the requested model path against configured roots.
+2. Resolve `llama-server` from candidates.
+3. Stop any existing managed server.
+4. Allocate a free loopback port.
+5. Build llama.cpp arguments.
+6. Spawn the process with an enhanced shell environment.
+7. Poll `/health` until HTTP 200 or timeout.
+8. Return `{ port, baseUrl, pid, alias, modelPath }`.
+
+The spawned arguments are deterministic:
+
+```ts
+const args = ['-m', modelPath, '--host', '127.0.0.1', '--port', String(port), '--alias', alias, '-ngl', String(gpuLayers), '-c', String(contextSize)];
+if (reasoning) args.push('--reasoning', reasoning);
+```
+
+The reasoning flag is important for models that otherwise stream thinking tags
+or spend answer budget on hidden reasoning. Known working local options on
+Antman's machine set `reasoning: 'off'` for Qwen3.5 4B/9B, Gemma 12B, and
+DeepSeek R1 Distill Qwen 14B.
+
 ## Areas for Review
 
 - Convert task cache from array to `Map` and expose task diagnostics.
 - Make team model fallback decisions visible to users.
 - Add exhaustive tests for provider normalization and model resolution.
+- Persist managed local runtime history so the UI can explain which model last failed and why.

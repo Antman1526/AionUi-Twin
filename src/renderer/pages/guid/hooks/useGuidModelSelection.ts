@@ -41,6 +41,8 @@ const MODEL_STORAGE_KEY: Record<ProviderAgentKey, 'gemini.defaultModel' | 'aionr
   aionrs: 'aionrs.defaultModel',
 };
 
+const MANAGED_LOCAL_PROVIDER_PREFIX = 'local-llama-cpp-';
+
 export type GuidModelSelectionResult = {
   modelList: IProvider[];
   isGoogleAuth: boolean;
@@ -138,13 +140,6 @@ export const useGuidModelSelection = (agentKey: ProviderAgentKey = 'gemini'): Gu
         selectedModelKeyRef.current = null;
       }
 
-      const currentKey = selectedModelKeyRef.current || buildModelKey(currentModel?.id, currentModel?.useModel);
-      if (!agentChanged && isModelKeyAvailable(currentKey, modelList)) {
-        if (!selectedModelKeyRef.current && currentKey) {
-          selectedModelKeyRef.current = currentKey;
-        }
-        return;
-      }
       const savedModel = await ConfigStorage.get(storageKey);
 
       const isNewFormat = savedModel && typeof savedModel === 'object' && 'id' in savedModel;
@@ -158,14 +153,44 @@ export const useGuidModelSelection = (agentKey: ProviderAgentKey = 'gemini'): Gu
         if (exactMatch && exactMatch.model.includes(useModel)) {
           defaultModel = exactMatch;
           resolvedUseModel = useModel;
+        } else if (typeof id === 'string' && id.startsWith(MANAGED_LOCAL_PROVIDER_PREFIX)) {
+          const replacementLocal = modelList.find(
+            (m) => m.id?.startsWith(MANAGED_LOCAL_PROVIDER_PREFIX) && m.model.includes(useModel)
+          );
+          if (replacementLocal) {
+            defaultModel = replacementLocal;
+            resolvedUseModel = useModel;
+          } else {
+            defaultModel = modelList[0];
+            resolvedUseModel = defaultModel?.model[0] ?? '';
+            if (defaultModel && resolvedUseModel) {
+              selectedModelKeyRef.current = null;
+              _setCurrentModel({ ...defaultModel, useModel: resolvedUseModel });
+            }
+            return;
+          }
         } else {
           defaultModel = modelList[0];
           resolvedUseModel = defaultModel?.model[0] ?? '';
         }
       } else if (typeof savedModel === 'string') {
+        const currentKey = selectedModelKeyRef.current || buildModelKey(currentModel?.id, currentModel?.useModel);
+        if (!agentChanged && isModelKeyAvailable(currentKey, modelList)) {
+          if (!selectedModelKeyRef.current && currentKey) {
+            selectedModelKeyRef.current = currentKey;
+          }
+          return;
+        }
         defaultModel = modelList.find((m) => m.model.includes(savedModel)) || modelList[0];
         resolvedUseModel = defaultModel?.model.includes(savedModel) ? savedModel : (defaultModel?.model[0] ?? '');
       } else {
+        const currentKey = selectedModelKeyRef.current || buildModelKey(currentModel?.id, currentModel?.useModel);
+        if (!agentChanged && isModelKeyAvailable(currentKey, modelList)) {
+          if (!selectedModelKeyRef.current && currentKey) {
+            selectedModelKeyRef.current = currentKey;
+          }
+          return;
+        }
         defaultModel = modelList[0];
         resolvedUseModel = defaultModel?.model[0] ?? '';
       }

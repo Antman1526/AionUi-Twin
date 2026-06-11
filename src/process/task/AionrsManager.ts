@@ -16,8 +16,10 @@ import { ToolConfirmationOutcome } from '../agent/gemini/cli/tools/tools';
 import { AionrsAgent, type StdioMcpOption } from '@process/agent/aionrs';
 import type { AionrsCapabilities } from '@process/agent/aionrs/protocol';
 import { getDatabase } from '@process/services/database';
+import { MANAGED_LOCAL_PROVIDER_PREFIX } from '@process/services/localModels/LocalModelRuntimeService';
 import { addMessage, addOrUpdateMessage } from '@process/utils/message';
 import { uuid } from '@/common/utils';
+import { isLocalBaseUrl } from '@/common/utils/localModelProviders';
 import BaseAgentManager from './BaseAgentManager';
 import { IpcAgentEventEmitter } from './IpcAgentEventEmitter';
 import { mainError, mainLog, mainWarn } from '@process/utils/mainLogger';
@@ -36,6 +38,35 @@ type AionrsApprovalKey = IApprovalKey & {
 
 function isValidCommandName(name: string): boolean {
   return /^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name);
+}
+
+function toOpenAIModelsUrl(baseUrl: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, '');
+  return trimmed.endsWith('/v1') ? `${trimmed}/models` : `${trimmed}/v1/models`;
+}
+
+async function assertManagedLocalProviderReachable(model: TProviderWithModel): Promise<void> {
+  if (!model.id?.startsWith(MANAGED_LOCAL_PROVIDER_PREFIX) || !isLocalBaseUrl(model.baseUrl)) return;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2500);
+  try {
+    const response = await fetch(toOpenAIModelsUrl(model.baseUrl), {
+      method: 'GET',
+      signal: controller.signal,
+      headers: model.apiKey ? { Authorization: `Bearer ${model.apiKey}` } : undefined,
+    });
+    if (!response.ok) {
+      throw new Error(`Local model endpoint returned HTTP ${response.status}`);
+    }
+  } catch (error) {
+    const detail = error instanceof Error && error.name !== 'AbortError' ? ` ${error.message}` : '';
+    throw new Error(
+      `Local model server is not reachable at ${model.baseUrl}.${detail} Load the GGUF model from Settings > Model > Local GGUF Models, then try again.`
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export class AionrsApprovalStore extends BaseApprovalStore<AionrsApprovalKey> {
@@ -119,7 +150,10 @@ export class AionrsManager extends BaseAgentManager<AionrsManagerData, string> {
     this.init();
 
     // Start the agent bootstrap — store promise so sendMessage can await it
-    this.agentReady = this.start().catch(() => {});
+    this.agentReady = this.start().catch((error) => {
+      mainError('[AionrsManager]', 'Failed to start aionrs agent', error);
+      throw error;
+    });
   }
 
   /**
@@ -222,6 +256,13 @@ export class AionrsManager extends BaseAgentManager<AionrsManagerData, string> {
   }
 
   async sendMessage(data: { content: string; msg_id: string; files?: string[] }) {
+    await assertManagedLocalProviderReachable(this.model);
+    // Wait for agent bootstrap to complete before saving a turn or reporting it as sent.
+    await this.agentReady;
+    if (!this.agent) {
+      throw new Error('Aionrs agent did not start');
+    }
+
     const message: TMessage = {
       id: data.msg_id,
       type: 'text',
@@ -238,13 +279,9 @@ export class AionrsManager extends BaseAgentManager<AionrsManagerData, string> {
     cronBusyGuard.setProcessing(this.conversation_id, true);
     this.status = 'pending';
     this._lastActivityAt = Date.now();
-    // Wait for agent bootstrap to complete before sending
-    await this.agentReady;
     this._messageSentAt = Date.now();
     mainLog('[AionrsManager]', `message sent: msg_id=${data.msg_id}`);
-    if (this.agent) {
-      await this.agent.send(data.content, data.msg_id, data.files);
-    }
+    await this.agent.send(data.content, data.msg_id, data.files);
   }
 
   /**

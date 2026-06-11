@@ -6,10 +6,11 @@
 
 import { ipcBridge } from '@/common';
 import { transformMessage } from '@/common/chat/chatLib';
+import type { TMessage } from '@/common/chat/chatLib';
 import type { IResponseMessage } from '@/common/adapter/ipcBridge';
 import type { TChatConversation, TokenUsageData } from '@/common/config/storage';
 import type { ThoughtData } from '@/renderer/components/chat/ThoughtDisplay';
-import { useAddOrUpdateMessage } from '@/renderer/pages/conversation/Messages/hooks';
+import { useAddOrUpdateMessage, useRemoveMessageByMsgId } from '@/renderer/pages/conversation/Messages/hooks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type TokenUsage = {
@@ -28,6 +29,7 @@ export const useAionrsMessage = (
   const onConfigChanged = options?.onConfigChanged;
   const onConfigChangedRef = useRef(onConfigChanged);
   const addOrUpdateMessage = useAddOrUpdateMessage();
+  const removeMessageByMsgId = useRemoveMessageByMsgId();
   const [streamRunning, setStreamRunning] = useState(false);
   const [hasActiveTools, setHasActiveTools] = useState(false);
   const [waitingResponse, setWaitingResponse] = useState(false);
@@ -39,6 +41,8 @@ export const useAionrsMessage = (
   const [tokenUsage, setTokenUsage] = useState<TokenUsageData | null>(null);
   // Current active message ID to filter out events from old requests (prevents aborted request events from interfering with new ones)
   const activeMsgIdRef = useRef<string | null>(null);
+  const pendingResponseMsgIdRef = useRef<string | null>(null);
+  const noFirstTokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use refs to avoid useEffect re-subscription when these states change
   const hasActiveToolsRef = useRef(hasActiveTools);
@@ -116,6 +120,78 @@ export const useAionrsMessage = (
     activeMsgIdRef.current = msgId;
   }, []);
 
+  const clearNoFirstTokenTimer = useCallback(() => {
+    if (noFirstTokenTimerRef.current) {
+      clearTimeout(noFirstTokenTimerRef.current);
+      noFirstTokenTimerRef.current = null;
+    }
+  }, []);
+
+  const clearPendingResponseMessage = useCallback(() => {
+    clearNoFirstTokenTimer();
+    const pendingMsgId = pendingResponseMsgIdRef.current;
+    if (!pendingMsgId) return;
+    pendingResponseMsgIdRef.current = null;
+    removeMessageByMsgId(pendingMsgId);
+  }, [clearNoFirstTokenTimer, removeMessageByMsgId]);
+
+  const beginWaitingResponse = useCallback(
+    (
+      msgId: string,
+      {
+        subject,
+        description,
+        noFirstTokenMessage,
+        stillWaitingSubject,
+      }: {
+        subject: string;
+        description: string;
+        noFirstTokenMessage: string;
+        stillWaitingSubject: string;
+      }
+    ) => {
+      clearPendingResponseMessage();
+      const pendingMsgId = `${msgId}:pending-response`;
+      activeMsgIdRef.current = msgId;
+      pendingResponseMsgIdRef.current = pendingMsgId;
+      hasContentInTurnRef.current = false;
+
+      setWaitingResponse(true);
+      waitingResponseRef.current = true;
+      setThought({ subject, description });
+
+      const pendingMessage: TMessage = {
+        id: `pending-${msgId}`,
+        type: 'thinking',
+        msg_id: pendingMsgId,
+        position: 'left',
+        conversation_id,
+        content: {
+          content: '',
+          subject,
+          status: 'thinking',
+        },
+        createdAt: Date.now(),
+      };
+      addOrUpdateMessage(pendingMessage, true);
+
+      noFirstTokenTimerRef.current = setTimeout(() => {
+        if (pendingResponseMsgIdRef.current !== pendingMsgId || hasContentInTurnRef.current) return;
+        addOrUpdateMessage({
+          ...pendingMessage,
+          id: `pending-${msgId}-still-waiting`,
+          content: {
+            content: noFirstTokenMessage,
+            subject: stillWaitingSubject,
+            status: 'thinking',
+          },
+        });
+        setThought({ subject: stillWaitingSubject, description: noFirstTokenMessage });
+      }, 30_000);
+    },
+    [addOrUpdateMessage, clearPendingResponseMessage, conversation_id]
+  );
+
   useEffect(() => {
     return ipcBridge.conversation.responseStream.on((message) => {
       if (conversation_id !== message.conversation_id) {
@@ -146,6 +222,7 @@ export const useAionrsMessage = (
           break;
         case 'finish':
           {
+            clearPendingResponseMessage();
             // aionrs stream_end carries usage in data field
             const usageData = message.data as TokenUsage | undefined;
             if (usageData && typeof usageData === 'object' && 'input_tokens' in usageData) {
@@ -168,6 +245,7 @@ export const useAionrsMessage = (
           break;
         case 'tool_group':
           {
+            clearPendingResponseMessage();
             // Mark that current turn has content output
             hasContentInTurnRef.current = true;
 
@@ -222,6 +300,7 @@ export const useAionrsMessage = (
           break;
         default: {
           if (message.type === 'error') {
+            clearPendingResponseMessage();
             setWaitingResponse(false);
             onError?.(message as IResponseMessage);
           } else {
@@ -229,6 +308,7 @@ export const useAionrsMessage = (
             hasContentInTurnRef.current = true;
             // Reset waitingResponse when actual content arrives
             if (message.type === 'content') {
+              clearPendingResponseMessage();
               setWaitingResponse(false);
               waitingResponseRef.current = false;
             }
@@ -245,7 +325,7 @@ export const useAionrsMessage = (
       }
     });
     // Note: hasActiveTools and streamRunning are accessed via refs to avoid re-subscription
-  }, [conversation_id, addOrUpdateMessage, onError]);
+  }, [conversation_id, addOrUpdateMessage, clearPendingResponseMessage, onError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -259,6 +339,16 @@ export const useAionrsMessage = (
     // to avoid flicker when switching to a running conversation
     void ipcBridge.conversation.get.invoke({ id: conversation_id }).then((res) => {
       if (cancelled) {
+        return;
+      }
+
+      // A send can start before the initial conversation-status hydration resolves
+      // on freshly-created conversations. Do not let stale DB status hide the stop
+      // button while a local pending turn is already visible.
+      if (pendingResponseMsgIdRef.current) {
+        setWaitingResponse(true);
+        waitingResponseRef.current = true;
+        setHasHydratedRunningState(true);
         return;
       }
 
@@ -296,6 +386,7 @@ export const useAionrsMessage = (
   }, [conversation_id]);
 
   const resetState = useCallback(() => {
+    clearPendingResponseMessage();
     setWaitingResponse(false);
     waitingResponseRef.current = false;
     setStreamRunning(false);
@@ -306,7 +397,7 @@ export const useAionrsMessage = (
     hasContentInTurnRef.current = false;
     // Clear active message ID to prevent filtering events from new messages after stop
     activeMsgIdRef.current = null;
-  }, []);
+  }, [clearPendingResponseMessage]);
 
   return {
     thought,
@@ -314,8 +405,10 @@ export const useAionrsMessage = (
     running,
     hasHydratedRunningState,
     tokenUsage,
+    beginWaitingResponse,
     setActiveMsgId,
     setWaitingResponse,
+    clearPendingResponseMessage,
     resetState,
   };
 };

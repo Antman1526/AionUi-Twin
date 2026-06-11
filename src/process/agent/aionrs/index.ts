@@ -169,7 +169,11 @@ export class AionrsAgent {
     // Inject stdio MCP servers (must happen before first message). Each entry
     // is forwarded as `add_mcp_server`; if any entry has `awaitReady: true`,
     // wait on the handshake before continuing.
-    const stdioMcpServers = this.options.stdioMcpServers ?? [];
+    const requestedMcpServers = this.options.stdioMcpServers ?? [];
+    const stdioMcpServers = this.capabilities?.mcp ? requestedMcpServers : [];
+    if (requestedMcpServers.length > 0 && !this.capabilities?.mcp) {
+      console.warn('[AionrsAgent] Skipping MCP server injection because this aionrs binary does not support MCP');
+    }
     let awaitAnyReady = false;
     for (const server of stdioMcpServers) {
       const envRecord: Record<string, string> = {};
@@ -382,6 +386,7 @@ export class AionrsAgent {
 
   async send(content: string, msgId: string, files?: string[]): Promise<void> {
     await this.readyPromise;
+    this.activeMsgId = msgId;
     this.sendCommand({
       type: 'message',
       msg_id: msgId,

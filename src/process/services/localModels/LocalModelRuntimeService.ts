@@ -80,6 +80,41 @@ let currentSession: ManagedSession | null = null;
 
 const DEFAULT_EXECUTABLE_CANDIDATES = ['llama-server', '/opt/homebrew/bin/llama-server', '/usr/local/bin/llama-server'];
 
+export function buildLlamaServerArgs({
+  modelPath,
+  port,
+  alias,
+  contextSize,
+  gpuLayers,
+  reasoning,
+}: {
+  modelPath: string;
+  port: number;
+  alias: string;
+  contextSize: number;
+  gpuLayers: number;
+  reasoning?: 'off' | 'on';
+}): string[] {
+  const args = [
+    '-m',
+    modelPath,
+    '--host',
+    '127.0.0.1',
+    '--port',
+    String(port),
+    '--alias',
+    alias,
+    '-ngl',
+    String(gpuLayers),
+    '-c',
+    String(contextSize),
+  ];
+  if (reasoning) {
+    args.push('--reasoning', reasoning);
+  }
+  return args;
+}
+
 function findFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -186,9 +221,10 @@ export async function startManagedLlamaServer({
   modelPath,
   allowedRoots,
   executableCandidates = DEFAULT_EXECUTABLE_CANDIDATES,
-  contextSize = 4096,
+  contextSize = 16_384,
   gpuLayers = 99,
   readinessTimeoutMs = 180_000,
+  reasoning,
 }: {
   modelPath: string;
   allowedRoots: readonly string[];
@@ -196,6 +232,7 @@ export async function startManagedLlamaServer({
   contextSize?: number;
   gpuLayers?: number;
   readinessTimeoutMs?: number;
+  reasoning?: 'off' | 'on';
 }): Promise<ManagedServerHandle> {
   if (!isPathInsideRoots(modelPath, allowedRoots)) {
     throw new Error(`Refusing to load "${modelPath}": it is outside the configured local model directories`);
@@ -213,20 +250,7 @@ export async function startManagedLlamaServer({
 
   const alias = path.basename(modelPath, path.extname(modelPath));
   const port = await findFreePort();
-  const args = [
-    '-m',
-    modelPath,
-    '--host',
-    '127.0.0.1',
-    '--port',
-    String(port),
-    '--alias',
-    alias,
-    '-ngl',
-    String(gpuLayers),
-    '-c',
-    String(contextSize),
-  ];
+  const args = buildLlamaServerArgs({ modelPath, port, alias, contextSize, gpuLayers, reasoning });
 
   const child = spawn(executable, args, {
     stdio: ['ignore', 'ignore', 'pipe'],

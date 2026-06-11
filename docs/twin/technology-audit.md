@@ -36,6 +36,7 @@
 - Agent Client Protocol SDK: ACP agent support.
 - Model Context Protocol SDK: MCP services and built-in MCP servers.
 - Office AI Aion CLI/core/platform packages: Aion CLI and office/assistant workflows.
+- llama.cpp `llama-server` (external executable, not npm): serves local GGUF files through an OpenAI-compatible HTTP API for managed local model chats.
 
 ## UI, Rendering, and Editing
 
@@ -88,6 +89,13 @@
 - Testing Library: React and React Native component tests.
 - oxlint/oxfmt/prettier config: lint/format.
 - Husky/lint-staged/prek: local hooks and PR checks.
+
+## Local AI Runtime Assets
+
+- GGUF files: user-provided local model binaries discovered from configured folders.
+- `AIONUI_MODEL_DIRS`: optional path-delimited environment override for model scanning.
+- `localModel.runtimeOptions`: ProcessConfig storage for context, GPU layers, readiness timeout, and reasoning behavior.
+- Managed provider id prefix `local-llama-cpp-`: runtime marker used to replace stale managed providers without touching user providers.
 
 ## Deployment and Infrastructure
 

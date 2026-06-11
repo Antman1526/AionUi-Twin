@@ -5,7 +5,7 @@ import { uuid } from '@/common/utils';
 import { supportsNoApiKeyForOpenAICompatibleProvider } from '@/common/utils/localModelProviders';
 import { isGoogleApisHost } from '@/common/utils/urlValidation';
 import ModalHOC from '@/renderer/utils/ui/ModalHOC';
-import { Form, Input, Message, Select } from '@arco-design/web-react';
+import { Button, Form, Input, Message, Select } from '@arco-design/web-react';
 import { LinkCloud, Edit, Search, Loading } from '@icon-park/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -128,9 +128,10 @@ const ProtocolDetectionStatus: React.FC<ProtocolDetectionStatusProps> = ({
           </div>
 
           {showSwitchButton && onSwitchPlatform && (
-            <button
-              type='button'
-              className='shrink-0 px-8px py-2px rounded-4px text-11px font-medium transition-colors'
+            <Button
+              size='mini'
+              type='text'
+              className='shrink-0 !h-22px !px-8px !text-11px !font-medium'
               style={{
                 backgroundColor: iconConfig.bgColor,
                 color: iconConfig.color,
@@ -138,7 +139,7 @@ const ProtocolDetectionStatus: React.FC<ProtocolDetectionStatusProps> = ({
               onClick={() => onSwitchPlatform(suggestion.suggestedPlatform!)}
             >
               {t('settings.switchPlatform')}
-            </button>
+            </Button>
           )}
         </div>
 

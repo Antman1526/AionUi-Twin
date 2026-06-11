@@ -6,6 +6,31 @@ These notes are source-grounded documentation for `/Users/Antman/Desktop/AionUi_
 
 AionUi has two backend surfaces: Electron IPC for the desktop renderer and Express/WebSocket HTTP APIs for WebUI/mobile/remote access. Both eventually use the same process services, database repositories, worker task managers, and configuration storage.
 
+## Electron IPC Contracts
+
+The preload bridge exposes `window.electronAPI`; `src/common/adapter/ipcBridge.ts`
+defines domain contracts and `src/process/bridge/*.ts` installs providers.
+Important local-model endpoints:
+
+| IPC provider | Input | Output | Notes |
+| ------------ | ----- | ------ | ----- |
+| `localModel.listModels` | none | `{ roots, models }` | Scans configured/default roots for `.gguf`. |
+| `localModel.start` | `{ modelPath, options? }` | runtime status | Validates root, starts `llama-server`, registers provider. |
+| `localModel.stop` | none | `{ running: false }` | Kills managed server and removes managed provider. |
+| `localModel.getStatus` | none | runtime status | Returns current in-memory process handle only. |
+| `localModel.getDirectories` | none | `string[]` | Returns configured roots or defaults. |
+| `localModel.setDirectories` | `{ directories }` | `string[]` | Normalizes/persists scan roots. |
+| `localModel.getRuntimeOptions` | none | map | Returns per-model options. |
+| `localModel.setRuntimeOptions` | `{ modelPath, options }` | normalized options | Clamps numeric values and accepts `reasoning` `off/on`. |
+
+Runtime status shape:
+
+```ts
+type LocalModelRuntimeStatus =
+  | { running: false }
+  | { running: true; modelPath: string; name: string; port: number; baseUrl: string };
+```
+
 ## WebUI Server
 
 `startWebServerWithInstance(port, allowRemote)` creates Express, an HTTP server, and a WebSocket server in `noServer` mode so Vite HMR can be forwarded during development instead of swallowed by the app WebSocket server.
@@ -72,3 +97,4 @@ Extension API modules must resolve inside their extension root and export a rout
 - Generate OpenAPI/IPC schemas from one source to prevent drift.
 - Sandbox extension route handlers rather than loading them with native `require`.
 - Add upload quotas and file-content scanning for remote WebUI deployments.
+- Add negative IPC tests for malformed local model paths/options and stale provider ids.

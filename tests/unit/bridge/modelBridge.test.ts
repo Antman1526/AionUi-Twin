@@ -164,6 +164,32 @@ describe('modelBridge fetchModelList', () => {
     expect(mockModelsList).not.toHaveBeenCalled();
   });
 
+  it('fetches local New API gateway models without requiring an API key', async () => {
+    mockModelsList.mockResolvedValue({
+      data: [{ id: 'qwen3-coder:local' }],
+    });
+
+    const fetchModelList = getFetchModelListHandler();
+    const result = await fetchModelList({
+      base_url: 'http://127.0.0.1:3001',
+      api_key: '',
+      platform: 'new-api',
+    });
+
+    expect(mockOpenAIConstructor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: 'http://127.0.0.1:3001/v1',
+        apiKey: expect.any(String),
+      })
+    );
+    expect(result).toEqual({
+      success: true,
+      data: {
+        mode: ['qwen3-coder:local'],
+      },
+    });
+  });
+
   it('returns error when apiKey is whitespace-only for default OpenAI path (Fixes ELECTRON-6X)', async () => {
     const fetchModelList = getFetchModelListHandler();
 

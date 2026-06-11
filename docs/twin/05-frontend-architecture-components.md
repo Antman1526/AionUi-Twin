@@ -28,8 +28,30 @@ Major UI directories: `components/layout`, `components/chat`, `pages/conversatio
 
 Build-time renderer chunks split React, Arco, markdown, syntax highlighter, Monaco/CodeMirror, KaTeX, icons, and diff2html. This supports WebUI caching and reduces monolithic vendor bundles.
 
+## Local GGUF UI
+
+`src/renderer/components/settings/SettingsModal/contents/LocalGgufModels.tsx`
+is the control surface for model roots, scanning, runtime options, loading, and
+unloading. It uses SWR keys for discovered models, runtime status, directories,
+and saved runtime options. A successful load mutates status and model config so
+chat pages can see the managed provider.
+
+`src/renderer/pages/conversation/platforms/aionrs/AionrsSendBox.tsx` watches
+`localModel.getStatus` and compares the current selected model to the runtime
+base URL/name. `useGuidModelSelection.ts` stores defaults per provider agent and
+contains special handling for managed local provider ids:
+
+```ts
+if (typeof id === 'string' && id.startsWith(MANAGED_LOCAL_PROVIDER_PREFIX)) {
+  const replacementLocal = modelList.find(
+    (m) => m.id?.startsWith(MANAGED_LOCAL_PROVIDER_PREFIX) && m.model.includes(useModel)
+  );
+}
+```
+
 ## Areas for Review
 
 - Replace `ready ? UI : null` with explicit loading/error states.
 - Add typed IPC hooks so pages do not depend on stringly bridge names.
 - Reassess chunk boundaries with production bundle analysis.
+- Add a persistent loading indicator while `llama-server` is starting large models.

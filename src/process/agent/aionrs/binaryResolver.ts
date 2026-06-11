@@ -19,15 +19,21 @@ function getBinaryName(): string {
  *  2. System PATH
  */
 export function resolveAionrsBinary(): string | null {
+  const runtimeKey = `${process.platform}-${process.arch}`;
+
   // 1. Bundled binary (production) — same layout as bundled-bun
   const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
   if (resourcesPath) {
-    const runtimeKey = `${process.platform}-${process.arch}`;
     const bundled = join(resourcesPath, 'bundled-aionrs', runtimeKey, getBinaryName());
     if (existsSync(bundled)) return bundled;
   }
 
-  // 2. System PATH
+  // 2. Development binary — electron-vite runs from the repo root, where
+  // resources are not copied into Electron's resourcesPath.
+  const devBundled = join(process.cwd(), 'resources', 'bundled-aionrs', runtimeKey, getBinaryName());
+  if (existsSync(devBundled)) return devBundled;
+
+  // 3. System PATH
   try {
     const cmd = process.platform === 'win32' ? 'where aionrs' : 'which aionrs';
     const result = execSync(cmd, { encoding: 'utf-8', timeout: 5000 }).trim();

@@ -5,6 +5,7 @@
  */
 
 import type { TProviderWithModel } from '@/common/config/storage';
+import { getApiKeysForOpenAICompatibleClient } from '@/common/utils/localModelProviders';
 import { isOpenAIHost } from '@/common/utils/urlValidation';
 
 type AionrsProvider = 'anthropic' | 'openai' | 'bedrock' | 'vertex';
@@ -108,8 +109,9 @@ export function buildSpawnConfig(
       break;
 
     case 'openai': {
-      if (model.apiKey) env.OPENAI_API_KEY = model.apiKey;
       const baseUrl = resolveOpenAIBaseUrl(model);
+      const apiKey = getApiKeysForOpenAICompatibleClient(model.apiKey, baseUrl);
+      if (apiKey) env.OPENAI_API_KEY = apiKey;
       if (baseUrl) args.push('--base-url', stripTrailingV1(baseUrl));
       break;
     }

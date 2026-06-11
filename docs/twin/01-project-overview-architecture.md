@@ -9,6 +9,7 @@ AionUi Twin is a desktop-first AI operations interface. It turns command-line an
 ## Core Functionality
 
 - Chat sessions for Gemini, Aion CLI, ACP-compatible agents, Nanobot, and remote agents.
+- Managed local GGUF model loading through `llama-server`, with OpenAI-compatible provider registration.
 - Persistent users, conversations, messages, teams, team mailbox records, channel sessions, channel users, providers, settings, and tasks in SQLite.
 - Typed-ish renderer-to-main communication through a preload IPC bridge.
 - WebUI server with login, QR login, cookie JWT auth, file upload, speech-to-text upload, extension routes/assets, WebSocket traffic, and static renderer serving.
@@ -75,8 +76,32 @@ export function initAllBridges(deps: BridgeDependencies): void {
 }
 ```
 
+## Local Model Flow
+
+The local GGUF feature is intentionally spread across three zones so the renderer
+never shells out directly:
+
+```text
+Settings UI
+  -> ipcBridge.localModel.start({ modelPath, options })
+  -> src/process/bridge/localModelBridge.ts validates and normalizes options
+  -> src/process/services/localModels/LocalModelRuntimeService.ts spawns llama-server
+  -> ProcessConfig model.config gets one managed provider
+  -> Guid model selection re-selects the provider by managed id prefix + model name
+  -> AionrsManager/envBuilder talks to http://127.0.0.1:<port>/v1
+```
+
+Key invariants:
+
+- Only one managed `llama-server` runs at a time.
+- Model paths must be inside configured local model directories.
+- The managed provider id starts with `local-llama-cpp-` and may change on each load.
+- The UI preserves local model selection by prefix and `useModel`, not by exact id only.
+- The runtime polls `/health` until HTTP 200 because the port opens before model load completes.
+
 ## Areas for Review
 
 - Can `initAllBridges` become a registry with typed contracts to reduce manual registration drift?
 - Should the preload bridge replace `any` payloads with Zod/TypeScript schemas?
 - Should extension/channel startup failures be visible in UI health diagnostics instead of only console output?
+- Should managed local model status be promoted into a global health/status bar so users know when a model is loading, healthy, or failed?

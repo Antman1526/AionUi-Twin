@@ -40,6 +40,7 @@
 - [🚀 Quick start (development)](#-quick-start-development)
 - [🛠️ Build from source](#️-build-from-source)
 - [🏗️ Architecture](#️-architecture)
+- [📚 Reconstruction docs](#-reconstruction-docs)
 - [🧪 Verification](#-verification)
 - [🙏 Acknowledgements](#-acknowledgements)
 - [📄 License](#-license)
@@ -96,6 +97,8 @@ your configured folders and lets you **Load** any of them with a single click:
    not just the port — large models take time).
 3. It auto-registers the running model as an **OpenAI-compatible provider**, so
    it's instantly usable in chat and teams.
+4. It preserves the selected managed local model even though each load creates a
+   fresh provider id, so the chat page keeps using the loaded model after reloads.
 
 **Unload** stops the server. Loading a different model swaps the running one
 (one model at a time, to keep memory in check). The managed provider is written
@@ -104,6 +107,29 @@ idempotently and never overwrites the providers you configured by hand.
 > Requires `llama-server` on your `PATH` — install with `brew install llama.cpp`.
 > It is resolved at runtime, **not bundled** in the installer, so the app stays
 > small and you stay in control of your runtime.
+
+Runtime options are stored per model path in `localModel.runtimeOptions`:
+
+| Option               | Default  | Range / values            | Purpose                                           |
+| -------------------- | -------- | ------------------------- | ------------------------------------------------- |
+| `contextSize`        | `16384`  | `512` to `262144`         | llama.cpp context window passed as `-c`.          |
+| `gpuLayers`          | `99`     | `0` to `999`              | GPU offload passed as `-ngl`.                     |
+| `readinessTimeoutMs` | `180000` | `30000` to `900000`       | Max wait for `/health` to return HTTP 200.        |
+| `reasoning`          | unset    | `off`, `on`, or automatic | Optional `--reasoning` flag for thinking models. |
+
+For the local test machine, the confirmed GGUF folder is:
+
+```bash
+/Users/Antman/Desktop/AI_Models/GGUF
+```
+
+Confirmed working local defaults from that folder:
+
+| Use case             | Model                              |
+| -------------------- | ---------------------------------- |
+| Best default         | `Qwen3.5-4B-Q4_K_M.gguf`           |
+| Fast backup          | `Phi-4-mini-instruct-Q4_K_M.gguf`  |
+| Stronger/heavier use | `Qwen2.5-14B-Instruct-Q4_K_M.gguf` |
 
 ### No-key local servers
 
@@ -227,6 +253,19 @@ AionUi Twin is an Electron app with three strictly separated process types
 
 Storage is SQLite (`better-sqlite3` or Bun's SQLite); the WebUI runs on Express +
 `ws`. See `docs/` for the full reconstruction manual and PRDs.
+
+## 📚 Reconstruction docs
+
+The project includes a dense AI-readable reconstruction pack in
+[`docs/twin`](./docs/twin/README.md). It contains:
+
+- 15 technical reconstruction documents covering architecture, environment,
+  database, APIs, frontend, auth, algorithms, integrations, config, tests, build,
+  errors/logging, performance, security, and code organization.
+- A three-page AI review pack that highlights overview, code/data flow, current
+  pain points, and specific areas to ask another model to review.
+- A technology audit listing every meaningful language, framework, library,
+  tool, service, and runtime detected in the codebase.
 
 ## 🧪 Verification
 

@@ -22,6 +22,13 @@ export const ConfigStorage = storage.buildStorage<IConfigStorageRefer>('agent.co
 // 系统环境变量存储
 export const EnvStorage = storage.buildStorage<IEnvStorageRefer>('agent.env');
 
+export interface LocalModelRuntimeOptions {
+  contextSize?: number;
+  gpuLayers?: number;
+  readinessTimeoutMs?: number;
+  reasoning?: 'auto' | 'off' | 'on';
+}
+
 export interface IConfigStorageRefer {
   'gemini.config': {
     authType: string;
@@ -76,6 +83,8 @@ export interface IConfigStorageRefer {
   'model.config': IProvider[];
   /** User-configured directories scanned for local GGUF/STT/TTS model files. Empty/unset → built-in defaults. */
   'localModel.directories'?: string[];
+  /** Per-model llama.cpp runtime overrides, keyed by absolute model path. Missing values use safe defaults. */
+  'localModel.runtimeOptions'?: Record<string, LocalModelRuntimeOptions>;
   'mcp.config': IMcpServer[];
   'mcp.agentInstallStatus': Record<string, string[]>;
   language: string;

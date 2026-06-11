@@ -1,5 +1,11 @@
 # AionUi Twin Documentation Index
 
+Last updated: 2026-06-10.
+
+This folder is the local, downloadable reconstruction pack requested for
+`/Users/Antman/Desktop/AionUi_TWIN/AionUi-Twin-main`. It is stored inside the
+project so the same documents are available locally and after pushing to GitHub.
+
 ## Reconstruction Set
 
 1. [Project Overview and Architecture](01-project-overview-architecture.md)
@@ -31,3 +37,8 @@
 ## How To Use This Set
 
 Start with documents 1, 2, 3, 4, 5, and 15 to understand the shape of the system. Use the AI review pack when asking another model for optimization/refactoring ideas. Use the technology audit to understand every meaningful technology, framework, library, service, and tool detected from package manifests, configs, source structure, scripts, and workflows.
+
+For local model behavior, read documents 1, 4, 7, 8, 9, 10, 11, and 14 together.
+The managed GGUF flow crosses renderer settings, IPC contracts, llama.cpp process
+management, provider persistence, model selection, packaging assumptions, and
+security boundaries.

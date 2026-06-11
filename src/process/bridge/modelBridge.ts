@@ -264,8 +264,10 @@ export function initModelBridge(): void {
     // new-api 暴露标准的 /v1/models 端点，直接走 OpenAI 路径
     // new-api exposes standard /v1/models endpoint, use OpenAI path directly
     if (isNewApiPlatform(platform)) {
+      const openAICompatibleApiKey = getApiKeyForModelList(api_key, base_url);
+
       // Validate API key before creating OpenAI client to avoid unhandled 'Missing credentials' error
-      if (!actualApiKey) {
+      if (!openAICompatibleApiKey) {
         return { success: false, msg: 'API key is required. Please configure your API key in settings.' };
       }
 
@@ -278,7 +280,7 @@ export function initModelBridge(): void {
       try {
         const openai = new OpenAI({
           baseURL: openaiBaseUrl,
-          apiKey: actualApiKey,
+          apiKey: openAICompatibleApiKey,
           defaultHeaders: {
             'User-Agent': 'AionUI/1.0',
           },

@@ -6,7 +6,7 @@
 
 import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeStatus } from '@/common/adapter/ipcBridge';
-import type { IProvider } from '@/common/config/storage';
+import type { IProvider, LocalModelRuntimeOptions } from '@/common/config/storage';
 import { normalizeModelDirectories, resolveModelDirectories } from '@/common/utils/localModelProviders';
 import { getDefaultLocalModelDirectories } from '@process/services/localModels/defaultModelDirectories';
 import { ProcessConfig } from '@process/utils/initStorage';
@@ -23,6 +23,48 @@ import {
 /** Effective scan directories: the user's configured list, or derived defaults. */
 async function getModelDirectories(): Promise<string[]> {
   return resolveModelDirectories(await ProcessConfig.get('localModel.directories'), getDefaultLocalModelDirectories());
+}
+
+const MIN_CONTEXT_SIZE = 512;
+const MAX_CONTEXT_SIZE = 262_144;
+const MIN_TIMEOUT_MS = 30_000;
+const MAX_TIMEOUT_MS = 900_000;
+
+function clampInteger(value: unknown, min: number, max: number): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  const integer = Math.round(value);
+  return Math.min(Math.max(integer, min), max);
+}
+
+function normalizeRuntimeOptions(options?: LocalModelRuntimeOptions): LocalModelRuntimeOptions {
+  if (!options) return {};
+  const next: LocalModelRuntimeOptions = {};
+  const contextSize = clampInteger(options.contextSize, MIN_CONTEXT_SIZE, MAX_CONTEXT_SIZE);
+  const gpuLayers = clampInteger(options.gpuLayers, 0, 999);
+  const readinessTimeoutMs = clampInteger(options.readinessTimeoutMs, MIN_TIMEOUT_MS, MAX_TIMEOUT_MS);
+  if (contextSize !== undefined) next.contextSize = contextSize;
+  if (gpuLayers !== undefined) next.gpuLayers = gpuLayers;
+  if (readinessTimeoutMs !== undefined) next.readinessTimeoutMs = readinessTimeoutMs;
+  if (options.reasoning === 'off' || options.reasoning === 'on') next.reasoning = options.reasoning;
+  return next;
+}
+
+async function getRuntimeOptionsMap(): Promise<Record<string, LocalModelRuntimeOptions>> {
+  const stored = await ProcessConfig.get('localModel.runtimeOptions');
+  return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+}
+
+async function getRuntimeOptions(modelPath: string, incoming?: LocalModelRuntimeOptions): Promise<LocalModelRuntimeOptions> {
+  if (incoming) return normalizeRuntimeOptions(incoming);
+  const stored = await getRuntimeOptionsMap();
+  return normalizeRuntimeOptions(stored[modelPath]);
+}
+
+async function saveRuntimeOptions(modelPath: string, options: LocalModelRuntimeOptions): Promise<LocalModelRuntimeOptions> {
+  const normalized = normalizeRuntimeOptions(options);
+  const stored = await getRuntimeOptionsMap();
+  await ProcessConfig.set('localModel.runtimeOptions', { ...stored, [modelPath]: normalized });
+  return normalized;
 }
 
 function toStatus(handle: ManagedServerHandle | null): LocalModelRuntimeStatus {
@@ -70,11 +112,20 @@ export function initLocalModelBridge(): void {
     }
   });
 
-  ipcBridge.localModel.start.provider(async ({ modelPath }) => {
+  ipcBridge.localModel.start.provider(async ({ modelPath, options }) => {
     try {
+      const runtimeOptions = await getRuntimeOptions(modelPath, options);
+      if (options) {
+        await saveRuntimeOptions(modelPath, runtimeOptions);
+      }
       const handle = await startManagedLlamaServer({
         modelPath,
         allowedRoots: await getModelDirectories(),
+        contextSize: runtimeOptions.contextSize,
+        gpuLayers: runtimeOptions.gpuLayers,
+        readinessTimeoutMs: runtimeOptions.readinessTimeoutMs,
+        reasoning:
+          runtimeOptions.reasoning === 'off' || runtimeOptions.reasoning === 'on' ? runtimeOptions.reasoning : undefined,
       });
       const provider = createLocalProviderFromRuntime({
         runtime: 'llama.cpp',
@@ -108,6 +159,18 @@ export function initLocalModelBridge(): void {
     try {
       await ProcessConfig.set('localModel.directories', normalizeModelDirectories(directories));
       return { success: true, data: await getModelDirectories() };
+    } catch (error) {
+      return { success: false, msg: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  ipcBridge.localModel.getRuntimeOptions.provider(async () => {
+    return { success: true, data: await getRuntimeOptionsMap() };
+  });
+
+  ipcBridge.localModel.setRuntimeOptions.provider(async ({ modelPath, options }) => {
+    try {
+      return { success: true, data: await saveRuntimeOptions(modelPath, options) };
     } catch (error) {
       return { success: false, msg: error instanceof Error ? error.message : String(error) };
     }

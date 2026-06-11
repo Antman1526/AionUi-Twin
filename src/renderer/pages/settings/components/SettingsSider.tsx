@@ -25,9 +25,9 @@ import { getSiderTooltipProps } from '@/renderer/utils/ui/siderTooltip';
 
 /** Builtin settings tab IDs in display order (must match router paths). */
 export const BUILTIN_TAB_IDS = [
+  'model',
   'gemini',
   'agent',
-  'model',
   'assistants',
   'capabilities',
   'display',
@@ -53,7 +53,7 @@ export const LEGACY_ANCHOR_REMAP: Record<string, string> = {
  * Extension tabs anchored between these builtins inherit the enclosing group visually.
  */
 const GROUP_HEADER_BEFORE: Record<string, string> = {
-  gemini: 'settings.groupAiCore',
+  model: 'settings.groupAiCore',
   display: 'settings.groupApp',
   about: 'settings.groupAbout',
 };

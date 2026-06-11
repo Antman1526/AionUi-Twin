@@ -41,6 +41,37 @@ bun run start
 - Remote channels: `grammy`, `dingtalk-stream`, `@wecom/aibot-node-sdk`, `@larksuiteoapi/node-sdk`.
 - Document/media: `docx`, `mammoth`, `officeparser`, `pptx2json`, `xlsx-republish`, `sharp`, `html-to-text`, `turndown`.
 
+## Local Model Runtime Prerequisites
+
+The app does not bundle llama.cpp. To recreate the local GGUF workflow install
+`llama-server` separately and ensure it can be resolved by either `PATH`,
+`/opt/homebrew/bin/llama-server`, or `/usr/local/bin/llama-server`.
+
+```bash
+brew install llama.cpp
+which llama-server
+llama-server --help | head
+```
+
+Configured model roots are stored in `localModel.directories`; default discovery
+also checks common folders such as `~/AI_Models`, `~/Models`,
+`~/Desktop/AI_Models`, Ollama/LM Studio caches, and llama.cpp caches when they
+exist. For Antman's test machine, the important root is:
+
+```text
+/Users/Antman/Desktop/AI_Models/GGUF
+```
+
+Per-model runtime options are stored under `localModel.runtimeOptions` and are
+clamped by `localModelBridge.ts` before reaching process spawn:
+
+```ts
+const MIN_CONTEXT_SIZE = 512;
+const MAX_CONTEXT_SIZE = 262_144;
+const MIN_TIMEOUT_MS = 30_000;
+const MAX_TIMEOUT_MS = 900_000;
+```
+
 ## Dev/Test Dependencies
 
 - `oxlint 1.56.0`, `oxfmt ^0.41.0`, TypeScript `^5.8.3`.
@@ -57,3 +88,4 @@ The mobile app uses Expo `~55.0.4`, Expo Router `~55.0.3`, React Native `0.83.2`
 - Should the README standardize on Bun-only commands except where Node is mandatory?
 - Are Electron native prebuilds and ABI assumptions documented enough for Windows/macOS/Linux rebuilds?
 - Should mobile and desktop React/i18next versions be aligned or intentionally isolated?
+- Should the app offer an in-app llama.cpp install check with platform-specific install commands?

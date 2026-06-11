@@ -37,8 +37,9 @@ import { mergeWithCapabilities, type AgentModeOption } from '@/renderer/utils/mo
 import { getModelContextLimit } from '@/renderer/utils/model/modelContextLimits';
 import { Message, Tag } from '@arco-design/web-react';
 import { Shield } from '@icon-park/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import { useAionrsMessage } from './useAionrsMessage';
 import type { AionrsModelSelection } from './useAionrsModelSelection';
 
@@ -51,6 +52,21 @@ const useAionrsSendBoxDraft = getSendBoxDraftHook('aionrs', {
 
 const EMPTY_AT_PATH: Array<string | FileOrFolderItem> = [];
 const EMPTY_UPLOAD_FILES: string[] = [];
+
+const normalizeBaseUrl = (url?: string): string => {
+  if (!url) return '';
+  return url.replace(/\/+$/, '');
+};
+
+const isLoopbackBaseUrl = (url?: string): boolean => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
 
 const useSendBoxDraft = (conversation_id: string) => {
   const { data, mutate } = useAionrsSendBoxDraft(conversation_id);
@@ -98,7 +114,7 @@ const AionrsSendBox: React.FC<{
   const { checkAndUpdateTitle } = useAutoTitle();
   const { currentModel, getDisplayModelName } = modelSelection;
 
-  const { thought, running, hasHydratedRunningState, tokenUsage, setActiveMsgId, setWaitingResponse, resetState } =
+  const { thought, running, hasHydratedRunningState, tokenUsage, beginWaitingResponse, clearPendingResponseMessage, resetState } =
     useAionrsMessage(conversation_id, {
       onConfigChanged: (capabilities) => {
         const modes = (capabilities as { modes?: string[] })?.modes;
@@ -118,11 +134,38 @@ const AionrsSendBox: React.FC<{
   }, [conversation_id]);
 
   const slashCommands = useSlashCommands(conversation_id);
+  const { data: localModelStatus } = useSWR(
+    running ? 'aionrs.local-model-runtime-status' : null,
+    () => ipcBridge.localModel.getStatus.invoke().then((res) => res.data),
+    { refreshInterval: 2000 }
+  );
 
   const addOrUpdateMessage = useAddOrUpdateMessage();
   const removeMessageByMsgId = useRemoveMessageByMsgId();
   const { setSendBoxHandler } = usePreviewContext();
   const isBusy = running;
+
+  const localRuntimeDescription = useMemo(() => {
+    const modelName = currentModel?.useModel ? getDisplayModelName(currentModel.useModel) : '';
+    const currentBaseUrl = normalizeBaseUrl(currentModel?.baseUrl);
+    const runtimeBaseUrl = normalizeBaseUrl(localModelStatus?.baseUrl);
+    const isCurrentLocalRuntime =
+      Boolean(localModelStatus?.running) &&
+      currentBaseUrl &&
+      runtimeBaseUrl &&
+      currentBaseUrl === runtimeBaseUrl &&
+      (!localModelStatus?.name || localModelStatus.name === currentModel?.useModel);
+
+    if (isCurrentLocalRuntime) {
+      return t('conversation.chat.localModelReady', { model: modelName });
+    }
+    if (isLoopbackBaseUrl(currentModel?.baseUrl)) {
+      return localModelStatus
+        ? t('conversation.chat.localModelNotRunning')
+        : t('conversation.chat.localModelChecking');
+    }
+    return t('conversation.chat.waitingForModel', { model: modelName });
+  }, [currentModel?.baseUrl, currentModel?.useModel, getDisplayModelName, localModelStatus, t]);
 
   const setContentRef = useLatestRef(setContent);
   const atPathRef = useLatestRef(atPath);
@@ -161,8 +204,12 @@ const AionrsSendBox: React.FC<{
       }
 
       const msg_id = uuid();
-      setActiveMsgId(msg_id);
-      setWaitingResponse(true);
+      beginWaitingResponse(msg_id, {
+        subject: t('conversation.chat.generatingAnswer'),
+        description: localRuntimeDescription,
+        noFirstTokenMessage: t('conversation.chat.noFirstTokenYet'),
+        stillWaitingSubject: t('conversation.chat.stillWaiting'),
+      });
 
       const displayMessage = buildDisplayMessage(input, files, workspacePath);
       if (!teamId) {
@@ -216,7 +263,23 @@ const AionrsSendBox: React.FC<{
           emitter.emit('aionrs.workspace.refresh');
         }
       } catch (error) {
+        clearPendingResponseMessage();
         removeMessageByMsgId(msg_id);
+        addOrUpdateMessage(
+          {
+            id: `send-error-${msg_id}`,
+            type: 'tips',
+            msg_id: `${msg_id}:send-error`,
+            position: 'center',
+            conversation_id,
+            content: {
+              content: error instanceof Error ? error.message : t('conversation.chat.sendFailed'),
+              type: 'error',
+            },
+            createdAt: Date.now(),
+          },
+          true
+        );
         throw error;
       }
     },
@@ -226,9 +289,11 @@ const AionrsSendBox: React.FC<{
       checkAndUpdateTitle,
       conversation_id,
       currentModel?.useModel,
-      setActiveMsgId,
+      beginWaitingResponse,
+      clearPendingResponseMessage,
+      localRuntimeDescription,
       removeMessageByMsgId,
-      setWaitingResponse,
+      t,
       teamId,
       workspacePath,
     ]

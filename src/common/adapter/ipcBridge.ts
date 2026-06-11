@@ -11,7 +11,14 @@ import type { McpSource } from '../../process/services/mcpServices/McpProtocol';
 import type { LocalModelScanResult } from '../../process/services/localModels/LocalModelDiscoveryService';
 import type { AgentBackend, AcpModelInfo } from '../types/acpTypes';
 import type { SlashCommandItem } from '../chat/slash/types';
-import type { IMcpServer, IProvider, TChatConversation, TProviderWithModel, ICssTheme } from '../config/storage';
+import type {
+  IMcpServer,
+  IProvider,
+  TChatConversation,
+  TProviderWithModel,
+  ICssTheme,
+  LocalModelRuntimeOptions,
+} from '../config/storage';
 import type { PreviewHistoryTarget, PreviewSnapshotInfo } from '../types/preview';
 import type {
   UpdateCheckRequest,
@@ -460,6 +467,11 @@ export type LocalModelRuntimeStatus = {
   baseUrl?: string;
 };
 
+export type LocalModelStartRequest = {
+  modelPath: string;
+  options?: LocalModelRuntimeOptions;
+};
+
 /**
  * Local GGUF model management — discover on-disk models and launch/stop a
  * managed llama-server that is auto-registered as an OpenAI-compatible provider.
@@ -468,7 +480,7 @@ export const localModel = {
   /** Scan the configured local model directories for on-disk model assets. */
   listModels: bridge.buildProvider<IBridgeResponse<LocalModelScanResult>, void>('local-model.list'),
   /** Launch (or swap to) a managed llama-server for the given GGUF model path. */
-  start: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeStatus>, { modelPath: string }>('local-model.start'),
+  start: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeStatus>, LocalModelStartRequest>('local-model.start'),
   /** Stop the managed llama-server and disable its provider. */
   stop: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeStatus>, void>('local-model.stop'),
   /** Current managed-server status. */
@@ -477,6 +489,15 @@ export const localModel = {
   getDirectories: bridge.buildProvider<IBridgeResponse<string[]>, void>('local-model.get-directories'),
   /** Persist the scanned model directories; returns the resolved effective list. */
   setDirectories: bridge.buildProvider<IBridgeResponse<string[]>, { directories: string[] }>('local-model.set-directories'),
+  /** Read all per-model runtime overrides, keyed by absolute model path. */
+  getRuntimeOptions: bridge.buildProvider<IBridgeResponse<Record<string, LocalModelRuntimeOptions>>, void>(
+    'local-model.get-runtime-options'
+  ),
+  /** Persist runtime overrides for one model path. */
+  setRuntimeOptions: bridge.buildProvider<
+    IBridgeResponse<LocalModelRuntimeOptions>,
+    { modelPath: string; options: LocalModelRuntimeOptions }
+  >('local-model.set-runtime-options'),
 };
 
 // ACP对话相关接口 - 复用统一的conversation接口

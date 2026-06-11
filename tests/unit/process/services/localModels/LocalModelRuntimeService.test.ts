@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  buildLlamaServerArgs,
   createLocalProviderFromRuntime,
   startManagedLlamaServer,
 } from '../../../../../src/process/services/localModels/LocalModelRuntimeService';
@@ -57,5 +58,18 @@ describe('LocalModelRuntimeService', () => {
     ).rejects.toThrow('outside the configured local model directories');
 
     fs.rmSync(modelPath, { force: true });
+  });
+
+  it('adds reasoning flags only when the model runtime option is set', () => {
+    const base = {
+      modelPath: '/models/qwen.gguf',
+      port: 18181,
+      alias: 'qwen',
+      contextSize: 4096,
+      gpuLayers: 99,
+    };
+
+    expect(buildLlamaServerArgs(base)).not.toContain('--reasoning');
+    expect(buildLlamaServerArgs({ ...base, reasoning: 'off' })).toEqual(expect.arrayContaining(['--reasoning', 'off']));
   });
 });
