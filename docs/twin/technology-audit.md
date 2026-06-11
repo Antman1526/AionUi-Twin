@@ -37,6 +37,7 @@
 - Model Context Protocol SDK: MCP services and built-in MCP servers.
 - Office AI Aion CLI/core/platform packages: Aion CLI and office/assistant workflows.
 - llama.cpp `llama-server` (external executable, not npm): serves local GGUF files through an OpenAI-compatible HTTP API for managed local model chats.
+- Microsoft SkillOpt (external upstream project, not bundled as a runtime dependency): informs the optional `skillopt-sleep` AionUi skill for validation-gated skill and memory improvement workflows.
 
 ## UI, Rendering, and Editing
 

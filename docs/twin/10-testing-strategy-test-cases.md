@@ -20,6 +20,12 @@ bun run test
 bun run test:e2e
 ```
 
+SkillOpt-style improvements require a separate validation gate before adoption.
+For a proposed skill or memory edit, record the baseline behavior, the candidate
+edit, and held-out checks that were not used to draft the change. Accept the
+candidate only if those checks improve or a verified defect is fixed without a
+regression. The bundled `skillopt-sleep` skill contains the operational template.
+
 High-value tests: DB corruption vs native ABI failures, auth constant-time paths, token logout, upload workspace mismatch, extension traversal, task cache/idle kill, New API URL normalization, renderer auth readiness, build static copy/asarUnpack behavior.
 
 ## Local Model Test Matrix

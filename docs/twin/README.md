@@ -33,6 +33,7 @@ project so the same documents are available locally and after pushing to GitHub.
 ## Audit
 
 - [Technology Audit](technology-audit.md)
+- [SkillOpt Integration Notes](../integrations/skillopt.md)
 
 ## How To Use This Set
 
@@ -42,3 +43,7 @@ For local model behavior, read documents 1, 4, 7, 8, 9, 10, 11, and 14 together.
 The managed GGUF flow crosses renderer settings, IPC contracts, llama.cpp process
 management, provider persistence, model selection, packaging assumptions, and
 security boundaries.
+
+For agent skill optimization behavior, read document 8, document 10, and
+`docs/integrations/skillopt.md` together. The packaged `skillopt-sleep` skill is
+an optional workflow skill, not a vendored Python runtime.

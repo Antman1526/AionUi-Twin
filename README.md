@@ -76,6 +76,9 @@ config — on your device.
 - 🤝 **Teams** — multiple agents collaborating in shared or isolated workspaces.
 - 🧰 **MCP tools & extensions** — connect Model Context Protocol servers and
   install skills/extensions to expand what agents can do.
+- 💤 **SkillOpt Sleep workflow** — an optional Microsoft SkillOpt-inspired skill
+  that helps agents improve skills and project memory through validation-gated
+  sleep-cycle reviews.
 - ⏰ **Scheduled prompts** — run prompts on a cron schedule.
 - 🐾 **Desktop pet** — lightweight confirmations and presence on your desktop.
 - 🌐 **WebUI mode** — serve the same UI over HTTP for remote/local-network access.
