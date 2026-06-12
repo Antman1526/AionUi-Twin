@@ -8,13 +8,13 @@ AionUi Twin is an Electron desktop and optional WebUI application that turns com
 
 | Layer        | Technologies                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------- |
-| Runtime      | Electron ^37.10.3, Node.js, Bun, optional Bun SQLite driver                               |
-| Frontend     | React ^19.1.0, React DOM ^19.1.0, React Router ^7.8.0, Arco ^2.66.1, UnoCSS ^66.3.3       |
-| Main process | electron-vite ^5.0.0, better-sqlite3 ^12.4.1, Express ^5.1.0, ws ^8.18.3                  |
-| AI protocols | OpenAI ^5.12.2, Anthropic ^0.71.2, Google GenAI ^1.16.0, ACP SDK ^0.18.2, MCP SDK ^1.20.0 |
+| Runtime      | Electron ^39.8.10, Node.js, Bun, optional Bun SQLite driver                               |
+| Frontend     | React ^19.1.0, React DOM ^19.1.0, React Router ^7.17.0, Arco ^2.66.1, UnoCSS ^66.3.3      |
+| Main process | electron-vite ^5.0.0, better-sqlite3 ^12.4.1, Express ^5.1.0, ws ^8.21.0                  |
+| AI protocols | OpenAI ^5.12.2, Anthropic ^0.71.2, Google GenAI ^2.8.0, ACP SDK ^0.18.2, MCP SDK ^1.29.0  |
 | Persistence  | SQLite with WAL, versioned migrations to CURRENT_DB_VERSION 26                            |
 | Testing      | Vitest ^4.0.18, Playwright ^1.58.2, Testing Library ^16.3.2, jsdom ^28.1.0                |
-| Packaging    | electron-builder ^26.6.0, Electron fuses ^1.8.0, optional notarization ^3.1.0             |
+| Packaging    | electron-builder ^26.15.2, Electron fuses ^1.8.0, optional notarization ^3.1.0            |
 
 ## Process architecture
 

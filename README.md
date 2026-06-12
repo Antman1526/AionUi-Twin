@@ -7,7 +7,7 @@
   &nbsp;
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-6C757D?style=flat-square&logo=linux&logoColor=white" alt="Platform">
   &nbsp;
-  <img src="https://img.shields.io/badge/Electron-37-007ACC?style=flat-square&logo=electron&logoColor=white" alt="Electron">
+  <img src="https://img.shields.io/badge/Electron-39-007ACC?style=flat-square&logo=electron&logoColor=white" alt="Electron">
   &nbsp;
   <img src="https://img.shields.io/badge/React-19-FF6B35?style=flat-square&logo=react&logoColor=white" alt="React">
   &nbsp;
@@ -260,7 +260,7 @@ Storage is SQLite (`better-sqlite3` or Bun's SQLite); the WebUI runs on Express 
 ## 📚 Reconstruction docs
 
 The project includes a dense AI-readable reconstruction pack in
-[`docs/twin`](./docs/twin/README.md). It contains:
+[`docs/ai-reconstruction`](./docs/ai-reconstruction/README.md). It contains:
 
 - 15 technical reconstruction documents covering architecture, environment,
   database, APIs, frontend, auth, algorithms, integrations, config, tests, build,
@@ -269,6 +269,9 @@ The project includes a dense AI-readable reconstruction pack in
   pain points, and specific areas to ask another model to review.
 - A technology audit listing every meaningful language, framework, library,
   tool, service, and runtime detected in the codebase.
+
+The shorter [`docs/twin`](./docs/twin/README.md) pack remains available as a
+fast orientation layer for code-review and architecture-improvement prompts.
 
 ## 🧪 Verification
 
