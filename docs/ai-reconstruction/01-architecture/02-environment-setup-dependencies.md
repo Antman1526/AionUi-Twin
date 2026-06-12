@@ -55,11 +55,11 @@ For local LLM testing, start one of these OpenAI-compatible servers before addin
 | `@dnd-kit/sortable`                |         `^10.0.0` |
 | `@dnd-kit/utilities`               |          `^3.2.2` |
 | `@floating-ui/react`               |        `^0.27.16` |
-| `@google/genai`                    |         `^1.16.0` |
+| `@google/genai`                    |          `^2.8.0` |
 | `@grammyjs/transformer-throttler`  |          `^1.2.1` |
 | `@icon-park/react`                 |          `^1.4.2` |
-| `@larksuiteoapi/node-sdk`          |         `^1.58.0` |
-| `@modelcontextprotocol/sdk`        |         `^1.20.0` |
+| `@larksuiteoapi/node-sdk`          |         `^1.66.1` |
+| `@modelcontextprotocol/sdk`        |         `^1.29.0` |
 | `@monaco-editor/react`             |          `^4.7.0` |
 | `@office-ai/aioncli-core`          |         `^0.30.6` |
 | `@office-ai/platform`              |         `^0.3.16` |
@@ -68,7 +68,7 @@ For local LLM testing, start one of these OpenAI-compatible servers before addin
 | `@types/jsonwebtoken`              |         `^9.0.10` |
 | `@uiw/codemirror-extensions-langs` |         `^4.25.1` |
 | `@uiw/react-codemirror`            |         `^4.25.2` |
-| `@wecom/aibot-node-sdk`            |          `^1.0.6` |
+| `@wecom/aibot-node-sdk`            |          `^1.0.7` |
 | `bcryptjs`                         |          `^2.4.3` |
 | `better-sqlite3`                   |         `^12.4.1` |
 | `buffer`                           |          `^6.0.3` |
@@ -95,7 +95,7 @@ For local LLM testing, start one of these OpenAI-compatible servers before addin
 | `jsonwebtoken`                     |          `^9.0.2` |
 | `katex`                            |        `^0.16.22` |
 | `mammoth`                          |         `^1.11.0` |
-| `mermaid`                          |        `^11.13.0` |
+| `mermaid`                          |        `^11.15.0` |
 | `multer`                           |          `^2.1.1` |
 | `officeparser`                     |          `^5.2.2` |
 | `openai`                           |         `^5.12.2` |
@@ -107,7 +107,7 @@ For local LLM testing, start one of these OpenAI-compatible servers before addin
 | `react-dom`                        |         `^19.1.0` |
 | `react-i18next`                    |         `^14.0.5` |
 | `react-markdown`                   |         `^10.1.0` |
-| `react-router-dom`                 |          `^7.8.0` |
+| `react-router-dom`                 |         `^7.17.0` |
 | `react-syntax-highlighter`         |         `^16.1.0` |
 | `react-virtuoso`                   |         `^4.18.1` |
 | `rehype-katex`                     |          `^7.0.1` |
@@ -126,7 +126,7 @@ For local LLM testing, start one of these OpenAI-compatible servers before addin
 | `turndown`                         |          `^7.2.2` |
 | `turndown-plugin-gfm`              |          `^1.0.2` |
 | `web-tree-sitter`                  |        `^0.25.10` |
-| `ws`                               |         `^8.18.3` |
+| `ws`                               |         `^8.21.0` |
 | `xlsx-republish`                   |         `^0.20.3` |
 | `zod`                              |        `^3.25.76` |
 
@@ -157,8 +157,8 @@ For local LLM testing, start one of these OpenAI-compatible servers before addin
 | `@vitest/coverage-v8`             |         `^4.0.18` |
 | `cross-env`                       |          `^7.0.3` |
 | `dotenv`                          |         `^17.2.1` |
-| `electron`                        |        `^37.10.3` |
-| `electron-builder`                |         `^26.6.0` |
+| `electron`                        |        `^39.8.10` |
+| `electron-builder`                |        `^26.15.2` |
 | `electron-devtools-installer`     |          `^4.0.0` |
 | `electron-vite`                   |          `^5.0.0` |
 | `esbuild`                         |        `^0.25.11` |
@@ -175,8 +175,8 @@ For local LLM testing, start one of these OpenAI-compatible servers before addin
 | `typescript`                      |          `^5.8.3` |
 | `unocss`                          |         `^66.3.3` |
 | `unocss-preset-extra`             |          `^1.0.0` |
-| `vite`                            |          `^6.4.1` |
-| `vite-plugin-static-copy`         |          `^3.2.0` |
+| `vite`                            |          `^6.4.3` |
+| `vite-plugin-static-copy`         |          `^4.1.1` |
 | `vitest`                          |         `^4.0.18` |
 
 ## Scripts

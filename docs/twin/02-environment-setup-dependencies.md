@@ -27,10 +27,10 @@ bun run start
 
 ## Core Runtime Dependencies
 
-- Electron `^37.10.3`: native desktop shell.
+- Electron `^39.8.10`: native desktop shell.
 - React `^19.1.0` and React DOM `^19.1.0`: renderer UI.
 - Electron Vite `^5.0.0`: builds main, preload, renderer, pet windows, workers, and lifecycle runner.
-- Electron Builder `^26.6.0`: macOS DMG/ZIP, Windows NSIS/ZIP, Linux DEB.
+- Electron Builder `^26.15.2`: macOS DMG/ZIP, Windows NSIS/ZIP, Linux DEB.
 - Better SQLite3 `^12.4.1`: native SQLite database driver.
 - Express `^5.1.0`, `ws`, `multer`, `cors`, `cookie-parser`, `express-rate-limit`: WebUI/API server.
 - JWT + auth: `jsonwebtoken`, `bcryptjs`, `tiny-csrf`, `cookie`.
