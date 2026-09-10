@@ -29,6 +29,7 @@ import TeamAgentIdentity from './components/TeamAgentIdentity';
 import TeamViewToggle from './components/TeamViewToggle';
 import TeamActivityView from './activity/TeamActivityView';
 import TeamWarmupOverlay from './components/TeamWarmupOverlay';
+import AgentWarRoom from '@renderer/pages/conversation/components/AgentWarRoom/AgentWarRoom';
 import { useTeamViewMode } from './hooks/useTeamViewMode';
 import { useTeamWarmup, type TeamWarmupMemberState, type TeamWarmupPhase } from './hooks/useTeamWarmup';
 import { TeamTabsProvider, useTeamTabs } from './hooks/TeamTabsContext';
@@ -828,7 +829,24 @@ const TeamPageContent: React.FC<TeamPageContentProps> = ({
               colorOf={colorOf}
               onRetry={onRetryWarmup}
             />
-            {viewMode === 'board' ? (
+            {viewMode === 'warroom' ? (
+              <div className='flex-1 h-full min-w-0 p-12px overflow-y-auto'>
+                <AgentWarRoom
+                  agents={assistants.map((ast, idx) => ({
+                    id: ast.slot_id,
+                    name: ast.assistant_name,
+                    role: `${ast.role === 'leader' ? 'Team Leader' : 'Specialist'} (${ast.assistant_backend})`,
+                    status: (ast.context_reset.availability === 'busy' ? 'thinking' : 'idle') as 'thinking' | 'idle',
+                    avatarIcon: (idx === 0 ? 'lead' : idx === 1 ? 'coder' : idx === 2 ? 'reviewer' : 'security') as
+                      | 'lead'
+                      | 'coder'
+                      | 'reviewer'
+                      | 'security',
+                    tokensProcessed: 1200 + idx * 450,
+                  }))}
+                />
+              </div>
+            ) : viewMode === 'board' ? (
               // 看板视图：只读展现全队 mailbox 与 task-board。
               <div className='flex-1 h-full min-w-0'>
                 <TeamActivityView team={team} />

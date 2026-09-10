@@ -18,6 +18,9 @@ import { resolveFeedbackModule } from '@/renderer/services/feedback/resolveFeedb
 import { isElectronDesktop, isMacOS } from '@/renderer/utils/platform';
 import { IS_DISCONTINUED_BUILD } from '@/renderer/utils/discontinuedBuild';
 import MigrationInviteCapsule from './MigrationInviteCapsule';
+import BreathingOrb from './BreathingOrb';
+import HardwareHUD from './HardwareHUD';
+import GhostModeToggle from './GhostModeToggle';
 import './titlebar.css';
 
 interface TitlebarProps {
@@ -410,6 +413,13 @@ const Titlebar: React.FC<TitlebarProps> = ({ workspaceAvailable }) => {
       <div ref={toolbarRef} className='app-titlebar__toolbar'>
         {layout?.isMobile && <div id='app-titlebar-actions-slot' className='app-titlebar__actions-slot' />}
         {IS_DISCONTINUED_BUILD && <MigrationInviteCapsule />}
+        {!layout?.isMobile && (
+          <div className='flex items-center gap-6px mr-4px'>
+            <BreathingOrb />
+            <HardwareHUD />
+            <GhostModeToggle />
+          </div>
+        )}
         <button
           type='button'
           className={classNames('app-titlebar__button', layout?.isMobile && 'app-titlebar__button--mobile')}

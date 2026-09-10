@@ -1182,6 +1182,131 @@ export const localModel = {
 };
 
 // ---------------------------------------------------------------------------
+// Hardware & System Telemetry
+// ---------------------------------------------------------------------------
+
+export type ModelFitLevel = 'optimal' | 'partial' | 'exceeded';
+
+export interface ModelFitAssessment {
+  level: ModelFitLevel;
+  requiredRamBytes: number;
+  availableRamBytes: number;
+  ratio: number;
+  description: string;
+}
+
+export interface SystemHardwareMetrics {
+  totalMemBytes: number;
+  freeMemBytes: number;
+  usedMemBytes: number;
+  cpuModel?: string;
+  isAppleSilicon: boolean;
+  activeLlama?: {
+    pid: number;
+    alias: string;
+    modelPath: string;
+    rssBytes?: number;
+    tokensPerSec?: number;
+  };
+}
+
+export const systemMetrics = {
+  getMetrics: bridge.buildProvider<IBridgeResponse<SystemHardwareMetrics>, void>('system-metrics.get'),
+  evaluateFit: bridge.buildProvider<
+    IBridgeResponse<ModelFitAssessment>,
+    { modelSizeBytes: number; contextSize?: number }
+  >('system-metrics.evaluate-fit'),
+};
+
+// ---------------------------------------------------------------------------
+// Hugging Face Model Hub (GGUF & MLX Downloader)
+// ---------------------------------------------------------------------------
+
+export type HfModelKind = 'gguf' | 'mlx' | 'other' | 'all';
+
+export interface HfModelSummary {
+  id: string;
+  author: string;
+  downloads: number;
+  likes: number;
+  modelType: HfModelKind;
+  tags: string[];
+  description?: string;
+  lastModified?: string;
+}
+
+export interface HfModelFile {
+  name: string;
+  path: string;
+  sizeBytes: number;
+  quantization?: string;
+}
+
+export interface HfModelDetail extends HfModelSummary {
+  files: HfModelFile[];
+  readme?: string;
+}
+
+export interface HfDownloadProgress {
+  downloadId: string;
+  modelId: string;
+  fileName: string;
+  isMlx: boolean;
+  totalBytes: number;
+  downloadedBytes: number;
+  speedBytesPerSec: number;
+  percent: number;
+  status: 'pending' | 'downloading' | 'completed' | 'failed' | 'cancelled';
+  error?: string;
+  targetPath?: string;
+}
+
+export const hfHub = {
+  searchModels: bridge.buildProvider<
+    IBridgeResponse<HfModelSummary[]>,
+    { query?: string; type?: HfModelKind; limit?: number }
+  >('hf-hub.search'),
+  getModelDetails: bridge.buildProvider<IBridgeResponse<HfModelDetail>, { modelId: string }>('hf-hub.details'),
+  startDownload: bridge.buildProvider<
+    IBridgeResponse<{ downloadId: string }>,
+    { modelId: string; fileName?: string; isMlx?: boolean }
+  >('hf-hub.download.start'),
+  cancelDownload: bridge.buildProvider<IBridgeResponse<boolean>, { downloadId: string }>('hf-hub.download.cancel'),
+  getDownloads: bridge.buildProvider<IBridgeResponse<HfDownloadProgress[]>, void>('hf-hub.downloads.get'),
+  downloadProgress: bridge.buildEmitter<HfDownloadProgress>('hf-hub.download.progress'),
+};
+
+// ---------------------------------------------------------------------------
+// Air-Gapped Ghost Mode
+// ---------------------------------------------------------------------------
+
+export interface GhostModeStatus {
+  enabled: boolean;
+  blockedRequestsCount: number;
+}
+
+export const ghostMode = {
+  getStatus: bridge.buildProvider<IBridgeResponse<GhostModeStatus>, void>('ghost-mode.status'),
+  toggle: bridge.buildProvider<IBridgeResponse<GhostModeStatus>, { enabled: boolean }>('ghost-mode.toggle'),
+  statusChanged: bridge.buildEmitter<GhostModeStatus>('ghost-mode.changed'),
+};
+
+// ---------------------------------------------------------------------------
+// Raycast Quick Palette Window
+// ---------------------------------------------------------------------------
+
+export interface QuickBarActionRequest {
+  prompt: string;
+  skillId?: string;
+}
+
+export const quickBar = {
+  toggle: bridge.buildProvider<void, void>('quickbar.toggle'),
+  hide: bridge.buildProvider<void, void>('quickbar.hide'),
+  submitPrompt: bridge.buildProvider<IBridgeResponse<boolean>, QuickBarActionRequest>('quickbar.submit-prompt'),
+};
+
+// ---------------------------------------------------------------------------
 // ACP Conversation — routed to /api/agents/* + conversation routes
 // ---------------------------------------------------------------------------
 

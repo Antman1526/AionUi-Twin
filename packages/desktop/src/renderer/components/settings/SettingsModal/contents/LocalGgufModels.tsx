@@ -7,11 +7,12 @@
 import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeOptions } from '@/common/config/storage';
 import { Alert, Button, InputNumber, Message, Select, Tag, Tooltip } from '@arco-design/web-react';
-import { Close, FolderOpen, Info, Play, Plus, Power, Refresh, SettingTwo } from '@icon-park/react';
+import { Close, Download, FolderOpen, Info, Play, Plus, Power, Refresh, SettingTwo } from '@icon-park/react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
+import HfModelHubModal from './HfModelHubModal';
 
 /** Human-readable byte size (binary units). */
 const formatBytes = (bytes: number): string => {
@@ -50,6 +51,11 @@ const LocalGgufModels: React.FC = () => {
   const [message, messageContext] = Message.useMessage();
   const [busyPath, setBusyPath] = useState<string | null>(null);
   const [expandedOptionsPath, setExpandedOptionsPath] = useState<string | null>(null);
+  const [hfModalVisible, setHfModalVisible] = useState(false);
+
+  const { data: metrics } = useSWR('system-metrics.get', () =>
+    ipcBridge.systemMetrics.getMetrics.invoke().then((r) => r.data)
+  );
 
   const {
     data: scan,
@@ -288,9 +294,19 @@ const LocalGgufModels: React.FC = () => {
             <Info theme='outline' size='14' className='text-t-secondary cursor-help' />
           </Tooltip>
         </div>
-        <Button size='mini' icon={<Refresh theme='outline' size='14' />} onClick={() => void mutateScan()}>
-          {t('settings.localGguf.refresh')}
-        </Button>
+        <div className='flex items-center gap-6px'>
+          <Button
+            size='mini'
+            type='primary'
+            icon={<Download theme='outline' size='14' />}
+            onClick={() => setHfModalVisible(true)}
+          >
+            Hugging Face Hub
+          </Button>
+          <Button size='mini' icon={<Refresh theme='outline' size='14' />} onClick={() => void mutateScan()}>
+            {t('settings.localGguf.refresh')}
+          </Button>
+        </div>
       </div>
       <div className='text-12px text-t-secondary mb-12px'>{t('settings.localGguf.description')}</div>
 
@@ -352,6 +368,24 @@ const LocalGgufModels: React.FC = () => {
                     <Tag size='small' color='gray'>
                       {formatBytes(model.sizeBytes)}
                     </Tag>
+                    {metrics?.totalMemBytes ? (
+                      <Tag
+                        size='small'
+                        color={
+                          model.sizeBytes <= metrics.totalMemBytes * 0.7
+                            ? 'green'
+                            : model.sizeBytes <= metrics.totalMemBytes * 0.92
+                              ? 'gold'
+                              : 'red'
+                        }
+                      >
+                        {model.sizeBytes <= metrics.totalMemBytes * 0.7
+                          ? 'Optimal'
+                          : model.sizeBytes <= metrics.totalMemBytes * 0.92
+                            ? 'Tight'
+                            : 'High RAM'}
+                      </Tag>
+                    ) : null}
                     {isRunning ? (
                       <Tag size='small' color='green'>
                         {t('settings.localGguf.running')}
@@ -402,6 +436,11 @@ const LocalGgufModels: React.FC = () => {
           })}
         </div>
       ) : null}
+      <HfModelHubModal
+        visible={hfModalVisible}
+        onCancel={() => setHfModalVisible(false)}
+        onModelDownloaded={() => void mutateScan()}
+      />
     </div>
   );
 };

@@ -12,7 +12,7 @@ import { useCallback, useState } from 'react';
  * - single：全屏显示当前选中的成员。
  * - board：只读的「消息 & 任务」看板视图。
  */
-export type TeamViewMode = 'parallel' | 'single' | 'board';
+export type TeamViewMode = 'parallel' | 'single' | 'board' | 'warroom';
 
 const storageKey = (team_id: string): string => `team-view-mode-${team_id}`;
 
@@ -21,6 +21,7 @@ const readViewMode = (team_id: string): TeamViewMode => {
     const stored = localStorage.getItem(storageKey(team_id));
     if (stored === 'single') return 'single';
     if (stored === 'board' || stored === 'flow') return 'board'; // migrate legacy 'flow'
+    if (stored === 'warroom') return 'warroom';
     return 'parallel';
   } catch {
     return 'parallel';

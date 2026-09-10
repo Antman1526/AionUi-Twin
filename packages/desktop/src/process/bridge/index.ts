@@ -13,6 +13,10 @@ import { initNotificationBridge } from './notificationBridge';
 import { initWebuiBridge } from './webuiBridge';
 import { initThemeBridge } from './themeBridge';
 import { initLocalModelBridge, stopLocalModelServer } from './localModelBridge';
+import { initSystemMetricsBridge } from './systemMetricsBridge';
+import { initHfHubBridge } from './hfHubBridge';
+import { initGhostModeBridge } from './ghostModeBridge';
+import { initQuickBarBridge } from './quickBarBridge';
 
 export type BridgeDependencies = Record<string, never>;
 
@@ -26,6 +30,10 @@ export function initAllBridges(_deps: BridgeDependencies = {}): void {
   initWebuiBridge();
   initThemeBridge();
   initLocalModelBridge();
+  initSystemMetricsBridge();
+  initHfHubBridge();
+  initGhostModeBridge();
+  initQuickBarBridge();
 }
 
 export {
@@ -38,6 +46,10 @@ export {
   initUpdateBridge,
   initWindowControlsBridge,
   initWebuiBridge,
+  initSystemMetricsBridge,
+  initHfHubBridge,
+  initGhostModeBridge,
+  initQuickBarBridge,
   stopLocalModelServer,
 };
 export { registerWindowMaximizeListeners } from './windowControlsBridge';
