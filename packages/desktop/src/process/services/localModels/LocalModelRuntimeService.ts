@@ -5,7 +5,7 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
@@ -80,6 +80,14 @@ type ManagedSession = ManagedServerHandle & { process: ChildProcess };
 let currentSession: ManagedSession | null = null;
 
 const DEFAULT_EXECUTABLE_CANDIDATES = ['llama-server', '/opt/homebrew/bin/llama-server', '/usr/local/bin/llama-server'];
+const DEFAULT_MLX_CANDIDATES = [
+  'mlx_lm.server',
+  '/opt/homebrew/bin/mlx_lm.server',
+  path.join(process.env.HOME || '', '.local/bin/mlx_lm.server'),
+  path.join(process.env.HOME || '', 'Library/Python/3.11/bin/mlx_lm.server'),
+  path.join(process.env.HOME || '', 'Library/Python/3.12/bin/mlx_lm.server'),
+  path.join(process.env.HOME || '', 'Library/Python/3.10/bin/mlx_lm.server'),
+];
 const MAX_CAPTURED_STDERR = 12_000;
 
 export function buildLlamaServerArgs({
@@ -134,9 +142,7 @@ function findFreePort(): Promise<number> {
 }
 
 /**
- * Poll GET /health until it returns HTTP 200. The llama-server TCP port opens
- * well before the model finishes loading, during which every endpoint returns
- * 503, so readiness must be checked at the HTTP layer rather than via TCP.
+ * Poll /health or /v1/models until it returns HTTP 200.
  */
 function waitForHealthy(port: number, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -147,18 +153,36 @@ function waitForHealthy(port: number, timeoutMs: number): Promise<void> {
         if (res.statusCode === 200) {
           resolve();
         } else {
-          retry();
+          checkModelsEndpoint();
         }
       });
-      req.on('error', retry);
+
+      const checkModelsEndpoint = (): void => {
+        const req2 = http.get({ host: '127.0.0.1', port, path: '/v1/models', timeout: 2000 }, (res2) => {
+          res2.resume();
+          if (res2.statusCode === 200) {
+            resolve();
+          } else {
+            retry();
+          }
+        });
+        req2.on('error', retry);
+        req2.on('timeout', () => {
+          req2.destroy();
+          retry();
+        });
+      };
+
+      req.on('error', () => checkModelsEndpoint());
       req.on('timeout', () => {
         req.destroy();
-        retry();
+        checkModelsEndpoint();
       });
     };
+
     const retry = (): void => {
       if (Date.now() >= deadline) {
-        reject(new Error(`llama-server did not become healthy within ${Math.round(timeoutMs / 1000)}s`));
+        reject(new Error(`Local model server did not become healthy within ${Math.round(timeoutMs / 1000)}s`));
       } else {
         setTimeout(attempt, 500);
       }
@@ -246,19 +270,33 @@ export async function startManagedLlamaServer({
     throw new Error(`Refusing to load "${modelPath}": it is outside the configured local model directories`);
   }
 
-  const executable = resolveExecutable(executableCandidates);
-  if (!executable) {
-    throw new Error(
-      'llama-server executable not found. Install llama.cpp (e.g. `brew install llama.cpp`) and try again.'
-    );
-  }
-
   // One model at a time: stop any previous managed server before starting a new one.
   stopManagedLlamaServer();
 
   const alias = path.basename(modelPath, path.extname(modelPath));
   const port = await findFreePort();
-  const args = buildLlamaServerArgs({ modelPath, port, alias, contextSize, gpuLayers, reasoning });
+
+  const isMlx = existsSync(modelPath) && (statSync(modelPath).isDirectory() || modelPath.endsWith('.safetensors'));
+  let executable: string | null = null;
+  let args: string[] = [];
+
+  if (isMlx) {
+    executable = resolveExecutable(DEFAULT_MLX_CANDIDATES);
+    if (!executable) {
+      throw new Error(
+        'mlx_lm.server executable not found. Install mlx-lm by running `pip install mlx-lm` to serve Apple Silicon native MLX models.'
+      );
+    }
+    args = ['--model', modelPath, '--port', String(port)];
+  } else {
+    executable = resolveExecutable(executableCandidates);
+    if (!executable) {
+      throw new Error(
+        'llama-server executable not found. Install llama.cpp (e.g. `brew install llama.cpp`) and try again.'
+      );
+    }
+    args = buildLlamaServerArgs({ modelPath, port, alias, contextSize, gpuLayers, reasoning });
+  }
 
   const child = spawn(executable, args, {
     stdio: ['ignore', 'ignore', 'pipe'],

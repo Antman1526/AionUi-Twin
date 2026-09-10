@@ -1134,8 +1134,8 @@ export type LocalModelStartRequest = {
 };
 
 export type LocalModelKind = 'llm' | 'stt' | 'tts';
-export type LocalModelFormat = 'gguf' | 'bin' | 'onnx';
-export type LocalModelRuntime = 'llama.cpp' | 'whisper.cpp' | 'piper';
+export type LocalModelFormat = 'gguf' | 'bin' | 'onnx' | 'mlx';
+export type LocalModelRuntime = 'llama.cpp' | 'whisper.cpp' | 'piper' | 'mlx';
 
 export type LocalModelAsset = {
   path: string;
@@ -1304,6 +1304,7 @@ export const quickBar = {
   toggle: bridge.buildProvider<void, void>('quickbar.toggle'),
   hide: bridge.buildProvider<void, void>('quickbar.hide'),
   submitPrompt: bridge.buildProvider<IBridgeResponse<boolean>, QuickBarActionRequest>('quickbar.submit-prompt'),
+  promptReceived: bridge.buildEmitter<QuickBarActionRequest>('quickbar.prompt-received'),
 };
 
 // ---------------------------------------------------------------------------

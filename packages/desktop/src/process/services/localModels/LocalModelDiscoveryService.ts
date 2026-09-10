@@ -15,12 +15,12 @@ export type LocalModelKind = 'llm' | 'stt' | 'tts';
 /**
  * On-disk format of a local model asset.
  */
-export type LocalModelFormat = 'gguf' | 'bin' | 'onnx';
+export type LocalModelFormat = 'gguf' | 'bin' | 'onnx' | 'mlx';
 
 /**
  * Runtime suggested to serve a given asset kind.
  */
-export type LocalModelRuntime = 'llama.cpp' | 'whisper.cpp' | 'piper';
+export type LocalModelRuntime = 'llama.cpp' | 'whisper.cpp' | 'piper' | 'mlx';
 
 /**
  * A discovered local model asset.
@@ -61,6 +61,7 @@ type FormatRule = {
  */
 const FORMAT_RULES: Record<string, FormatRule> = {
   '.gguf': { format: 'gguf', kind: 'llm', suggestedRuntime: 'llama.cpp' },
+  '.safetensors': { format: 'mlx', kind: 'llm', suggestedRuntime: 'mlx' },
   '.bin': { format: 'bin', kind: 'stt', suggestedRuntime: 'whisper.cpp' },
   '.onnx': { format: 'onnx', kind: 'tts', suggestedRuntime: 'piper' },
 };
@@ -70,6 +71,47 @@ const FORMAT_RULES: Record<string, FormatRule> = {
  */
 function isMacMetadataFile(fileName: string): boolean {
   return fileName.startsWith('._') || fileName === '.DS_Store';
+}
+
+async function classifyMlxDirectory(dirPath: string, dirName: string): Promise<LocalModelAsset | null> {
+  if (isMacMetadataFile(dirName)) return null;
+
+  try {
+    const files = await fs.readdir(dirPath);
+    const hasConfig = files.includes('config.json');
+    const hasWeights = files.some(
+      (f) => f.endsWith('.safetensors') || f.endsWith('.npz') || f.endsWith('.bin') || f.endsWith('.model')
+    );
+
+    if (!hasConfig || !hasWeights) {
+      return null;
+    }
+
+    let totalSizeBytes = 0;
+    for (const f of files) {
+      if (!isMacMetadataFile(f)) {
+        try {
+          const stat = await fs.stat(path.join(dirPath, f));
+          if (stat.isFile()) totalSizeBytes += stat.size;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    const displayName = dirName.replace(/^mlx-community--/, '').replace(/--/g, '/');
+
+    return {
+      path: dirPath,
+      name: `${displayName} (MLX)`,
+      kind: 'llm',
+      format: 'mlx',
+      suggestedRuntime: 'mlx',
+      sizeBytes: totalSizeBytes,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function classifyFile(fullPath: string, fileName: string): Promise<LocalModelAsset | null> {
@@ -124,6 +166,12 @@ async function scanRoot(
 
     const fullPath = path.join(root, entry.name);
     if (entry.isDirectory()) {
+      const mlxAsset = await classifyMlxDirectory(fullPath, entry.name);
+      if (mlxAsset) {
+        assets.push(mlxAsset);
+        continue;
+      }
+
       const childAssets = await scanRoot(fullPath, { depth: depth + 1, fileBudget });
       if (childAssets) assets.push(...childAssets);
       continue;

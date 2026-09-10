@@ -130,6 +130,14 @@ const Layout: React.FC<{
   useBrowserNotification();
   useDesktopTurnNotification();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return ipcBridge.quickBar.promptReceived.on(({ prompt }) => {
+      if (prompt) {
+        void navigate('/guid', { state: { prefillPrompt: prompt, focusPrefill: true } });
+      }
+    });
+  }, [navigate]);
   const location = useLocation();
   const workspaceAvailable =
     location.pathname.startsWith('/conversation/') || (TEAM_MODE_ENABLED && location.pathname.startsWith('/team/'));

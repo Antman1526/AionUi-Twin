@@ -365,6 +365,9 @@ const LocalGgufModels: React.FC = () => {
                 <div className='flex items-center justify-between gap-8px px-12px py-8px'>
                   <div className='flex items-center gap-8px min-w-0'>
                     <span className='truncate text-13px'>{model.name}</span>
+                    <Tag size='small' color={model.format === 'mlx' ? 'arcoblue' : 'purple'}>
+                      {model.format.toUpperCase()}
+                    </Tag>
                     <Tag size='small' color='gray'>
                       {formatBytes(model.sizeBytes)}
                     </Tag>
