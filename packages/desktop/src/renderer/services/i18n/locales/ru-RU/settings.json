@@ -1430,7 +1430,7 @@
   "crossSessionMessageResume": "Включить снова",
   "crossSessionMessageUpdateFailed": "Не удалось обновить настройку сообщений между беседами",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "Локальные модели (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1468,6 +1468,13 @@
     "browseFolder": "Обзор…",
     "pathAlreadyAdded": "Папка уже добавлена в список",
     "pathAdded": "Папка успешно добавлена",
-    "invalidPath": "Пожалуйста, укажите корректный путь к папке"
+    "invalidPath": "Пожалуйста, укажите корректный путь к папке",
+    "filterAll": "Все ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "Поиск моделей…",
+    "sortName": "Имя",
+    "sortSize": "Размер",
+    "noMatch": "Модели не найдены"
   }
 }

@@ -1416,7 +1416,7 @@
   "crossSessionMessageResume": "Yeniden aç",
   "crossSessionMessageUpdateFailed": "Sohbetler arası mesaj ayarı güncellenemedi",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "Yerel Modeller (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1454,6 +1454,13 @@
     "browseFolder": "Gözat…",
     "pathAlreadyAdded": "Klasör zaten listede",
     "pathAdded": "Klasör başarıyla eklendi",
-    "invalidPath": "Lütfen geçerli bir klasör yolu girin"
+    "invalidPath": "Lütfen geçerli bir klasör yolu girin",
+    "filterAll": "Tümü ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "Modelleri ara…",
+    "sortName": "Ad",
+    "sortSize": "Boyut",
+    "noMatch": "Arama kriterlerinize uygun model bulunamadı"
   }
 }

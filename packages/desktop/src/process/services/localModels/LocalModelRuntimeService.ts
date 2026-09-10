@@ -129,6 +129,27 @@ export function buildLlamaServerArgs({
   return args;
 }
 
+export function buildMlxServerArgs({
+  modelPath,
+  port,
+  contextSize,
+  reasoning,
+}: {
+  modelPath: string;
+  port: number;
+  contextSize?: number;
+  reasoning?: 'off' | 'on';
+}): string[] {
+  const args = ['--model', modelPath, '--host', '127.0.0.1', '--port', String(port), '--trust-remote-code'];
+  if (contextSize) {
+    args.push('--max-tokens', String(contextSize));
+  }
+  if (reasoning === 'off') {
+    args.push('--chat-template-args', '{"enable_thinking":false}');
+  }
+  return args;
+}
+
 function findFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -299,7 +320,7 @@ export async function startManagedLlamaServer({
         'mlx_lm.server executable not found. Install mlx-lm by running `pip install mlx-lm` to serve Apple Silicon native MLX models.'
       );
     }
-    args = ['--model', modelPath, '--port', String(port)];
+    args = buildMlxServerArgs({ modelPath, port, contextSize, reasoning });
   } else {
     executable = resolveExecutable(executableCandidates);
     if (!executable) {

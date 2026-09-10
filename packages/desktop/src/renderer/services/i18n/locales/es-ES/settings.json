@@ -1416,7 +1416,7 @@
   "crossSessionMessageResume": "Volver a activar",
   "crossSessionMessageUpdateFailed": "No se pudo actualizar el ajuste de mensajes entre conversaciones",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "Modelos Locales (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1454,6 +1454,13 @@
     "browseFolder": "Examinar…",
     "pathAlreadyAdded": "La carpeta ya está en la lista",
     "pathAdded": "Carpeta añadida con éxito",
-    "invalidPath": "Por favor ingrese una ruta de carpeta válida"
+    "invalidPath": "Por favor ingrese una ruta de carpeta válida",
+    "filterAll": "Todos ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "Filtrar modelos…",
+    "sortName": "Nombre",
+    "sortSize": "Tamaño",
+    "noMatch": "No se encontraron modelos coincidentes"
   }
 }

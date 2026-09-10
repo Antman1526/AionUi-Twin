@@ -1416,7 +1416,7 @@
   "crossSessionMessageResume": "Wieder einschalten",
   "crossSessionMessageUpdateFailed": "Einstellung konnte nicht aktualisiert werden",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "Lokale Modelle (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1454,6 +1454,13 @@
     "browseFolder": "Durchsuchen…",
     "pathAlreadyAdded": "Ordner ist bereits in der Liste",
     "pathAdded": "Ordner erfolgreich hinzugefügt",
-    "invalidPath": "Bitte geben Sie einen gültigen Ordnerpfad ein"
+    "invalidPath": "Bitte geben Sie einen gültigen Ordnerpfad ein",
+    "filterAll": "Alle ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "Modelle filtern…",
+    "sortName": "Name",
+    "sortSize": "Größe",
+    "noMatch": "Keine passenden Modelle gefunden"
   }
 }

@@ -6,9 +6,9 @@
 
 import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeOptions } from '@/common/config/storage';
-import { Alert, Button, Input, InputNumber, Message, Select, Tag, Tooltip } from '@arco-design/web-react';
-import { Close, Download, FolderOpen, Info, Play, Plus, Power, Refresh, SettingTwo } from '@icon-park/react';
-import React, { useState } from 'react';
+import { Alert, Button, Input, InputNumber, Message, Radio, Select, Tag, Tooltip } from '@arco-design/web-react';
+import { Close, Download, FolderOpen, Info, Play, Plus, Power, Refresh, Search, SettingTwo } from '@icon-park/react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
@@ -81,6 +81,27 @@ const LocalGgufModels: React.FC = () => {
   const runningPath = status?.running ? status.modelPath : undefined;
 
   const [customPathInput, setCustomPathInput] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
+  const [formatFilter, setFormatFilter] = useState<'all' | 'mlx' | 'gguf'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'size'>('name');
+
+  const mlxCount = llmModels.filter((m) => m.format === 'mlx').length;
+  const ggufCount = llmModels.filter((m) => m.format === 'gguf').length;
+
+  const displayModels = useMemo(() => {
+    let list = llmModels;
+    if (formatFilter !== 'all') {
+      list = list.filter((m) => m.format === formatFilter);
+    }
+    if (modelSearch.trim()) {
+      const q = modelSearch.trim().toLowerCase();
+      list = list.filter((m) => m.name.toLowerCase().includes(q) || m.path.toLowerCase().includes(q));
+    }
+    return [...list].toSorted((a, b) => {
+      if (sortBy === 'size') return b.sizeBytes - a.sizeBytes;
+      return a.name.localeCompare(b.name);
+    });
+  }, [llmModels, formatFilter, modelSearch, sortBy]);
 
   const applyDirectories = async (next: string[]): Promise<void> => {
     await ipcBridge.localModel.setDirectories.invoke({ directories: next });
@@ -389,92 +410,131 @@ const LocalGgufModels: React.FC = () => {
       {!scanError && llmModels.length === 0 ? (
         <div className='text-12px text-t-secondary py-8px'>{t('settings.localGguf.noModels')}</div>
       ) : !scanError ? (
-        <div className='flex flex-col gap-6px'>
-          {llmModels.map((model) => {
-            const isRunning = runningPath === model.path;
-            const isBusy = busyPath === model.path;
-            const optionsExpanded = expandedOptionsPath === model.path;
-            return (
-              <div
-                key={model.path}
-                className='rounded-6px border-1px border-solid border-[var(--color-border-2)] overflow-hidden'
+        <>
+          <div className='flex items-center justify-between gap-8px mb-10px flex-wrap'>
+            <Radio.Group
+              type='button'
+              size='mini'
+              value={formatFilter}
+              onChange={(val) => setFormatFilter(val as 'all' | 'mlx' | 'gguf')}
+            >
+              <Radio value='all'>{t('settings.localGguf.filterAll', { count: llmModels.length })}</Radio>
+              <Radio value='mlx'>{t('settings.localGguf.filterMlx', { count: mlxCount })}</Radio>
+              <Radio value='gguf'>{t('settings.localGguf.filterGguf', { count: ggufCount })}</Radio>
+            </Radio.Group>
+            <div className='flex items-center gap-6px'>
+              <Input
+                size='mini'
+                prefix={<Search theme='outline' size='13' className='text-t-secondary' />}
+                placeholder={t('settings.localGguf.searchPlaceholder')}
+                value={modelSearch}
+                onChange={(val) => setModelSearch(val)}
+                allowClear
+                className='w-170px'
+              />
+              <Select
+                size='mini'
+                value={sortBy}
+                onChange={(val) => setSortBy(val as 'name' | 'size')}
+                className='w-85px'
               >
-                <div className='flex items-center justify-between gap-8px px-12px py-8px'>
-                  <div className='flex items-center gap-8px min-w-0'>
-                    <span className='truncate text-13px'>{model.name}</span>
-                    <Tag size='small' color={model.format === 'mlx' ? 'arcoblue' : 'purple'}>
-                      {model.format.toUpperCase()}
-                    </Tag>
-                    <Tag size='small' color='gray'>
-                      {formatBytes(model.sizeBytes)}
-                    </Tag>
-                    {metrics?.totalMemBytes ? (
-                      <Tag
-                        size='small'
-                        color={
-                          model.sizeBytes <= metrics.totalMemBytes * 0.7
-                            ? 'green'
-                            : model.sizeBytes <= metrics.totalMemBytes * 0.92
-                              ? 'gold'
-                              : 'red'
-                        }
-                      >
-                        {model.sizeBytes <= metrics.totalMemBytes * 0.7
-                          ? 'Optimal'
-                          : model.sizeBytes <= metrics.totalMemBytes * 0.92
-                            ? 'Tight'
-                            : 'High RAM'}
-                      </Tag>
-                    ) : null}
-                    {isRunning ? (
-                      <Tag size='small' color='green'>
-                        {t('settings.localGguf.running')}
-                      </Tag>
-                    ) : null}
+                <Select.Option value='name'>{t('settings.localGguf.sortName')}</Select.Option>
+                <Select.Option value='size'>{t('settings.localGguf.sortSize')}</Select.Option>
+              </Select>
+            </div>
+          </div>
+
+          {displayModels.length === 0 ? (
+            <div className='text-12px text-t-secondary py-16px text-center'>{t('settings.localGguf.noMatch')}</div>
+          ) : (
+            <div className='flex flex-col gap-6px'>
+              {displayModels.map((model) => {
+                const isRunning = runningPath === model.path;
+                const isBusy = busyPath === model.path;
+                const optionsExpanded = expandedOptionsPath === model.path;
+                return (
+                  <div
+                    key={model.path}
+                    className='rounded-6px border-1px border-solid border-[var(--color-border-2)] overflow-hidden'
+                  >
+                    <div className='flex items-center justify-between gap-8px px-12px py-8px'>
+                      <div className='flex items-center gap-8px min-w-0'>
+                        <span className='truncate text-13px'>{model.name}</span>
+                        <Tag size='small' color={model.format === 'mlx' ? 'arcoblue' : 'purple'}>
+                          {model.format.toUpperCase()}
+                        </Tag>
+                        <Tag size='small' color='gray'>
+                          {formatBytes(model.sizeBytes)}
+                        </Tag>
+                        {metrics?.totalMemBytes ? (
+                          <Tag
+                            size='small'
+                            color={
+                              model.sizeBytes <= metrics.totalMemBytes * 0.7
+                                ? 'green'
+                                : model.sizeBytes <= metrics.totalMemBytes * 0.92
+                                  ? 'gold'
+                                  : 'red'
+                            }
+                          >
+                            {model.sizeBytes <= metrics.totalMemBytes * 0.7
+                              ? 'Optimal'
+                              : model.sizeBytes <= metrics.totalMemBytes * 0.92
+                                ? 'Tight'
+                                : 'High RAM'}
+                          </Tag>
+                        ) : null}
+                        {isRunning ? (
+                          <Tag size='small' color='green'>
+                            {t('settings.localGguf.running')}
+                          </Tag>
+                        ) : null}
+                      </div>
+                      <div className='flex items-center gap-6px shrink-0'>
+                        <Tooltip content={t('settings.localGguf.advancedOptions')}>
+                          <Button
+                            size='mini'
+                            type='text'
+                            icon={<SettingTwo theme='outline' size='14' />}
+                            onClick={() => setExpandedOptionsPath(optionsExpanded ? null : model.path)}
+                          />
+                        </Tooltip>
+                        {isRunning ? (
+                          <>
+                            <Button size='mini' type='primary' onClick={() => void handleUseInChat()}>
+                              {t('settings.localGguf.useInChat')}
+                            </Button>
+                            <Button
+                              size='mini'
+                              status='danger'
+                              icon={<Power theme='outline' size='14' />}
+                              loading={isBusy}
+                              onClick={() => void handleUnload()}
+                            >
+                              {t('settings.localGguf.unload')}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            size='mini'
+                            type='primary'
+                            icon={<Play theme='outline' size='14' />}
+                            loading={isBusy}
+                            disabled={busyPath !== null && !isBusy}
+                            onClick={() => void handleLoad(model.path, model.name)}
+                          >
+                            {isBusy ? t('settings.localGguf.loadingState') : t('settings.localGguf.load')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {optionsExpanded ? renderAdvancedOptions(model.path) : null}
                   </div>
-                  <div className='flex items-center gap-6px shrink-0'>
-                    <Tooltip content={t('settings.localGguf.advancedOptions')}>
-                      <Button
-                        size='mini'
-                        type='text'
-                        icon={<SettingTwo theme='outline' size='14' />}
-                        onClick={() => setExpandedOptionsPath(optionsExpanded ? null : model.path)}
-                      />
-                    </Tooltip>
-                    {isRunning ? (
-                      <>
-                        <Button size='mini' type='primary' onClick={() => void handleUseInChat()}>
-                          {t('settings.localGguf.useInChat')}
-                        </Button>
-                        <Button
-                          size='mini'
-                          status='danger'
-                          icon={<Power theme='outline' size='14' />}
-                          loading={isBusy}
-                          onClick={() => void handleUnload()}
-                        >
-                          {t('settings.localGguf.unload')}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        size='mini'
-                        type='primary'
-                        icon={<Play theme='outline' size='14' />}
-                        loading={isBusy}
-                        disabled={busyPath !== null && !isBusy}
-                        onClick={() => void handleLoad(model.path, model.name)}
-                      >
-                        {isBusy ? t('settings.localGguf.loadingState') : t('settings.localGguf.load')}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                {optionsExpanded ? renderAdvancedOptions(model.path) : null}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       ) : null}
       <HfModelHubModal
         visible={hfModalVisible}

@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { scanLocalModelDirectories } from '../../../packages/desktop/src/process/services/localModels/LocalModelDiscoveryService';
 import { expandHomeDirectory } from '../../../packages/desktop/src/process/services/localModels/defaultModelDirectories';
+import { buildMlxServerArgs } from '../../../packages/desktop/src/process/services/localModels/LocalModelRuntimeService';
 
 describe('LocalModelDiscoveryService', () => {
   it('discovers both GGUF files and Apple Silicon native MLX bundles', async () => {
@@ -106,5 +107,28 @@ describe('expandHomeDirectory', () => {
     expect(expandHomeDirectory('~/AI/models/')).toBe(path.join(home, 'AI', 'models'));
     expect(expandHomeDirectory('/Volumes/External/Models')).toBe('/Volumes/External/Models');
     expect(expandHomeDirectory('')).toBe('');
+  });
+});
+
+describe('buildMlxServerArgs', () => {
+  it('constructs correct CLI flags for mlx_lm.server', () => {
+    const args = buildMlxServerArgs({
+      modelPath: '/path/to/mlx-model',
+      port: 8080,
+      contextSize: 8192,
+      reasoning: 'off',
+    });
+
+    expect(args).toContain('--model');
+    expect(args).toContain('/path/to/mlx-model');
+    expect(args).toContain('--host');
+    expect(args).toContain('127.0.0.1');
+    expect(args).toContain('--port');
+    expect(args).toContain('8080');
+    expect(args).toContain('--trust-remote-code');
+    expect(args).toContain('--max-tokens');
+    expect(args).toContain('8192');
+    expect(args).toContain('--chat-template-args');
+    expect(args).toContain('{"enable_thinking":false}');
   });
 });

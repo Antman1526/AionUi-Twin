@@ -1431,7 +1431,7 @@
   "crossSessionMessageResume": "Увімкнути знову",
   "crossSessionMessageUpdateFailed": "Не вдалося оновити налаштування повідомлень між розмовами",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "Локальні моделі (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1469,6 +1469,13 @@
     "browseFolder": "Огляд…",
     "pathAlreadyAdded": "Папка вже є у списку",
     "pathAdded": "Папку успішно додано",
-    "invalidPath": "Будь ласка, введіть дійсний шлях до папки"
+    "invalidPath": "Будь ласка, введіть дійсний шлях до папки",
+    "filterAll": "Всі ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "Пошук моделей…",
+    "sortName": "Назва",
+    "sortSize": "Розмір",
+    "noMatch": "Моделей не знайдено"
   }
 }

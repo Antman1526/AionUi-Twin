@@ -1416,7 +1416,7 @@
   "crossSessionMessageResume": "روشن کردن دوباره",
   "crossSessionMessageUpdateFailed": "به‌روزرسانی تنظیم پیام‌های بین گفتگوها ناموفق بود",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "مدل‌های محلی (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1454,6 +1454,13 @@
     "browseFolder": "مرور…",
     "pathAlreadyAdded": "پوشه قبلاً در لیست موجود است",
     "pathAdded": "پوشه با موفقیت اضافه شد",
-    "invalidPath": "لطفاً یک مسیر پوشه معتبر وارد کنید"
+    "invalidPath": "لطفاً یک مسیر پوشه معتبر وارد کنید",
+    "filterAll": "همه ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "فیلتر کردن مدل‌ها…",
+    "sortName": "نام",
+    "sortSize": "اندازه",
+    "noMatch": "هیچ مدلی با معیارهای جستجو مطابقت ندارد"
   }
 }

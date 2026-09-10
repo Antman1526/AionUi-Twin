@@ -1416,7 +1416,7 @@
   "crossSessionMessageResume": "Turn back on",
   "crossSessionMessageUpdateFailed": "Failed to update the cross-conversation message setting",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "Local Models (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1454,6 +1454,13 @@
     "browseFolder": "Browse…",
     "pathAlreadyAdded": "Folder is already in the list",
     "pathAdded": "Folder added successfully",
-    "invalidPath": "Please enter a valid folder path"
+    "invalidPath": "Please enter a valid folder path",
+    "filterAll": "All ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "Filter models…",
+    "sortName": "Name",
+    "sortSize": "Size",
+    "noMatch": "No models match your search criteria"
   }
 }

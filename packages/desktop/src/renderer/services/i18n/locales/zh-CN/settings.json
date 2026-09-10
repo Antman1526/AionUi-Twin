@@ -1417,7 +1417,7 @@
   "crossSessionMessageResume": "重新开启",
   "crossSessionMessageUpdateFailed": "跨会话消息设置更新失败",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "本地模型 (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1455,6 +1455,13 @@
     "browseFolder": "浏览…",
     "pathAlreadyAdded": "文件夹已在列表中",
     "pathAdded": "文件夹添加成功",
-    "invalidPath": "请输入有效的文件夹路径"
+    "invalidPath": "请输入有效的文件夹路径",
+    "filterAll": "全部 ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "搜索模型…",
+    "sortName": "名称",
+    "sortSize": "大小",
+    "noMatch": "未找到匹配的模型"
   }
 }

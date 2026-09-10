@@ -1418,7 +1418,7 @@
   "crossSessionMessageResume": "다시 켜기",
   "crossSessionMessageUpdateFailed": "대화 간 메시지 설정 업데이트에 실패했습니다",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "로컬 모델 (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1456,6 +1456,13 @@
     "browseFolder": "찾아보기…",
     "pathAlreadyAdded": "폴더가 이미 목록에 있습니다",
     "pathAdded": "폴더가 성공적으로 추가되었습니다",
-    "invalidPath": "올바른 폴더 경로를 입력하세요"
+    "invalidPath": "올바른 폴더 경로를 입력하세요",
+    "filterAll": "전체 ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "모델 검색…",
+    "sortName": "이름",
+    "sortSize": "크기",
+    "noMatch": "일치하는 모델이 없습니다"
   }
 }

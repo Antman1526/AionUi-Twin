@@ -1418,7 +1418,7 @@
   "crossSessionMessageResume": "再度オンにする",
   "crossSessionMessageUpdateFailed": "会話間メッセージ設定の更新に失敗しました",
   "localGguf": {
-    "title": "Local GGUF Models",
+    "title": "ローカルモデル (GGUF & MLX)",
     "description": "Load .gguf models found in your local model folders. Loading one launches a local server and registers it as a model provider automatically.",
     "refresh": "Rescan",
     "load": "Load",
@@ -1456,6 +1456,13 @@
     "browseFolder": "参照…",
     "pathAlreadyAdded": "フォルダはすでに一覧に存在します",
     "pathAdded": "フォルダを追加しました",
-    "invalidPath": "有効なフォルダパスを入力してください"
+    "invalidPath": "有効なフォルダパスを入力してください",
+    "filterAll": "すべて ({{count}})",
+    "filterMlx": "MLX ({{count}})",
+    "filterGguf": "GGUF ({{count}})",
+    "searchPlaceholder": "モデルを検索…",
+    "sortName": "名前",
+    "sortSize": "サイズ",
+    "noMatch": "一致するモデルが見つかりません"
   }
 }
