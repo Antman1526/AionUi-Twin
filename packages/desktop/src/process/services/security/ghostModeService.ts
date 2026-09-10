@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { session } from 'electron';
 import { ipcBridge } from '@/common';
 import type { GhostModeStatus } from '@/common/adapter/ipcBridge';
 
@@ -12,7 +11,7 @@ let isGhostModeEnabled = false;
 let blockedRequestsCount = 0;
 let isFilterInstalled = false;
 
-function isAllowedLocalUrl(urlString: string): boolean {
+export function isAllowedLocalUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
     const hostname = url.hostname.toLowerCase();
@@ -24,7 +23,13 @@ function isAllowedLocalUrl(urlString: string): boolean {
     }
 
     // Allow localhost / 127.0.0.1 loopback
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname === '::1' ||
+      hostname === '0.0.0.0'
+    ) {
       return true;
     }
 
@@ -35,32 +40,49 @@ function isAllowedLocalUrl(urlString: string): boolean {
   }
 }
 
+export function resetGhostModeState(): void {
+  isGhostModeEnabled = false;
+  blockedRequestsCount = 0;
+}
+
 function ensureNetworkInterceptor(): void {
   if (isFilterInstalled) return;
   isFilterInstalled = true;
 
+  if (!process.versions.electron) {
+    return;
+  }
+
   try {
-    session.defaultSession.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
-      if (!isGhostModeEnabled) {
-        callback({ cancel: false });
-        return;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const electron = require('electron');
+    const defaultSession = electron?.session?.defaultSession;
+    if (!defaultSession?.webRequest) return;
+
+    defaultSession.webRequest.onBeforeRequest(
+      { urls: ['*://*/*'] },
+      (details: { url: string }, callback: (res: { cancel: boolean }) => void) => {
+        if (!isGhostModeEnabled) {
+          callback({ cancel: false });
+          return;
+        }
+
+        if (isAllowedLocalUrl(details.url)) {
+          callback({ cancel: false });
+          return;
+        }
+
+        // Blocked external request
+        blockedRequestsCount++;
+        console.warn(`[GhostMode] Blocked external request to: ${details.url}`);
+        ipcBridge.ghostMode.statusChanged.emit({
+          enabled: isGhostModeEnabled,
+          blockedRequestsCount,
+        });
+
+        callback({ cancel: true });
       }
-
-      if (isAllowedLocalUrl(details.url)) {
-        callback({ cancel: false });
-        return;
-      }
-
-      // Blocked external request
-      blockedRequestsCount++;
-      console.warn(`[GhostMode] Blocked external request to: ${details.url}`);
-      ipcBridge.ghostMode.statusChanged.emit({
-        enabled: isGhostModeEnabled,
-        blockedRequestsCount,
-      });
-
-      callback({ cancel: true });
-    });
+    );
   } catch (error) {
     console.warn('[GhostMode] Failed to attach webRequest listener:', error);
   }

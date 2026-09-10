@@ -108,36 +108,64 @@ export async function searchHfModels({
  * Fetch detailed files list for a Hugging Face model repository.
  */
 export async function getHfModelDetails(modelId: string): Promise<HfModelDetail> {
-  const url = `${HF_BASE_URL}/api/models/${encodeURIComponent(modelId)}`;
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'WE-App/2.2.2' },
-    signal: AbortSignal.timeout(15_000),
-  });
+  const cleanModelId = modelId.split('/').map(encodeURIComponent).join('/');
+  const modelUrl = `${HF_BASE_URL}/api/models/${cleanModelId}`;
+  const treeUrl = `${HF_BASE_URL}/api/models/${cleanModelId}/tree/main`;
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch Hugging Face model details (${response.status} ${response.statusText})`);
+  const [modelResponse, treeResponse] = await Promise.all([
+    fetch(modelUrl, {
+      headers: { 'User-Agent': 'WE-App/2.2.2' },
+      signal: AbortSignal.timeout(15_000),
+    }),
+    fetch(treeUrl, {
+      headers: { 'User-Agent': 'WE-App/2.2.2' },
+      signal: AbortSignal.timeout(15_000),
+    }).catch((): Response | null => null),
+  ]);
+
+  if (!modelResponse.ok) {
+    throw new Error(`Failed to fetch Hugging Face model details (${modelResponse.status} ${modelResponse.statusText})`);
   }
 
-  const raw = (await response.json()) as HfRawModelItem;
+  const raw = (await modelResponse.json()) as HfRawModelItem;
   const isMlx = raw.tags?.includes('mlx') || raw.id.startsWith('mlx-community/');
   const isGguf = raw.tags?.includes('gguf') || raw.id.toLowerCase().includes('gguf');
   const modelType: HfModelKind = isMlx ? 'mlx' : isGguf ? 'gguf' : 'other';
+
+  // Build a lookup map of file sizes from repository tree
+  const sizeMap = new Map<string, number>();
+  if (treeResponse && treeResponse.ok) {
+    try {
+      const treeData = (await treeResponse.json()) as Array<{ path?: string; size?: number }>;
+      if (Array.isArray(treeData)) {
+        for (const item of treeData) {
+          if (item.path && typeof item.size === 'number') {
+            sizeMap.set(item.path, item.size);
+          }
+        }
+      }
+    } catch {
+      /* ignore tree parse error */
+    }
+  }
 
   const files: HfModelFile[] = [];
 
   if (raw.siblings && Array.isArray(raw.siblings)) {
     for (const sib of raw.siblings) {
       const fileName = sib.rfilename;
+      const sizeBytes = sizeMap.get(fileName) ?? 0;
+
       // For GGUF, we look for .gguf files
       if (modelType === 'gguf' && fileName.toLowerCase().endsWith('.gguf')) {
         files.push({
           name: fileName,
           path: fileName,
-          sizeBytes: 0, // Will be fetched via HEAD when user selects
+          sizeBytes,
           quantization: extractQuantization(fileName),
         });
       } else if (modelType === 'mlx') {
-        // For MLX, we include all relevant model artifacts
+        // For MLX, include weights, configs, and tokenizers
         if (
           fileName.endsWith('.safetensors') ||
           fileName.endsWith('.json') ||
@@ -148,7 +176,7 @@ export async function getHfModelDetails(modelId: string): Promise<HfModelDetail>
           files.push({
             name: fileName,
             path: fileName,
-            sizeBytes: 0,
+            sizeBytes,
           });
         }
       }

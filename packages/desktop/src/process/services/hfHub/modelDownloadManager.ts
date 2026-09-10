@@ -10,7 +10,7 @@ import { ipcBridge } from '@/common';
 import type { HfDownloadProgress } from '@/common/adapter/ipcBridge';
 import { uuid } from '@/common/utils';
 import { getDefaultLocalModelDirectories } from '@process/services/localModels/defaultModelDirectories';
-import { ProcessConfig } from '@process/utils/initStorage';
+import { getHfModelDetails } from './hfModelHubService';
 
 const HF_RESOLVE_URL = 'https://huggingface.co';
 
@@ -24,10 +24,16 @@ type ActiveDownload = {
 const activeDownloads = new Map<string, ActiveDownload>();
 
 async function getTargetModelDirectory(): Promise<string> {
-  const dirs = (await ProcessConfig.get('localModel.directories')) as string[] | undefined;
-  if (Array.isArray(dirs) && dirs.length > 0 && dirs[0]) {
-    return dirs[0];
+  try {
+    const { ProcessConfig } = await import('@process/utils/initStorage');
+    const dirs = (await ProcessConfig.get('localModel.directories')) as string[] | undefined;
+    if (Array.isArray(dirs) && dirs.length > 0 && dirs[0]) {
+      return dirs[0];
+    }
+  } catch {
+    /* Fallback if ProcessConfig is not initialized */
   }
+
   const defaults = getDefaultLocalModelDirectories();
   const target = defaults[0] || path.join(process.env.HOME || '.', '.cache', 'we', 'models');
   if (!fs.existsSync(target)) {
@@ -51,6 +57,67 @@ export function cancelModelDownload(downloadId: string): boolean {
   return true;
 }
 
+/** Helper to stream a single file from Hugging Face with progress callbacks */
+async function streamFileFromHf({
+  modelId,
+  fileName,
+  destinationPath,
+  signal,
+  onChunk,
+}: {
+  modelId: string;
+  fileName: string;
+  destinationPath: string;
+  signal: AbortSignal;
+  onChunk: (bytesRead: number, totalExpectedBytes?: number) => void;
+}): Promise<void> {
+  const fileUrl = `${HF_RESOLVE_URL}/${modelId}/resolve/main/${encodeURIComponent(fileName)}?download=true`;
+  const response = await fetch(fileUrl, {
+    headers: { 'User-Agent': 'WE-App/2.2.2' },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Download request failed for ${fileName} (${response.status} ${response.statusText})`);
+  }
+
+  const contentLength = response.headers.get('content-length');
+  const expectedBytes = contentLength ? parseInt(contentLength, 10) : undefined;
+
+  if (!response.body) {
+    throw new Error('Response body is null');
+  }
+
+  const fileStream = fs.createWriteStream(destinationPath);
+  const reader = response.body.getReader();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        fileStream.write(Buffer.from(value));
+        onChunk(value.byteLength, expectedBytes);
+      }
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      fileStream.end(() => resolve());
+      fileStream.on('error', reject);
+    });
+  } catch (err) {
+    fileStream.destroy();
+    if (fs.existsSync(destinationPath)) {
+      try {
+        fs.unlinkSync(destinationPath);
+      } catch {
+        /* ignore */
+      }
+    }
+    throw err;
+  }
+}
+
 export async function startModelDownload({
   modelId,
   fileName,
@@ -64,15 +131,15 @@ export async function startModelDownload({
   const abortController = new AbortController();
   const rootDir = await getTargetModelDirectory();
 
-  // If GGUF and no fileName provided, we resolve the first .gguf in repo
-  const resolvedFileName = fileName || (isMlx ? 'model' : `${modelId.split('/').pop()}.gguf`);
+  const isBundle = isMlx && !fileName;
+  const resolvedFileName = fileName || (isMlx ? `${modelId.split('/').pop()}-mlx` : `${modelId.split('/').pop()}.gguf`);
   const targetDir = isMlx ? path.join(rootDir, 'mlx', modelId.replace('/', '--')) : rootDir;
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
-  const targetPath = isMlx ? path.join(targetDir, resolvedFileName) : path.join(targetDir, resolvedFileName);
+  const targetPath = isBundle ? targetDir : path.join(targetDir, resolvedFileName);
 
   const progress: HfDownloadProgress = {
     downloadId,
@@ -97,72 +164,78 @@ export async function startModelDownload({
   activeDownloads.set(downloadId, active);
   ipcBridge.hfHub.downloadProgress.emit({ ...progress });
 
-  // Start asynchronous download loop
+  // Start background download routine
   void (async () => {
     try {
-      const fileUrl = `${HF_RESOLVE_URL}/${modelId}/resolve/main/${encodeURIComponent(resolvedFileName)}?download=true`;
-      const response = await fetch(fileUrl, {
-        headers: { 'User-Agent': 'WE-App/2.2.2' },
-        signal: abortController.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Download request failed with status ${response.status}: ${response.statusText}`);
-      }
-
-      const contentLength = response.headers.get('content-length');
-      if (contentLength) {
-        progress.totalBytes = parseInt(contentLength, 10);
-      }
-
       progress.status = 'downloading';
       ipcBridge.hfHub.downloadProgress.emit({ ...progress });
 
-      if (!response.body) {
-        throw new Error('Response body is null');
-      }
-
-      const fileStream = fs.createWriteStream(targetPath);
-      const reader = response.body.getReader();
-      let downloaded = 0;
       let lastEmit = Date.now();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        if (value) {
-          fileStream.write(Buffer.from(value));
-          downloaded += value.byteLength;
-          progress.downloadedBytes = downloaded;
-
-          if (progress.totalBytes > 0) {
-            progress.percent = Math.min(100, Math.round((downloaded / progress.totalBytes) * 100));
+      const updateSpeed = () => {
+        const now = Date.now();
+        if (now - lastEmit >= 600) {
+          const timeDiffSec = (now - active.lastTime) / 1000;
+          if (timeDiffSec > 0) {
+            progress.speedBytesPerSec = Math.round((progress.downloadedBytes - active.lastBytes) / timeDiffSec);
           }
-
-          const now = Date.now();
-          if (now - lastEmit >= 600) {
-            const timeDiffSec = (now - active.lastTime) / 1000;
-            if (timeDiffSec > 0) {
-              progress.speedBytesPerSec = Math.round((downloaded - active.lastBytes) / timeDiffSec);
-            }
-            active.lastBytes = downloaded;
-            active.lastTime = now;
-            lastEmit = now;
-            ipcBridge.hfHub.downloadProgress.emit({ ...progress });
-          }
+          active.lastBytes = progress.downloadedBytes;
+          active.lastTime = now;
+          lastEmit = now;
+          ipcBridge.hfHub.downloadProgress.emit({ ...progress });
         }
+      };
+
+      if (isBundle) {
+        // Download all files in MLX repository
+        const details = await getHfModelDetails(modelId);
+        const filesToDownload =
+          details.files.length > 0 ? details.files : [{ name: 'config.json', path: 'config.json', sizeBytes: 0 }];
+        progress.totalBytes = filesToDownload.reduce((sum, f) => sum + (f.sizeBytes || 0), 0);
+
+        for (const file of filesToDownload) {
+          if (abortController.signal.aborted) break;
+          const filePath = path.join(targetDir, file.name);
+
+          await streamFileFromHf({
+            modelId,
+            fileName: file.name,
+            destinationPath: filePath,
+            signal: abortController.signal,
+            onChunk: (bytesRead) => {
+              progress.downloadedBytes += bytesRead;
+              if (progress.totalBytes > 0) {
+                progress.percent = Math.min(100, Math.round((progress.downloadedBytes / progress.totalBytes) * 100));
+              }
+              updateSpeed();
+            },
+          });
+        }
+      } else {
+        // Single file download (e.g. GGUF or specific file)
+        await streamFileFromHf({
+          modelId,
+          fileName: resolvedFileName,
+          destinationPath: targetPath,
+          signal: abortController.signal,
+          onChunk: (bytesRead, expectedBytes) => {
+            if (expectedBytes && progress.totalBytes === 0) {
+              progress.totalBytes = expectedBytes;
+            }
+            progress.downloadedBytes += bytesRead;
+            if (progress.totalBytes > 0) {
+              progress.percent = Math.min(100, Math.round((progress.downloadedBytes / progress.totalBytes) * 100));
+            }
+            updateSpeed();
+          },
+        });
       }
 
-      await new Promise<void>((resolve, reject) => {
-        fileStream.end(() => resolve());
-        fileStream.on('error', reject);
-      });
-
-      progress.status = 'completed';
-      progress.percent = 100;
-      progress.speedBytesPerSec = 0;
-      ipcBridge.hfHub.downloadProgress.emit({ ...progress });
+      if (!abortController.signal.aborted) {
+        progress.status = 'completed';
+        progress.percent = 100;
+        progress.speedBytesPerSec = 0;
+        ipcBridge.hfHub.downloadProgress.emit({ ...progress });
+      }
     } catch (err: unknown) {
       if (abortController.signal.aborted) {
         progress.status = 'cancelled';
@@ -171,15 +244,6 @@ export async function startModelDownload({
         progress.error = err instanceof Error ? err.message : String(err);
       }
       ipcBridge.hfHub.downloadProgress.emit({ ...progress });
-
-      // Clean up partial file on failure or cancel
-      if (fs.existsSync(targetPath)) {
-        try {
-          fs.unlinkSync(targetPath);
-        } catch {
-          /* swallow */
-        }
-      }
     } finally {
       setTimeout(() => {
         activeDownloads.delete(downloadId);
