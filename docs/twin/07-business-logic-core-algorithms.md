@@ -44,7 +44,20 @@ Extension routing, upload workspace validation, and channel plugin initializatio
 The spawned arguments are deterministic:
 
 ```ts
-const args = ['-m', modelPath, '--host', '127.0.0.1', '--port', String(port), '--alias', alias, '-ngl', String(gpuLayers), '-c', String(contextSize)];
+const args = [
+  '-m',
+  modelPath,
+  '--host',
+  '127.0.0.1',
+  '--port',
+  String(port),
+  '--alias',
+  alias,
+  '-ngl',
+  String(gpuLayers),
+  '-c',
+  String(contextSize),
+];
 if (reasoning) args.push('--reasoning', reasoning);
 ```
 

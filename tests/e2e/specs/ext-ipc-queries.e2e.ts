@@ -45,7 +45,7 @@ test.describe('Extension IPC: ACP Adapters', () => {
 test.describe('Extension IPC: MCP Servers', () => {
   test('returns servers from multiple extensions', async ({ page }) => {
     const snapshot = await getExtensionSnapshot(page);
-    const names = snapshot.mcpServers.map((s) => s.name);
+    const names = snapshot.mcp_servers.map((s) => s.name);
 
     expect(names).toContain('e2e-echo-server');
     expect(names).toContain('hello-echo-mcp');
@@ -53,7 +53,7 @@ test.describe('Extension IPC: MCP Servers', () => {
 
   test('each server has a name', async ({ page }) => {
     const snapshot = await getExtensionSnapshot(page);
-    for (const server of snapshot.mcpServers) {
+    for (const server of snapshot.mcp_servers) {
       expect(server.name).toBeTruthy();
     }
   });
@@ -155,16 +155,13 @@ test.describe('Extension IPC: Settings Tabs', () => {
     expect(ids).toContain('ext-hello-world-hello-settings');
   });
 
-  test('each settings tab has valid entryUrl', async ({ page }) => {
+  test('each settings tab has valid backend URL', async ({ page }) => {
     const snapshot = await getExtensionSnapshot(page);
     for (const tab of snapshot.settingsTabs) {
       expect(tab.id).toBeTruthy();
-      expect(tab.name).toBeTruthy();
-      // entryUrl must be aion-asset:// (local) or http(s):// (external)
+      expect(tab.label).toBeTruthy();
       expect(
-        tab.entryUrl.startsWith('aion-asset://') ||
-          tab.entryUrl.startsWith('http://') ||
-          tab.entryUrl.startsWith('https://')
+        tab.url.startsWith('/api/extensions/') || tab.url.startsWith('http://') || tab.url.startsWith('https://')
       ).toBeTruthy();
     }
   });
@@ -172,7 +169,7 @@ test.describe('Extension IPC: Settings Tabs', () => {
   test('settings tabs carry extension name metadata', async ({ page }) => {
     const snapshot = await getExtensionSnapshot(page);
     for (const tab of snapshot.settingsTabs) {
-      expect(tab._extensionName).toBeTruthy();
+      expect(tab.extensionName).toBeTruthy();
     }
   });
 });

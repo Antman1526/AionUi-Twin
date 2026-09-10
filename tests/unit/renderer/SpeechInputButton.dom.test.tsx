@@ -1,260 +1,121 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+/**
+ * @license
+ * Copyright 2025 AionUi (aionui.com)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-let speechToTextEnabled = false;
-let speechInputAvailability: 'record' | 'file' | 'unsupported' = 'record';
-let speechInputStatus: 'idle' | 'recording' | 'transcribing' | 'error' = 'idle';
-let speechInputRecordingDurationMs = 0;
-let speechInputRecordingLevels = [0.12, 0.18, 0.24, 0.16];
+const mocks = vi.hoisted(() => ({
+  startRecording: vi.fn(() => Promise.resolve()),
+  stopRecording: vi.fn(),
+  status: 'idle' as 'idle' | 'recording' | 'transcribing',
+}));
 
-const mockClearError = vi.fn();
-const mockStartRecording = vi.fn();
-const mockStopRecording = vi.fn();
-const mockTranscribeFile = vi.fn();
-const mockMessageError = vi.fn();
-const mockMessageWarning = vi.fn();
-let speechInputErrorCode: string | null = null;
-let speechInputErrorMessage: string | null = null;
+vi.mock('@/renderer/services/clientBusinessSettings', () => ({
+  getClientBusinessSetting: vi.fn(() => Promise.resolve({ enabled: true })),
+}));
 
-vi.mock('@/common/config/storage', () => ({
-  ConfigStorage: {
-    get: vi.fn(async (key: string) => {
-      if (key === 'tools.speechToText') {
-        return {
-          enabled: speechToTextEnabled,
-        };
-      }
-      return undefined;
-    }),
-  },
+vi.mock('@/renderer/services/SpeechToTextService', () => ({
+  SPEECH_TO_TEXT_CONFIG_CHANGED_EVENT: 'speech-to-text-config-changed',
 }));
 
 vi.mock('@/renderer/hooks/system/useSpeechInput', () => ({
+  getSpeechInputErrorMessageKey: vi.fn(),
   useSpeechInput: () => ({
-    availability: speechInputAvailability,
-    clearError: mockClearError,
-    errorCode: speechInputErrorCode,
-    errorMessage: speechInputErrorMessage,
-    recordingDurationMs: speechInputRecordingDurationMs,
-    recordingLevels: speechInputRecordingLevels,
-    startRecording: mockStartRecording,
-    status: speechInputStatus,
-    stopRecording: mockStopRecording,
-    transcribeFile: mockTranscribeFile,
+    availability: 'record',
+    clearError: vi.fn(),
+    errorCode: null,
+    errorMessage: null,
+    recordingDurationMs: 0,
+    recordingLevels: [],
+    startRecording: mocks.startRecording,
+    status: mocks.status,
+    stopRecording: mocks.stopRecording,
+    transcribeFile: vi.fn(),
   }),
 }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, options?: { shortcut?: string }) =>
+      key === 'conversation.chat.speech.recordTooltipWithShortcut'
+        ? '语音输入 cmd+M'
+        : options?.shortcut
+          ? `${key}:${options.shortcut}`
+          : key,
   }),
 }));
 
 vi.mock('@arco-design/web-react', () => ({
-  Button: ({ icon, children, ...props }: React.ComponentProps<'button'> & { icon?: React.ReactNode }) =>
-    React.createElement('button', props, icon ?? children),
-  Message: {
-    error: (...args: unknown[]) => mockMessageError(...args),
-    warning: (...args: unknown[]) => mockMessageWarning(...args),
-  },
-  Tooltip: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, {}, children),
+  Button: ({ icon, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon?: React.ReactNode }) => (
+    <button {...props}>{icon}</button>
+  ),
+  Tooltip: ({ children }: { children: React.ReactNode }) => <span data-testid='speech-tooltip'>{children}</span>,
+  Message: { warning: vi.fn(), error: vi.fn() },
 }));
 
 import SpeechInputButton from '@/renderer/components/chat/SpeechInputButton';
 
 describe('SpeechInputButton', () => {
   beforeEach(() => {
-    speechToTextEnabled = false;
-    speechInputAvailability = 'record';
-    speechInputStatus = 'idle';
-    speechInputRecordingDurationMs = 0;
-    speechInputRecordingLevels = [0.12, 0.18, 0.24, 0.16];
-    speechInputErrorCode = null;
-    speechInputErrorMessage = null;
     vi.clearAllMocks();
+    mocks.status = 'idle';
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
+  it('shows the shortcut and toggles recording on consecutive presses', async () => {
+    const view = render(<SpeechInputButton onTranscript={vi.fn()} />);
 
-  it('stays hidden when speech-to-text is disabled', async () => {
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
+    const button = await screen.findByRole('button');
+    expect(button.getAttribute('aria-label')).toContain('M');
+    fireEvent.mouseEnter(view.container.querySelector('.speech-input-control') as Element);
 
+    // The window keydown listener is attached in an effect gated on async
+    // config loading, so a single fire can race the attachment on slow CI
+    // runners. Retry the press until it is observed; presses before the
+    // listener exists contribute zero calls, so the final count stays exact.
     await waitFor(() => {
-      expect(screen.queryByRole('button')).toBeNull();
+      fireEvent.keyDown(window, { code: 'KeyM', metaKey: true });
+      expect(mocks.startRecording).toHaveBeenCalled();
     });
+    expect(mocks.startRecording).toHaveBeenCalledTimes(1);
+
+    mocks.status = 'recording';
+    view.rerender(<SpeechInputButton onTranscript={vi.fn()} />);
+    fireEvent.keyDown(window, { code: 'KeyM', metaKey: true });
+    await waitFor(() => expect(mocks.stopRecording).toHaveBeenCalledTimes(1));
   });
 
-  it('renders a microphone button when speech-to-text is enabled', async () => {
-    speechToTextEnabled = true;
+  it('only triggers the active voice input when several send boxes are mounted', async () => {
+    const view = render(
+      <>
+        <SpeechInputButton onTranscript={vi.fn()} />
+        <SpeechInputButton onTranscript={vi.fn()} />
+      </>
+    );
+    await screen.findAllByRole('button');
+    const controls = view.container.querySelectorAll('.speech-input-control');
+    fireEvent.mouseEnter(controls[1]);
 
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    const button = await screen.findByRole('button', {
-      name: 'conversation.chat.speech.recordTooltip',
-    });
-    expect(button).toBeInTheDocument();
-    expect(button.querySelector('svg')).not.toBeNull();
-  });
-
-  it('refreshes visibility when the speech-to-text config changes', async () => {
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
+    // Same listener-attachment race as above: retry the press until observed.
+    // Only the hovered instance passes the ownership check, so the final
+    // count still proves exactly one recording started.
     await waitFor(() => {
-      expect(screen.queryByRole('button')).toBeNull();
+      fireEvent.keyDown(window, { code: 'KeyM', metaKey: true });
+      expect(mocks.startRecording).toHaveBeenCalled();
     });
-
-    speechToTextEnabled = true;
-
-    await act(async () => {
-      window.dispatchEvent(new CustomEvent('aionui:speech-to-text-config-changed'));
-    });
-
-    expect(
-      await screen.findByRole('button', {
-        name: 'conversation.chat.speech.recordTooltip',
-      })
-    ).toBeInTheDocument();
+    expect(mocks.startRecording).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the transcription detail when speech-to-text returns a concrete error', async () => {
-    speechToTextEnabled = true;
-    speechInputErrorCode = 'transcription-failed';
-    speechInputErrorMessage = 'model overloaded';
+  it('shows only the spinner button while transcribing', async () => {
+    mocks.status = 'transcribing';
+    const { container } = render(<SpeechInputButton onTranscript={vi.fn()} />);
+    const button = await screen.findByRole('button');
 
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    await waitFor(() => {
-      expect(mockMessageError).toHaveBeenCalledWith('conversation.chat.speech.transcriptionFailed: model overloaded');
-    });
-    expect(mockClearError).toHaveBeenCalled();
-  });
-
-  it('shows the translated error without details when the provider does not return one', async () => {
-    speechToTextEnabled = true;
-    speechInputErrorCode = 'network';
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    await waitFor(() => {
-      expect(mockMessageError).toHaveBeenCalledWith('conversation.chat.speech.networkError');
-    });
-    expect(mockClearError).toHaveBeenCalled();
-  });
-
-  it('shows a warning when recording ends without a detectable transcript', async () => {
-    speechToTextEnabled = true;
-    speechInputErrorCode = 'empty-transcript';
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    await waitFor(() => {
-      expect(mockMessageWarning).toHaveBeenCalledWith('conversation.chat.speech.emptyTranscript');
-    });
-    expect(mockClearError).toHaveBeenCalled();
-  });
-
-  it('starts recording when the speech input button is clicked in record mode', async () => {
-    speechToTextEnabled = true;
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    const button = await screen.findByRole('button', {
-      name: 'conversation.chat.speech.recordTooltip',
-    });
-    button.click();
-
-    expect(mockStartRecording).toHaveBeenCalledTimes(1);
-    expect(mockStopRecording).not.toHaveBeenCalled();
-  });
-
-  it('stops recording when clicked while a recording is in progress', async () => {
-    speechToTextEnabled = true;
-    speechInputStatus = 'recording';
-    speechInputRecordingDurationMs = 42_000;
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    const button = await screen.findByRole('button', {
-      name: 'conversation.chat.speech.stopTooltip',
-    });
-    button.click();
-
-    expect(mockStopRecording).toHaveBeenCalledTimes(1);
-    expect(mockStartRecording).not.toHaveBeenCalled();
-    expect(screen.getByText('0:42')).toBeInTheDocument();
-  });
-
-  it('shows a processing label and disables the button while transcribing', async () => {
-    speechToTextEnabled = true;
-    speechInputStatus = 'transcribing';
-    speechInputRecordingLevels = [0.2, 0.28, 0.12, 0.18];
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    const button = await screen.findByRole('button', {
-      name: 'conversation.chat.speech.processing',
-    });
     expect(button).toBeDisabled();
-    expect(screen.getByText('conversation.chat.speech.transcribingShort')).toBeInTheDocument();
-  });
-
-  it('opens the file picker when only file upload is available', async () => {
-    speechToTextEnabled = true;
-    speechInputAvailability = 'file';
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    const button = await screen.findByRole('button', {
-      name: 'conversation.chat.speech.pickFileTooltip',
-    });
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const clickSpy = vi.spyOn(fileInput, 'click');
-
-    await act(async () => {
-      fireEvent.click(button);
-    });
-
-    expect(clickSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('forwards a chosen audio file to the transcription hook', async () => {
-    speechToTextEnabled = true;
-    speechInputAvailability = 'file';
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    await screen.findByRole('button', {
-      name: 'conversation.chat.speech.pickFileTooltip',
-    });
-    const file = new File(['audio'], 'sample.webm', { type: 'audio/webm' });
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-
-    await act(async () => {
-      Object.defineProperty(fileInput, 'files', {
-        configurable: true,
-        value: [file],
-      });
-      fireEvent.change(fileInput);
-    });
-
-    expect(mockTranscribeFile).toHaveBeenCalledWith(file);
-  });
-
-  it('shows an unsupported warning instead of starting recording when capture is unavailable', async () => {
-    speechToTextEnabled = true;
-    speechInputAvailability = 'unsupported';
-
-    render(<SpeechInputButton onTranscript={vi.fn()} />);
-
-    const button = await screen.findByRole('button', {
-      name: 'conversation.chat.speech.unsupported',
-    });
-    button.click();
-
-    expect(mockMessageWarning).toHaveBeenCalledWith('conversation.chat.speech.unsupported');
-    expect(mockStartRecording).not.toHaveBeenCalled();
+    expect(container.querySelector('.speech-input-feedback')).toBeNull();
+    expect(screen.queryByTestId('speech-tooltip')).toBeNull();
   });
 });

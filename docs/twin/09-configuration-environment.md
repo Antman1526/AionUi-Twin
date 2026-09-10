@@ -21,13 +21,13 @@ type LocalModelRuntimeOptions = {
 
 Important keys:
 
-| Config key | Shape | Purpose |
-| ---------- | ----- | ------- |
-| `localModel.directories` | `string[]` | User-approved scan/load roots. |
-| `localModel.runtimeOptions` | `Record<string, LocalModelRuntimeOptions>` | Per-GGUF runtime options keyed by absolute model path. |
-| `model.config` | `IProvider[]` | Includes the single managed local provider while a model is loaded. |
-| `aionrs.defaultModel` | `{ id, useModel }` | Selected model for AionRS-style chats. |
-| `gemini.defaultModel` | `{ id, useModel }` | Selected model for Gemini-style chats. |
+| Config key                  | Shape                                      | Purpose                                                             |
+| --------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| `localModel.directories`    | `string[]`                                 | User-approved scan/load roots.                                      |
+| `localModel.runtimeOptions` | `Record<string, LocalModelRuntimeOptions>` | Per-GGUF runtime options keyed by absolute model path.              |
+| `model.config`              | `IProvider[]`                              | Includes the single managed local provider while a model is loaded. |
+| `aionrs.defaultModel`       | `{ id, useModel }`                         | Selected model for AionRS-style chats.                              |
+| `gemini.defaultModel`       | `{ id, useModel }`                         | Selected model for Gemini-style chats.                              |
 
 The runtime also honors `AIONUI_MODEL_DIRS` as a path-delimited set of extra
 local model roots for users who want startup discovery without opening Settings.

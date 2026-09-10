@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./resources/aionui-banner-1.png" alt="AionUi - Cowork with AI Agents" width="100%">
+  <img src="../../resources/aionui-banner-1.png" alt="AionUi - Cowork with AI Agents" width="100%">
 </p>
 
 <p align="center">
@@ -19,8 +19,8 @@
 ---
 
 <p align="center">
-  <strong>Бесплатное приложение с открытым исходным кодом для совместной работы с ИИ-агентами</strong><br>
-  <em>Встроенный агент | Без настройки | Любой API-ключ | Мультиагентность | Удалённый доступ | Кроссплатформенность | Автоматизация 24/7</em>
+  <strong>Бесплатное Cowork-приложение с открытым исходным кодом для работы с ИИ-агентами</strong><br>
+  <em>Встроенный агент | Без настройки | Любой API-ключ | Multi-Agent Mode | Удалённый доступ | Кроссплатформенность | Автоматизация 24/7</em>
 </p>
 
 <p align="center">
@@ -30,11 +30,31 @@
 </p>
 
 <p align="center">
-  <a href="./readme.md">English</a> | <a href="./docs/readme/readme_ch.md">简体中文</a> | <a href="./docs/readme/readme_tw.md">繁體中文</a> | <a href="./docs/readme/readme_jp.md">日本語</a> | <a href="./docs/readme/readme_ko.md">한국어</a> | <a href="./docs/readme/readme_es.md">Español</a> | <a href="./docs/readme/readme_pt.md">Português</a> | <a href="./docs/readme/readme_tr.md">Türkçe</a> | <strong>Русский</strong> | <a href="./docs/readme/readme_uk.md">Українська</a> | <a href="https://www.aionui.com" target="_blank">Официальный сайт</a>
+  <a href="../../readme.md">English</a> | <a href="./readme_ch.md">简体中文</a> | <a href="./readme_tw.md">繁體中文</a> | <a href="./readme_jp.md">日本語</a> | <a href="./readme_ko.md">한국어</a> | <a href="./readme_es.md">Español</a> | <a href="./readme_pt.md">Português</a> | <a href="./readme_tr.md">Türkçe</a> | <strong>Русский</strong> | <a href="./readme_uk.md">Українська</a> | <a href="https://www.aionui.com" target="_blank">Официальный сайт</a>
 </p>
 
 <p align="center">
-  <strong>💬 Сообщество:</strong> <a href="https://discord.gg/2QAwJn7Egx" target="_blank">Discord (English)</a> | <a href="./resources/wx-6.png" target="_blank">微信 (中文群)</a> | <a href="https://twitter.com/AionUI" target="_blank">Twitter</a>
+  <strong>💬 Сообщество:</strong> <a href="https://discord.gg/2QAwJn7Egx" target="_blank">Discord (English)</a> | <a href="../../resources/wx-23.png" target="_blank">微信 (中文群)</a> | <a href="https://twitter.com/AionUI" target="_blank">Twitter</a>
+</p>
+
+---
+
+<p align="center">
+  <a href="https://x.com/AionUi/status/2079493379914961069">
+    <img src="../../resources/kimi/contributor-bonus-black-blue.jpg" alt="AionUi × Kimi Бонус для контрибьюторов" width="600">
+  </a>
+</p>
+
+<p align="center">
+  🎁 <strong>Партнёрство AionUi × Kimi</strong>: бесплатные премиум-планы <strong>Kimi «Allegretto» (стоимостью $39/мес · ¥199/мес)</strong> для наших контрибьюторов!
+</p>
+
+<h3 align="center">
+  <a href="https://x.com/AionUi/status/2079493379914961069">Условия акции и как получить →</a>
+</h3>
+
+<p align="center">
+  <sub><strong>Kimi K3</strong> уже здесь и работает в AionUi из коробки — <a href="https://www.kimi.com/code?aff=aionui" target="_blank">оформите план Kimi For Coding</a> или получите API-ключ (<a href="https://platform.kimi.ai?track_id=track-32e04532b08d460fac729191744fa75c&aff=aionui" target="_blank">Global</a> / <a href="https://platform.kimi.com?track_id=track-98f92981df1c4c61b2c68930ba3ab658&aff=aionui" target="_blank">Китай</a>)</sub>
 </p>
 
 ---
@@ -56,51 +76,51 @@
 
 **AionUi — это больше, чем просто клиент для чата.** Это платформа Cowork, где ИИ-агенты работают вместе с вами на вашем компьютере — читают файлы, пишут код, просматривают веб-страницы и автоматизируют задачи. Вы видите всё, что делает агент, и всегда остаётесь в управлении.
 
-|                                        | Традиционные ИИ-чаты | **AionUi (Cowork)**                                                                                                            |
-| :------------------------------------- | :------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
-| ИИ может работать с вашими файлами     | Ограниченно или нет  | **Да — встроенный агент с полным доступом к файлам**                                                                           |
-| ИИ может выполнять многошаговые задачи | Ограниченно          | **Да — автономно с вашего одобрения**                                                                                          |
-| Удалённый доступ с телефона            | Редко                | **WebUI + Telegram / Lark / DingTalk / WeChat / WeCom**                                                                        |
-| Запланированная автоматизация          | Нет                  | **Cron — 24/7 без присмотра**                                                                                                  |
-| Несколько ИИ-агентов одновременно      | Нет                  | **Claude Code, Codex, Qwen Code, Kiro, Hermes Agent, Snow CLI, Cursor Agent и 16+ других — автоопределение, единый интерфейс** |
-| Цена                                   | Бесплатно / Платно   | **Бесплатно и с открытым исходным кодом**                                                                                      |
+|                                        | Традиционные ИИ-чаты | **AionUi (Cowork)**                                                                                                  |
+| :------------------------------------- | :------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| ИИ может работать с вашими файлами     | Ограниченно или нет  | **Да — встроенный агент с полным доступом к файлам**                                                                 |
+| ИИ может выполнять многошаговые задачи | Ограниченно          | **Да — автономно с вашего одобрения**                                                                                |
+| Удалённый доступ с телефона            | Редко                | **WebUI + Telegram / Lark / DingTalk / WeChat**                                                                      |
+| Запланированная автоматизация          | Нет                  | **Cron — 24/7 без присмотра**                                                                                        |
+| Несколько ИИ-агентов одновременно      | Нет                  | **Десятки внешних агентов, включая Claude Code, Codex, Qwen Code, Hermes Agent и Cursor Agent, в едином интерфейсе** |
+| Цена                                   | Бесплатно / Платно   | **Бесплатно и с открытым исходным кодом**                                                                            |
 
 <p align="center">
-  <img src="./resources/offica-ai BANNER-function.png" alt="AionUi Cowork Platform" width="800">
+  <img src="../../resources/offica-ai BANNER-function.png" alt="AionUi Cowork Platform" width="800">
 </p>
 
 ---
 
-## Встроенный агент — установил и работай, без настройки
+## Встроенный агент — установите и сразу работайте, без настройки
 
 AionUi поставляется с полноценным движком ИИ-агента. В отличие от инструментов, требующих отдельной установки CLI-агентов, **AionUi работает сразу после установки**.
 
 - **Не нужно устанавливать CLI-инструменты** — движок агента встроен
-- **Без сложной настройки** — войдите через Google или вставьте любой API-ключ
+- **Без сложной настройки** — вставьте любой API-ключ, чтобы начать
 - **Полные возможности агента** — чтение/запись файлов, поиск в интернете, генерация изображений, MCP-инструменты
-- **Готовые ассистенты** — 20 встроенных профессиональных ассистентов (Cowork, PPT Creator, Word Creator, Excel Creator, Morph PPT 3D, Pitch Deck Creator, Dashboard Creator, Academic Paper Writer, Financial Model Creator и другие), готовые к использованию немедленно
+- **Готовые ассистенты** — 21 встроенный профессиональный ассистент (Cowork, PPT Creator, Word Creator, Word Form Creator, Excel Creator, Morph PPT, Morph PPT 3D, Pitch Deck Creator, Dashboard Creator, Academic Paper Writer, Financial Model Creator и другие) — все готовы к использованию сразу
 
 <p align="center">
-  <img src="./resources/homepage.png" alt="Built-in Agents" width="800">
+  <img src="../../resources/homepage.png" alt="Built-in Agents" width="800">
 </p>
 
 ### **Офисные ассистенты — PPT, Word и Excel**
 
-Эти направления соответствуют тому, что приложение действительно предоставляет: предустановки **Morph PPT** и навыки **`pptx` / `docx` / `xlsx`** (см. предустановки `assistant/` и `skills/` в репозитории). Нужен вывод в документы или таблицы? Встроенный **[OfficeCLI](https://github.com/iOfficeAI/OfficeCli)** помогает превратить запрос в готовый PPT (Morph), Word (`.docx`) и Excel (`.xlsx/.xlsm/.csv`) быстрее и надёжнее.
+Эти направления соответствуют тому, что приложение действительно предоставляет: предустановки **Morph PPT** и навыки **`pptx` / `docx` / `xlsx`**. Канонические [определения ассистентов](https://github.com/iOfficeAI/AionCore/blob/main/crates/aionui-app/assets/builtin-assistants/assistants.json) и [встроенные навыки](https://github.com/iOfficeAI/AionCore/tree/main/crates/aionui-app/assets/builtin-skills) поддерживаются в AionCore. Нужен вывод в документы или таблицы? Встроенный **[OfficeCLI](https://github.com/iOfficeAI/OfficeCLI)** помогает превратить запрос в готовый PPT (Morph), Word (`.docx`) и Excel (`.xlsx/.xlsm/.csv`) быстрее и надёжнее.
 Три типа ассистентов соответствуют файловым рабочим процессам, а итоговые файлы можно сразу редактировать и использовать повторно.
 
 #### **Ассистент PPT**
 
 > **Результат:** редактируемый Morph PPT (`.pptx`)
-> Морфированные переходы между слайдами с согласованным повествованием; на базе [OfficeCLI](https://github.com/iOfficeAI/OfficeCli).
+> Морфированные переходы между слайдами с согласованным повествованием; на базе [OfficeCLI](https://github.com/iOfficeAI/OfficeCLI).
 
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="./resources/morph-ppt-balanced.gif" alt="Morph PPT — slide-to-slide transitions (OfficeCLI)" width="390">
+      <img src="../../resources/morph-ppt-balanced.gif" alt="Morph PPT — slide-to-slide transitions (OfficeCLI)" width="390">
     </td>
     <td align="center" width="50%">
-      <img src="./resources/readme-demo-assistant-ppt.gif" alt="PPT assistant — screen recording" width="390">
+      <img src="../../resources/readme-demo-assistant-ppt.gif" alt="PPT assistant — screen recording" width="390">
     </td>
   </tr>
 </table>
@@ -108,15 +128,15 @@ AionUi поставляется с полноценным движком ИИ-а
 #### **Ассистент Word**
 
 > **Результат:** редактируемый Word (`.docx`)
-> Написание статей/диссертаций и готовое редактирование документов через навык `docx`; на базе [OfficeCLI](https://github.com/iOfficeAI/OfficeCli).
+> Написание статей/диссертаций и готовое редактирование документов через навык `docx`; на базе [OfficeCLI](https://github.com/iOfficeAI/OfficeCLI).
 
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="./resources/readme-demo-generate-academic-paper.gif" alt="Generate academic paper demo" width="390">
+      <img src="../../resources/readme-demo-generate-academic-paper.gif" alt="Generate academic paper demo" width="390">
     </td>
     <td align="center" width="50%">
-      <img src="./resources/readme-demo-assistant-write-paper.gif" alt="Paper writing assistant demo" width="390">
+      <img src="../../resources/readme-demo-assistant-write-paper.gif" alt="Paper writing assistant demo" width="390">
     </td>
   </tr>
 </table>
@@ -124,15 +144,15 @@ AionUi поставляется с полноценным движком ИИ-а
 #### **Ассистент Excel**
 
 > **Результат:** готовый Excel (`.xlsx/.xlsm/.csv`)
-> Генерация/обновление таблиц через `xlsx` для анализа, автоформатирования и диаграмм; на базе [OfficeCLI](https://github.com/iOfficeAI/OfficeCli).
+> Генерация/обновление таблиц через `xlsx` для анализа, автоформатирования и диаграмм; на базе [OfficeCLI](https://github.com/iOfficeAI/OfficeCLI).
 
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="./resources/readme-demo-generate-excel.gif" alt="Excel generation demo" width="390">
+      <img src="../../resources/readme-demo-generate-excel.gif" alt="Excel generation demo" width="390">
     </td>
     <td align="center" width="50%">
-      <img src="./resources/readme-demo-assistant-excel.gif" alt="Excel assistant demo" width="390">
+      <img src="../../resources/readme-demo-assistant-excel.gif" alt="Excel assistant demo" width="390">
     </td>
   </tr>
 </table>
@@ -141,30 +161,30 @@ AionUi поставляется с полноценным движком ИИ-а
 
 ## Мультиагентный режим — уже есть CLI-агенты? Подключайте их
 
-Если вы уже используете Claude Code, Codex или Qwen Code, AionUi автоматически обнаружит их и позволит работать со всеми ними вместе со встроенным агентом.
+Если вы уже используете Claude Code, Codex, Hermes Agent или OpenClaw, AionUi автоматически обнаружит их и позволит работать со всеми ними вместе со встроенным агентом.
 
-**Поддерживаемые агенты:** Встроенный агент (без настройки) • Claude Code • Codex • Qwen Code • Goose AI • OpenClaw • Augment Code • CodeBuddy • Kimi CLI • OpenCode • Factory Droid • GitHub Copilot • Qoder CLI • Mistral Vibe • Nanobot • Aion CLI (aionrs, Rust-бэкенд-сервис в составе AionUi) • Snow CLI • Kiro • Hermes Agent • Cursor Agent и другие
+**Поддерживаемые агенты:** Встроенный агент (на встроенном движке [aionrs](https://github.com/iOfficeAI/aionrs)) • Claude Code • Codex • Qwen Code • Gemini CLI • Goose • OpenClaw • Augment Code • CodeBuddy • Kimi CLI • OpenCode • Factory Droid • GitHub Copilot • Qoder • Mistral Vibe • Nanobot • Snow • Hermes • Cursor Agent • Pi • MiMo Code • omp • Antigravity и другие
 
 <p align="center">
-  <img src="./resources/multi-agent支持openclaw.gif" alt="Multi-Agent Cowork" width="800">
+  <img src="../../resources/multi-agent支持openclaw.gif" alt="Multi-Agent Cowork" width="800">
 </p>
 
 - **Автоопределение** — автоматически распознаёт установленные CLI-инструменты
 - **Единый интерфейс** — одна платформа Cowork для всех ваших ИИ-агентов
 - **Параллельные сессии** — запуск нескольких агентов одновременно с независимым контекстом
-- **Единое управление MCP** — настройте MCP (Model Context Protocol) инструменты один раз, автоматическая синхронизация со всеми агентами — не нужно настраивать каждый агент отдельно
-- **YOLO Mode** (автоподтверждение всех действий агента без ручного подтверждения) / **Полностью автоматический режим** — одним кликом пропускайте запросы разрешений; все агенты поддерживают полностью автоматический режим для работы без присмотра
+- **Единое управление MCP** — управляйте MCP-инструментами в одном месте; AionUi внедряет или синхронизирует совместимые транспорты с учётом возможностей каждого агента
+- **YOLO / Full-Auto Mode** — поддерживаемые агенты могут предоставлять режим без присмотра; доступные режимы и разрешения зависят от выбранного агента
 
 ### Team Mode — скоординированная мультиагентная совместная работа
 
 Запускайте несколько ИИ-агентов как организованную команду: агент **Leader** получает ваши инструкции, разбивает их на подзадачи и делегирует агентам **Teammate** через встроенный Team MCP Server. Teammate-агенты выполняют задачи параллельно, обмениваются результатами через асинхронный почтовый ящик и записывают в общую доску задач.
 
 <p align="center">
-  <img src="./resources/AionUi_team.gif" alt="Team Mode overview" width="800">
+  <img src="../../resources/AionUi_team.gif" alt="Team Mode overview" width="800">
 </p>
 
-- **Параллельное выполнение нескольких агентов** — Leader разбивает задачи на подзадачи и делегирует параллельно работающим Teammate-агентам; каждый Teammate использует свою модель через ACP (Agent Communication Protocol, слой координации мультиагентности AionUi), Gemini или Aionrs
-- **Оркестрация Leader** — Leader назначает, отслеживает и агрегирует результаты; поддерживаемые бэкенды: Claude Code, Codex, Gemini, Snow CLI, Aion CLI
+- **Параллельное выполнение нескольких агентов** — Leader разбивает и делегирует задачи Teammate-агентам; внешние агенты подключаются через ACP (Agent Client Protocol), а AionUi координирует команду
+- **Оркестрация Leader** — Leader назначает, отслеживает и агрегирует результаты; поддерживаемые бэкенды: Claude Code, Codex, Hermes Agent, Gemini, Snow CLI, Aion CLI
 - **Изолированное рабочее пространство команды** — все агенты совместно используют одну папку; у каждого есть свой диалог подтверждения разрешений с бейджем на боковой панели для ожидающих подтверждений
 
 <details>
@@ -186,22 +206,23 @@ AionUi поставляется с полноценным движком ИИ-а
 
 Другие ИИ-приложения дают вам чат с вашим API-ключом. **AionUi даёт полноценного Cowork-агента.**
 
-| Ваш API-ключ                                        | Что вы получаете            |
-| :-------------------------------------------------- | :-------------------------- |
-| API-ключ Gemini (или вход через Google — бесплатно) | Cowork-агент на базе Gemini |
-| API-ключ OpenAI                                     | Cowork-агент на базе GPT    |
-| API-ключ Anthropic                                  | Cowork-агент на базе Claude |
-| Ollama / LM Studio (локально)                       | Локальный Cowork-агент      |
-| Шлюз NewAPI                                         | Единый доступ к 20+ моделям |
+| Ваш API-ключ                  | Что вы получаете                         |
+| :---------------------------- | :--------------------------------------- |
+| API-ключ Gemini               | Cowork-агент на базе Gemini              |
+| API-ключ OpenAI               | Cowork-агент на базе GPT                 |
+| API-ключ Anthropic            | Cowork-агент на базе Claude              |
+| Учётные данные AWS Bedrock    | Агент на Bedrock через Aion CLI (aionrs) |
+| Ollama / LM Studio (локально) | Локальный Cowork-агент                   |
+| NewAPI Gateway                | Единый доступ к 20+ моделям              |
 
-Одни и те же возможности — чтение/запись файлов, поиск в интернете, генерация изображений, использование инструментов — независимо от того, какая модель лежит в основе. AionUi поддерживает **20+ ИИ-платформ**, включая облачные сервисы и локальные развёртывания.
+Одни и те же возможности — чтение/запись файлов, поиск в интернете, генерация изображений, использование инструментов — независимо от того, какая модель лежит в основе. AionUi поддерживает **30+ ИИ-платформ**, включая облачные сервисы и локальные развёртывания.
 
 <p align="center">
-  <img src="./resources/llm_newapi.png" alt="Multi-Model Support" width="800">
+  <img src="../../resources/llm_newapi.png" alt="Multi-Model Support" width="800">
 </p>
 
 <details>
-<summary><strong>🔍 Посмотреть все 20+ поддерживаемых платформ ▶️</strong></summary>
+<summary><strong>🔍 Посмотреть все 30+ поддерживаемых платформ ▶️</strong></summary>
 
 <br>
 
@@ -209,8 +230,8 @@ AionUi поставляется с полноценным движком ИИ-а
 
 - **Официальные платформы** — Gemini, Gemini (Vertex AI), Anthropic (Claude), OpenAI
 - **Облачные провайдеры** — AWS Bedrock, New API (унифицированный шлюз ИИ-моделей)
-- **Китайские платформы** — Dashscope (Qwen), Zhipu, Moonshot (Kimi), Qianfan (Baidu), Hunyuan (Tencent), Lingyi, ModelScope, InfiniAI, Ctyun, StepFun
-- **Международные платформы** — DeepSeek, MiniMax, OpenRouter, SiliconFlow, xAI, Ark (Volcengine), Poe
+- **Китайские платформы** — Dashscope (Qwen), Dashscope Coding Plan, Zhipu, Moonshot (Kimi), Qianfan (Baidu), Hunyuan (Tencent), Lingyi, ModelScope, InfiniAI, Ctyun, StepFun, SiliconFlow-CN, PPIO
+- **Международные платформы** — DeepSeek, MiniMax, Novita, OpenRouter, SiliconFlow, xAI, Ark (Volcengine), Poe
 - **Локальные модели** — Ollama, LM Studio (через пользовательскую платформу с локальной API-точкой)
 
 AionUi также поддерживает шлюз-сервис [NewAPI](https://github.com/QuantumNous/new-api) — единый хаб ИИ-моделей, агрегирующий и распространяющий различные LLM. Гибкое переключение между разными моделями в одном интерфейсе для решения различных задач.
@@ -221,33 +242,34 @@ AionUi также поддерживает шлюз-сервис [NewAPI](https:
 
 ## Расширяемые ассистенты и навыки
 
-_Расширяемая система ассистентов с 20 встроенными профессиональными ассистентами и трёхуровневой системой навыков. Создавайте и управляйте собственными ассистентами и навыками._
+_Расширяемая система ассистентов с 21 встроенным профессиональным ассистентом и трёхуровневой системой навыков. Создавайте и управляйте собственными ассистентами и навыками._
 
 - **Создание пользовательских ассистентов** — определяйте собственных ассистентов с пользовательскими правилами и возможностями
 - **Трёхуровневые навыки** — встроенные навыки (поставляются с AionUi), пользовательские навыки (ваши собственные) и Extension-навыки (от сторонних расширений); включайте/отключайте для каждого разговора с помощью индикатора навыков
 - **Контроль для каждого разговора** — индикатор навыков в заголовке чата показывает активные навыки текущего разговора; ищите и исключайте навыки по необходимости
 
 <p align="center">
-  <img src="./resources/assitants.png" alt="AI Assistants & Skills Ecosystem" width="800">
+  <img src="../../resources/assitants.png" alt="AI Assistants & Skills Ecosystem" width="800">
 </p>
+
+AionUi поддерживает три уровня навыков: **встроенные** навыки (поставляются с приложением), **пользовательские** навыки (создаются пользователем) и **навыки расширений** (загружаются через Extension SDK).
 
 <details>
 <summary><strong>🔍 Подробности об ассистентах и пользовательских навыках ▶️</strong></summary>
 
 <br>
 
-AionUi включает **20 профессиональных ассистентов** с предопределёнными возможностями, расширяемыми через пользовательские навыки:
+AionUi включает **21 профессиональный ассистент** с предопределёнными возможностями, расширяемыми через пользовательские навыки:
 
 - **🤝 Cowork** — автономное выполнение задач (операции с файлами, обработка документов, планирование рабочих процессов)
 - **📊 PPT Creator / Morph PPT / Morph PPT 3D** — генерация и анимация PPTX-презентаций с Morph-переходами
 - **📐 Pitch Deck Creator** — генерация презентации для инвесторов
 - **📊 Dashboard Creator** — генерация информационных панелей данных
 - **📝 Word Creator** — генерация готовых к производству документов Word (`.docx`)
+- **📋 Word Form Creator** — структурированная генерация Word-форм и шаблонов договоров
 - **📗 Excel Creator** — генерация электронных таблиц с анализом, диаграммами и автоформатированием
 - **🎓 Academic Paper Writer** — структурированное написание академических статей
 - **💰 Financial Model Creator** — финансовые модели и прогнозы
-- **⭐ Star Office Helper** — ассистент для офисной продуктивности
-- **📄 PDF to PPT** — конвертация PDF в PPT
 - **🎮 3D Game** — генерация 3D-игр в одном файле
 - **🎨 UI/UX Pro Max** — профессиональный UI/UX дизайн (57 стилей, 95 цветовых палитр)
 - **📋 Planning with Files** — планирование на основе файлов для сложных задач (постоянное markdown-планирование в стиле Manus)
@@ -258,9 +280,11 @@ AionUi включает **20 профессиональных ассистент
 - **🔧 OpenClaw Setup** — ассистент по настройке и конфигурации интеграции OpenClaw
 - **📖 Story Roleplay** — иммерсивная ролевая игра с карточками персонажей и информацией о мире (совместимо с SillyTavern)
 
-**Пользовательские навыки**: создавайте навыки в директории `skills/`, включайте/отключайте навыки для ассистентов, расширяя возможности ИИ. Навыки поступают из трёх источников: встроенные (поставляются с AionUi), пользовательские (ваши собственные) и Extension (через Extension SDK). Встроенные навыки включают `pptx`, `docx`, `pdf`, `xlsx`, `mermaid` и другие.
+- **🧭 AionUi Butler** — Руководство по продукту, помощь в настройке и устранение неполадок внутри AionUi
 
-> 💡 Каждый ассистент определяется markdown-файлом. Проверьте директорию `assistant/` для примеров.
+**Пользовательские навыки**: импортируйте или создавайте навыки в **Настройки → Skills**, затем назначайте их нужным ассистентам. Навыки поступают из трёх источников: встроенные, пользовательские и Extension. Встроенные навыки включают `pptx`, `docx`, `pdf`, `xlsx`, `mermaid` и другие.
+
+> 💡 Канонические встроенные определения находятся в [каталоге ассистентов](https://github.com/iOfficeAI/AionCore/blob/main/crates/aionui-app/assets/builtin-assistants/assistants.json) AionCore. Правила остаются в Markdown и настраиваются в AionUi.
 
 </details>
 
@@ -277,18 +301,19 @@ _Ваш ИИ-ассистент 24/7 — доступ к AionUi с любого 
   - **Lark (Feishu)** — Cowork через Feishu-ботов для корпоративного взаимодействия
   - **DingTalk** — потоковая передача AI-карт с автоматическим переключением
   - **WeChat** — интеграция с личным аккаунтом WeChat
-  - **WeCom (企业微信)** — корпоративный бот WeChat для командной работы
-  - **Slack** и другие платформы скоро появятся
+  - **WeCom (企业微信), Slack, Discord** и другие платформы скоро появятся
 
 > **Настройка:** Настройки AionUi → Настройки WebUI → Канал, настройте токен бота.
 
 <p align="center">
-  <img src="./resources/webui-remote.gif" alt="WebUI remote access demo" width="800">
+  <img src="../../resources/webui-remote.gif" alt="WebUI remote access demo" width="800">
 </p>
 
-<p align="center"><em>Удалённое управление и мониторин агента — Claude, Gemini, Codex. Используйте из браузера или с телефона, так же как удалённый доступ Claude Code.</em></p>
+<p align="center"><em>Удалённо управляйте агентом и отслеживайте его работу — Claude, Gemini или Codex. Используйте браузер или телефон, как в Claude Code remote.</em></p>
 
 > [Руководство по удалённому доступу через интернет](https://github.com/iOfficeAI/AionUi/wiki/Remote-Internet-Access-Guide-Chinese)
+
+<a id="-cowork-in-action"></a>
 
 ## ✨ Cowork в действии
 
@@ -302,7 +327,7 @@ _Настройте один раз, ИИ-агент работает автом
 - **Примеры использования:** запланированная агрегация данных, генерация отчётов, организация файлов, напоминания
 
 <p align="center">
-  <img src="./resources/alart/task.png" alt="Scheduled Tasks" width="800">
+  <img src="../../resources/alart-task.png" alt="Scheduled Tasks" width="800">
 </p>
 
 <details>
@@ -350,7 +375,7 @@ _10+ форматов: PDF, Word, Excel, PPT, код, Markdown, изображе
 - **История версий** — просматривайте и восстанавливайте предыдущие версии файлов (на базе Git)
 
 <p align="center">
-  <img src="./resources/preview.gif" alt="Preview Panel" width="800">
+  <img src="../../resources/preview.gif" alt="Preview Panel" width="800">
 </p>
 
 <details>
@@ -375,7 +400,7 @@ _10+ форматов: PDF, Word, Excel, PPT, код, Markdown, изображе
 _Пакетное переименование, автоматическая организация, умная классификация, объединение файлов — Cowork-агент справится с этим за вас._
 
 <p align="center">
-  <img src="./resources/aionui sort file 2.gif" alt="Smart File Management" width="800">
+  <img src="../../resources/aionui sort file 2.gif" alt="Smart File Management" width="800">
 </p>
 
 <details>
@@ -400,10 +425,10 @@ _Пакетное переименование, автоматическая о�
 
 ### **Обработка данных Excel — анализ на базе ИИ**
 
-_Глубокий анализ данных Excel, автоматическое美化 отчётов и генерация выводов — всё на базе ИИ-агентов._
+_Глубокий анализ данных Excel, автоформатирование отчётов и генерация выводов — всё на базе ИИ-агентов._
 
 <p align="center">
-  <img src="./resources/generate_xlsx.gif" alt="Excel Processing" width="800">
+  <img src="../../resources/generate_xlsx.gif" alt="Excel Processing" width="800">
 </p>
 
 <details>
@@ -412,7 +437,7 @@ _Глубокий анализ данных Excel, автоматическое�
 <br>
 
 - **Умный анализ** — ИИ анализирует паттерны данных и генерирует выводы
-- **Автоформатирование** — автоматическое美化 Excel-отчётов с профессиональным оформлением
+- **Автоформатирование** — автоматическое оформление Excel-отчётов в профессиональном стиле
 - **Трансформация данных** — конвертация, объединение и реструктуризация данных командами на естественном языке
 - **Генерация отчётов** — создание комплексных отчётов из сырых данных
 
@@ -432,7 +457,7 @@ _Глубокий анализ данных Excel, автоматическое�
 _Интеллектуальная генерация, редактирование и распознавание изображений на базе Gemini_
 
 <p align="center">
-  <img src="./resources/Image_Generation.gif" alt="AI Image Generation" width="800">
+  <img src="../../resources/Image_Generation.gif" alt="AI Image Generation" width="800">
 </p>
 
 <details>
@@ -456,7 +481,7 @@ _Интеллектуальная генерация, редактировани
 _Автоматическая генерация профессиональных документов — презентаций, отчётов и многого другого — с помощью ИИ-агентов._
 
 <p align="center">
-  <img src="./resources/file_generation_preview.png" alt="Document Generation" width="800">
+  <img src="../../resources/file_generation_preview.png" alt="Document Generation" width="800">
 </p>
 
 <details>
@@ -483,7 +508,7 @@ _Автоматическая генерация профессиональны�
 _Настройте с помощью собственного CSS-кода, сделайте интерфейс под свои предпочтения_
 
 <p align="center">
-  <img src="./resources/css with skin.gif" alt="CSS Customization" width="800">
+  <img src="../../resources/css with skin.gif" alt="CSS Customization" width="800">
 </p>
 
 - ✅ **Полная настраиваемость** — свободно настраивайте цвета, стили, макет интерфейса через CSS-код, создайте свой уникальный опыт
@@ -495,7 +520,7 @@ _Настройте с помощью собственного CSS-кода, с�
 _Открывайте несколько разговоров, задачи не перемешиваются, независимая память, двойная эффективность_
 
 <p align="center">
-  <img src="./resources/multichat-side-by-side.gif" alt="Multi-Task Parallel" width="800">
+  <img src="../../resources/multichat-side-by-side.gif" alt="Multi-Task Parallel" width="800">
 </p>
 
 - ✅ **Независимый контекст** — каждый разговор сохраняет собственный контекст и историю
@@ -504,6 +529,8 @@ _Открывайте несколько разговоров, задачи не
 
 ---
 
+<a id="-why-choose-aionui-over-claude-cowork"></a>
+
 ## 🤔 Почему AionUi вместо Claude Cowork?
 
 <details>
@@ -511,20 +538,20 @@ _Открывайте несколько разговоров, задачи не
 
 <br>
 
-AionUi — это **бесплатный мультиагентный рабочий стол с открытым исходным кодом**. По сравнению с Claude Cowork, который работает только на macOS и привязан к Claude, AionUi — его кроссплатформенная улучшенная версия со всеми моделями.
+AionUi — это **бесплатное open-source десктопное приложение для работы с несколькими AI agents**. В отличие от Claude Cowork, который работает только на macOS и привязан к Claude, AionUi поддерживает разные платформы и модели.
 
-| Параметр          | Claude Cowork  | AionUi                                                               |
-| :---------------- | :------------- | :------------------------------------------------------------------- |
-| ОС                | Только macOS   | macOS / Windows / Linux                                              |
-| Поддержка моделей | Только Claude  | Gemini, Claude, DeepSeek, OpenAI, Ollama, ...                        |
-| Взаимодействие    | Десктопный GUI | Десктопный GUI + WebUI + Telegram / Lark / DingTalk / WeChat / WeCom |
-| Автоматизация     | Только вручную | Cron запланированные задачи — 24/7 без присмотра                     |
-| Стоимость         | $100/месяц     | Бесплатно и с открытым исходным кодом                                |
+| Параметр          | Claude Cowork  | AionUi                                                       |
+| :---------------- | :------------- | :----------------------------------------------------------- |
+| ОС                | Только macOS   | macOS / Windows / Linux                                      |
+| Поддержка моделей | Только Claude  | Gemini, Claude, DeepSeek, OpenAI, Ollama, ...                |
+| Взаимодействие    | Десктопный GUI | Десктопный GUI + WebUI + Telegram / Lark / DingTalk / WeChat |
+| Автоматизация     | Только вручную | Cron запланированные задачи — 24/7 без присмотра             |
+| Стоимость         | $100/месяц     | Бесплатно и с открытым исходным кодом                        |
 
 Глубокая поддержка сценариев ИИ-офиса:
 
 - **Управление файлами**: интеллектуальная организация локальных папок и пакетное переименование в один клик.
-- **Обработка данных**: глубокий анализ и автоматическое美化 Excel-отчётов.
+- **Обработка данных**: глубокий анализ и автоформатирование Excel-отчётов.
 - **Генерация документов**: автоматическое написание и форматирование PPT, Word и Markdown-документов.
 - **Мгновенный предпросмотр**: встроенные панели предпросмотра 10+ форматов, результаты ИИ-сотрудничества видны сразу.
 
@@ -536,27 +563,45 @@ AionUi — это **бесплатный мультиагентный рабоч
 
 <details>
 <summary><strong>В: Нужно ли сначала устанавливать Gemini CLI или Claude Code?</strong></summary>
-О: <strong>Нет.</strong> AionUi имеет встроенный ИИ-агент, который работает сразу после установки. Просто войдите через Google или введите любой API-ключ. Если у вас также установлены CLI-инструменты, такие как Claude Code или Gemini CLI, AionUi автоматически обнаружит и интегрирует их для ещё больших возможностей.
+О: <strong>Нет.</strong> В AionUi есть встроенный ИИ-агент, который работает сразу после установки. Просто введите любой API-ключ, чтобы начать. Если у вас также установлены CLI-инструменты, такие как Claude Code или Gemini CLI, AionUi автоматически обнаружит и подключит их для дополнительных возможностей.
 </details>
 
 <details>
 <summary><strong>В: Что я могу делать с AionUi?</strong></summary>
-О: AionUi — это ваше <strong>приватное Cowork-рабочее пространство</strong>. Встроенный агент может пакетно организовывать папки, обрабатывать данные Excel, генерировать документы, искать в интернете и генерировать изображения. С мультиагентным режимом вы также можете использовать Claude Code, Codex и другие мощные CLI-агенты через один и тот же интерфейс.
+О: AionUi — это ваше <strong>приватное Cowork-пространство</strong>. Встроенный агент может пакетно организовывать папки, обрабатывать данные Excel, генерировать документы, искать в интернете и генерировать изображения. В Multi-Agent Mode можно подключить Claude Code, Codex и другие мощные CLI-агенты через тот же интерфейс.
 </details>
 
 <details>
 <summary><strong>В: Это бесплатно?</strong></summary>
-О: AionUi полностью бесплатен и имеет открытый исходный код. Вы можете войти через Google, чтобы бесплатно использовать Gemini, или использовать API-ключи любого провайдера по вашему выбору.
+О: AionUi полностью бесплатен и имеет открытый исходный код. Вы платите только за использование API выбранного провайдера и можете использовать API-ключи любого провайдера по вашему выбору.
+</details>
+
+<details>
+<summary><strong>В: Можно ли запустить AionUi на сервере (headless)?</strong></summary>
+О: Да — режим WebUI в AionUi работает как самостоятельный HTTP-сервер. Инструкции по настройке смотрите в разделе WebUI выше.
 </details>
 
 <details>
 <summary><strong>В: Мои данные в безопасности?</strong></summary>
-О: Все данные хранятся локально в базе данных SQLite. Ничего не загружается на какие-либо серверы.
+О: Все данные хранятся локально в базе данных SQLite. AionUi не загружает их на сторонние серверы.
 </details>
 
 ---
 
 ## Посмотрите, как люди используют AionUi
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=vWxE6VO9TKo" target="_blank">
+    <img src="https://img.youtube.com/vi/vWxE6VO9TKo/maxresdefault.jpg" alt="Hermes + Aion UI is Insane (FREE)!" width="400">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://www.youtube.com/watch?v=RgSLdOhICZw" target="_blank">
+    <img src="https://img.youtube.com/vi/RgSLdOhICZw/maxresdefault.jpg" alt="OpenClaw + Aion UI is Insane (FREE!)" width="400">
+  </a>
+</p>
+<p align="center">
+  <em>Julian Goldie SEO — Hermes + Aion UI is Insane (FREE!) · 27K views</em> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <em>Julian Goldie SEO — OpenClaw + Aion UI is Insane (FREE!) · 11K views</em>
+</p>
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=yUU5E-U5B3M" target="_blank">
@@ -568,7 +613,7 @@ AionUi — это **бесплатный мультиагентный рабоч
   </a>
 </p>
 <p align="center">
-  <em>WorldofAI (200 тыс. подписчиков)</em> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <em>Julian Goldie SEO (318 тыс. подписчиков)</em>
+  <em>WorldofAI (200 тыс. подписчиков)</em> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <em>Julian Goldie SEO (384 тыс. подписчиков)</em>
 </p>
 
 ### Статьи сообщества
@@ -580,6 +625,8 @@ AionUi — это **бесплатный мультиагентный рабоч
 > **Сняли видео об AionUi?** [Сообщите нам в X](https://x.com/AionUi), и мы разместим его здесь!
 
 ---
+
+<a id="-quick-start"></a>
 
 ## 🚀 Быстрый старт
 
@@ -609,7 +656,7 @@ brew install aionui
 ### Начало работы за 3 шага
 
 1. **Установите** AionUi
-2. **Войдите** через аккаунт Google или введите любой API-ключ
+2. **Введите** любой API-ключ, чтобы начать
 3. **Начните Cowork** — встроенный ИИ-агент готов к работе
 
 ### 📖 Подробные руководства
@@ -643,13 +690,15 @@ brew install aionui
 
 ---
 
+<a id="-community--support"></a>
+
 ## 💬 Сообщество и поддержка
 
 **Ваши идеи важны!** Мы ценим каждое предложение и отзыв.
 
 <p align="center">
   <a href="https://x.com/AionUi" target="_blank">
-    <img src="./resources/contactus-x.png" alt="Contact Us on X" width="600">
+    <img src="../../resources/contactus-x.png" alt="Contact Us on X" width="600">
   </a>
 </p>
 
@@ -657,31 +706,27 @@ brew install aionui
 - [Сообщить о проблемах](https://github.com/iOfficeAI/AionUi/issues) — ошибки и запросы функций
 - [Обновления релизов](https://github.com/iOfficeAI/AionUi/releases) — получите последнюю версию
 - [Сообщество Discord](https://discord.gg/2QAwJn7Egx) — англоязычное сообщество
-- [Группа WeChat](./resources/wx-6.png) — русскоязычное сообщество
+- [Группа WeChat](../../resources/wx-23.png) — китайское сообщество
 
 ### Вклад в проект
+
+Перед открытием PR прочитайте [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 1. Сделайте форк этого проекта
 2. Создайте ветку функции (`git checkout -b feature/AmazingFeature`)
 3. Зафиксируйте изменения (`git commit -m 'Add some AmazingFeature'`)
 4. Отправьте в ветку (`git push origin feature/AmazingFeature`)
-5. Откройте Pull Request
+5. Откройте пул-реквест
 
 ### Настройка среды разработки
 
-Технологический стек: Electron · Vite · React · Bun
-
-```bash
-bun install        # установить зависимости
-bun run dev        # запустить dev-сервер
-bun run test       # запустить юнит-тесты
-```
+Локальная разработка AionUi использует два репозитория: AionUi для Electron-фронтенда и AionCore для локального backend. Полная настройка для macOS, Linux и Windows описана в [Development Guide](../contributing/development.md).
 
 ---
 
 ## Лицензия
 
-Этот проект лицензирован на условиях [Apache-2.0](LICENSE).
+Этот проект лицензирован на условиях [Apache-2.0](../../LICENSE).
 
 ---
 
@@ -708,3 +753,5 @@ bun run test       # запустить юнит-тесты
 [Сообщить об ошибке](https://github.com/iOfficeAI/AionUi/issues) · [Запросить функцию](https://github.com/iOfficeAI/AionUi/issues)
 
 </div>
+
+<sub><a href="https://linux.do/">LINUX DO - A New Ideal Community</a></sub>

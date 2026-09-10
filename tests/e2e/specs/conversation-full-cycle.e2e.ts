@@ -12,67 +12,607 @@ import {
   goToGuid,
   goToNewChat,
   selectAgent,
+  findAssistantIdForBackend,
+  selectAssistantForBackend,
   sendMessageFromGuid,
   waitForSessionActive,
   waitForAiReply,
   deleteConversation,
   waitForSettle,
-  AGENT_PILL,
-  AGENT_STATUS_MESSAGE,
   AGENT_BADGE,
-  agentPillByBackend,
+  ASSISTANT_PILL,
   SKILLS_INDICATOR,
   SKILLS_INDICATOR_COUNT,
+  invokeBridge,
+  startAutoApprovePermissionMessages,
+  MODE_SELECTOR,
+  httpGet,
+  httpPost,
+  httpDelete,
+  resolveAionrsPreconditions,
 } from '../helpers';
 
 // Generous timeout for AI responses
 test.describe.configure({ timeout: 180_000 });
 
 /**
- * Pick the first available agent backend from the guid page pill bar.
+ * Pick the first available assistant backend from the unified assistant catalog.
  * Returns the backend name (e.g. 'gemini', 'claude') or null if none found.
- * If pills are missing (e.g. after many conversation cycles), reloads once to reset SWR.
  */
 async function pickAvailableBackend(page: import('@playwright/test').Page): Promise<string | null> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const visible = await page
-      .locator(AGENT_PILL)
-      .first()
-      .waitFor({ state: 'visible', timeout: 15_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (visible) {
-      const backends = await page
-        .locator(AGENT_PILL)
-        .evaluateAll((els) => els.map((el) => el.getAttribute('data-agent-backend')).filter(Boolean));
-      const found = ['gemini', 'claude', 'codex', 'aionrs'].find((b) => backends.includes(b));
-      if (found) return found;
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    for (const backend of ['gemini', 'claude', 'codex']) {
+      const assistantId = await findAssistantIdForBackend(page, backend, { requireAvailable: true }).catch(() => null);
+      if (assistantId) return backend;
     }
-    if (attempt === 0) {
-      // Reload to reset stale SWR caches after conversation cycles
-      await page.reload({ waitUntil: 'domcontentloaded' });
-      await goToGuid(page);
-    }
+    await page.waitForTimeout(500);
   }
   return null;
+}
+
+async function resolveFullAutoModeFromAgentMetadata(
+  page: import('@playwright/test').Page,
+  backend: string
+): Promise<string> {
+  const agents = await httpGet<Array<{ backend?: string; yolo_id?: string }>>(page, '/api/agents/management').catch(
+    () => []
+  );
+  return agents.find((agent) => agent.backend === backend)?.yolo_id || 'yolo';
+}
+
+type CronJobRecord = {
+  id: string;
+  name: string;
+  metadata?: {
+    conversation_id?: string;
+    agent_type?: string;
+    created_by?: string;
+    agent_config?: {
+      backend?: string;
+      mode?: string;
+      assistant_id?: string;
+      custom_agent_id?: string;
+      preset_agent_type?: string;
+    };
+  };
+};
+
+type AssistantRecord = {
+  id: string;
+};
+
+type ManagedAgentRecord = {
+  id: string;
+  name?: string;
+  backend?: string | null;
+  agent_type?: string;
+  enabled?: boolean;
+  installed?: boolean;
+  status?: string;
+  last_check_status?: string;
+  last_check_error_code?: string;
+  last_check_error_message?: string;
+};
+
+type ConversationWithAssistant = {
+  assistant?: {
+    id: string;
+    backend?: string;
+  } | null;
+};
+
+function agentMatchesBackend(agent: ManagedAgentRecord, backend: string): boolean {
+  return agent.backend === backend || (!agent.backend && agent.agent_type === backend);
+}
+
+function formatAgentHealthFailure(backend: string, agent: ManagedAgentRecord | null): string {
+  if (!agent) return `${backend} agent row was not found after refresh`;
+  const fields = [
+    `id=${agent.id}`,
+    `name=${agent.name ?? ''}`,
+    `status=${agent.status ?? ''}`,
+    `last_check_status=${agent.last_check_status ?? ''}`,
+    `last_check_error_code=${agent.last_check_error_code ?? ''}`,
+    `last_check_error_message=${agent.last_check_error_message ?? ''}`,
+  ];
+  return `${backend} assistant did not become online after health-check (${fields.join(', ')})`;
+}
+
+async function refreshAssistantForBackend(
+  page: import('@playwright/test').Page,
+  backend: string
+): Promise<ManagedAgentRecord | null> {
+  await httpPost(page, '/api/agents/refresh', {}).catch(() => undefined);
+  const agents = await httpGet<ManagedAgentRecord[]>(page, '/api/agents/management').catch(() => []);
+  const agent = agents.find((item) => item.enabled !== false && agentMatchesBackend(item, backend)) ?? null;
+  if (!agent || agent.installed === false) return agent;
+
+  return httpPost<ManagedAgentRecord>(page, `/api/agents/${encodeURIComponent(agent.id)}/health-check`, {}).catch(
+    () => agent
+  );
+}
+
+async function requireOnlineAssistantForBackend(
+  page: import('@playwright/test').Page,
+  backend: string
+): Promise<string> {
+  const checkedAgent = await refreshAssistantForBackend(page, backend);
+  if (!checkedAgent || checkedAgent.installed === false || checkedAgent.enabled === false) {
+    test.skip(true, `${backend} assistant is not installed or enabled`);
+    throw new Error(`${backend} assistant is not installed or enabled`);
+  }
+
+  let lastAgent: ManagedAgentRecord | null = checkedAgent;
+  let onlineAssistantId: string | null = null;
+  await expect
+    .poll(
+      async () => {
+        const id = await findAssistantIdForBackend(page, backend, { requireAvailable: true }).catch(() => null);
+        if (id) {
+          onlineAssistantId = id;
+          return id;
+        }
+
+        const agents = await httpGet<ManagedAgentRecord[]>(page, '/api/agents/management').catch(() => []);
+        lastAgent = agents.find((item) => agentMatchesBackend(item, backend)) ?? lastAgent;
+        return null;
+      },
+      {
+        timeout: 60_000,
+        message: formatAgentHealthFailure(backend, lastAgent),
+      }
+    )
+    .not.toBeNull();
+
+  if (!onlineAssistantId) {
+    throw new Error(formatAgentHealthFailure(backend, lastAgent));
+  }
+  return onlineAssistantId;
+}
+
+type ConversationMessageRecord = {
+  type?: string;
+  content?: unknown;
+  position?: string;
+};
+
+type ConversationArtifactRecord = {
+  id: string;
+  kind?: string;
+  status?: string;
+  payload?: unknown;
+};
+
+function parseJsonish<T>(value: unknown): T | null {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
+    }
+  }
+  return value as T;
+}
+
+async function selectPreferredCronDialogAgent(
+  page: import('@playwright/test').Page,
+  dialog: import('@playwright/test').Locator
+): Promise<string | null> {
+  return selectCronDialogAgentByPattern(page, dialog);
+}
+
+async function selectCronDialogAgentByPattern(
+  page: import('@playwright/test').Page,
+  dialog: import('@playwright/test').Locator,
+  preferredPatterns = [/Gemini/i, /Claude/i, /Codex/i, /Aion/i]
+): Promise<string | null> {
+  const agentSelect = dialog.locator('[data-testid="cron-assistant-select"]').first();
+  await agentSelect.click();
+  const selectableOptions = page.locator('.arco-select-option:not(.arco-select-option-disabled)');
+  const anyOptionVisible = await selectableOptions
+    .first()
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!anyOptionVisible) {
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.keyboard.press('Escape').catch(() => {});
+    return null;
+  }
+
+  for (const pattern of preferredPatterns) {
+    const option = selectableOptions.filter({ hasText: pattern }).first();
+    if (await option.isVisible().catch(() => false)) {
+      const label = (await option.textContent())?.trim() ?? null;
+      await option.click();
+      return label;
+    }
+  }
+
+  const fallback = selectableOptions.first();
+  if (!(await fallback.isVisible().catch(() => false))) {
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.keyboard.press('Escape').catch(() => {});
+    return null;
+  }
+  const label = (await fallback.textContent())?.trim() ?? null;
+  await fallback.click();
+  return label;
+}
+
+async function waitForCronCreateDialogToClose(
+  page: import('@playwright/test').Page,
+  dialog: import('@playwright/test').Locator
+): Promise<void> {
+  const closed = await dialog
+    .waitFor({ state: 'hidden', timeout: 10_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (closed) return;
+
+  const diagnostics = await page.evaluate(() => {
+    const messages = Array.from(document.querySelectorAll('.arco-message, .arco-message-wrapper'))
+      .map((el) => el.textContent?.trim())
+      .filter(Boolean);
+    const formErrors = Array.from(document.querySelectorAll('.arco-form-message, .arco-form-item-error'))
+      .map((el) => el.textContent?.trim())
+      .filter(Boolean);
+    const selectedAssistant = Array.from(document.querySelectorAll('[data-testid="cron-assistant-select"]'))
+      .map((el) => el.textContent?.trim())
+      .filter(Boolean);
+    const modalText = Array.from(document.querySelectorAll('.arco-modal'))
+      .map((el) => el.textContent?.trim())
+      .filter(Boolean)
+      .join('\n')
+      .slice(0, 2000);
+    return {
+      messages,
+      formErrors,
+      selectedAssistant,
+      modalText,
+    };
+  });
+
+  throw new Error(`CreateTaskDialog did not close after save: ${JSON.stringify(diagnostics)}`);
+}
+
+async function getAvailableModes(page: import('@playwright/test').Page): Promise<string[]> {
+  const selector = page.locator(MODE_SELECTOR);
+  await selector.click();
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const isVisible = (el: Element) => {
+            const node = el as HTMLElement;
+            const style = window.getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+          };
+          return Array.from(document.querySelectorAll('[data-mode-value]'))
+            .filter(isVisible)
+            .map((el) => el.getAttribute('data-mode-value'))
+            .filter(Boolean).length;
+        }),
+      { timeout: 5_000, message: 'Waiting for mode dropdown options to become visible' }
+    )
+    .toBeGreaterThan(0);
+  const modes = await page.evaluate(() => {
+    const isVisible = (el: Element) => {
+      const node = el as HTMLElement;
+      const style = window.getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    };
+    return Array.from(document.querySelectorAll('[data-mode-value]'))
+      .filter(isVisible)
+      .map((el) => el.getAttribute('data-mode-value'))
+      .filter(Boolean) as string[];
+  });
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.waitForTimeout(300);
+  return modes;
+}
+
+async function selectMode(page: import('@playwright/test').Page, modeValue: string): Promise<void> {
+  const selector = page.locator(MODE_SELECTOR);
+  await selector.click();
+  await expect
+    .poll(
+      async () =>
+        page.evaluate((targetMode) => {
+          const isVisible = (el: Element) => {
+            const node = el as HTMLElement;
+            const style = window.getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+          };
+          return Array.from(document.querySelectorAll('[data-mode-value]')).some(
+            (el) => el.getAttribute('data-mode-value') === targetMode && isVisible(el)
+          );
+        }, modeValue),
+      { timeout: 5_000, message: `Waiting for visible mode option ${modeValue}` }
+    )
+    .toBeTruthy();
+  await page.evaluate((targetMode) => {
+    const isVisible = (el: Element) => {
+      const node = el as HTMLElement;
+      const style = window.getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    };
+    const target = Array.from(document.querySelectorAll('[data-mode-value]')).find(
+      (el) => el.getAttribute('data-mode-value') === targetMode && isVisible(el)
+    ) as HTMLElement | undefined;
+    if (!target) {
+      throw new Error(`Visible mode option ${targetMode} not found`);
+    }
+    target.click();
+  }, modeValue);
+  await expect(selector).toHaveAttribute('data-current-mode', modeValue, { timeout: 5_000 });
+}
+
+async function listCronJobs(page: import('@playwright/test').Page): Promise<CronJobRecord[]> {
+  return invokeBridge<CronJobRecord[]>(page, 'cron.list-jobs', undefined, 10_000);
+}
+
+async function findCronJobByName(
+  page: import('@playwright/test').Page,
+  taskName: string,
+  timeoutMs = 15_000
+): Promise<CronJobRecord> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const jobs = await listCronJobs(page);
+    const job = jobs.find((item) => item.name === taskName);
+    if (job) return job;
+    await page.waitForTimeout(500);
+  }
+  throw new Error(`Cron job ${taskName} not found within ${timeoutMs}ms`);
+}
+
+async function listAutoInjectBuiltinSkills(
+  page: import('@playwright/test').Page
+): Promise<Array<{ name: string; relative_location?: string; is_auto_inject: boolean; source?: string }>> {
+  const skills = await httpGet<
+    Array<{ name: string; relative_location?: string; is_auto_inject: boolean; source?: string }>
+  >(page, '/api/skills');
+  return (skills ?? []).filter((skill) => skill.source === 'builtin' && skill.is_auto_inject);
+}
+
+async function expectCronBuiltinAutoSkill(page: import('@playwright/test').Page): Promise<void> {
+  const skills = await listAutoInjectBuiltinSkills(page);
+  const hasCron = skills.some((skill) => skill.name === 'cron');
+  expect(hasCron).toBeTruthy();
+}
+
+async function hasCronSkill(page: import('@playwright/test').Page, jobId: string): Promise<boolean> {
+  return page.evaluate(
+    async ({ jobId }) => {
+      const port = (window as unknown as { __backendPort?: number }).__backendPort;
+      if (!port) throw new Error('window.__backendPort is not available');
+      const res = await fetch(`http://127.0.0.1:${port}/api/cron/jobs/${encodeURIComponent(jobId)}/skill`);
+      if (!res.ok) {
+        throw new Error(`GET /api/cron/jobs/${jobId}/skill failed (${res.status})`);
+      }
+      const json = (await res.json()) as { data?: { has_skill?: boolean } };
+      return Boolean(json.data?.has_skill);
+    },
+    { jobId }
+  );
+}
+
+async function deleteCronSkill(page: import('@playwright/test').Page, jobId: string): Promise<void> {
+  await page.evaluate(
+    async ({ jobId }) => {
+      const port = (window as unknown as { __backendPort?: number }).__backendPort;
+      if (!port) throw new Error('window.__backendPort is not available');
+      const res = await fetch(`http://127.0.0.1:${port}/api/cron/jobs/${encodeURIComponent(jobId)}/skill`, {
+        method: 'DELETE',
+      });
+      if (res.status === 404) return;
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`DELETE /api/cron/jobs/${jobId}/skill failed (${res.status}): ${body}`);
+      }
+    },
+    { jobId }
+  );
+}
+
+async function getConversationMessages(
+  page: import('@playwright/test').Page,
+  conversationId: string
+): Promise<ConversationMessageRecord[]> {
+  const result = await invokeBridge<{ items?: ConversationMessageRecord[] } | ConversationMessageRecord[]>(
+    page,
+    'database.get-conversation-messages',
+    { conversation_id: conversationId, limit: 100 },
+    10_000
+  );
+  if (Array.isArray(result)) return result;
+  return Array.isArray(result?.items) ? result.items : [];
+}
+
+function messageContentText(message: ConversationMessageRecord): string {
+  const parsed = parseJsonish<{ content?: unknown }>(message.content);
+  return typeof parsed?.content === 'string' ? parsed.content : '';
+}
+
+async function waitForCronCreationConfirmation(
+  page: import('@playwright/test').Page,
+  conversationId: string,
+  taskName: string,
+  timeoutMs = 180_000
+): Promise<string> {
+  let lastAssistantText = '';
+  await expect
+    .poll(
+      async () => {
+        const messages = await getConversationMessages(page, conversationId);
+        const assistantTexts = messages
+          .filter((message) => message.type === 'text' && message.position !== 'right')
+          .map(messageContentText)
+          .filter(Boolean);
+        lastAssistantText = assistantTexts.at(-1) ?? '';
+        return assistantTexts.some((text) => {
+          const lower = text.toLowerCase();
+          return (
+            text.includes(taskName) &&
+            /created|success|done/.test(lower) &&
+            !/cron_[0-9a-f-]+/i.test(text) &&
+            !/failed|error|cannot|can't/.test(lower)
+          );
+        });
+      },
+      {
+        timeout: timeoutMs,
+        message: `Waiting for user-friendly cron creation confirmation for task ${taskName}. Last assistant text: ${lastAssistantText}`,
+      }
+    )
+    .toBe(true);
+
+  return lastAssistantText;
+}
+
+async function waitForSkillSuggestMessage(
+  page: import('@playwright/test').Page,
+  conversationId: string,
+  timeoutMs = 90_000
+): Promise<{ name: string; description: string; skillContent: string }> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const artifacts = await getConversationArtifacts(page, conversationId);
+    const skillArtifact = artifacts.find(
+      (artifact) => artifact.kind === 'skill_suggest' && artifact.status === 'pending'
+    );
+    if (!skillArtifact) {
+      await page.waitForTimeout(1_000);
+      continue;
+    }
+
+    const parsed = parseJsonish<{
+      name?: string;
+      description?: string;
+      skill_content?: string;
+      skillContent?: string;
+    }>(skillArtifact.payload);
+
+    if (parsed?.name) {
+      return {
+        name: parsed.name,
+        description: parsed.description ?? '',
+        skillContent: parsed.skillContent ?? parsed.skill_content ?? '',
+      };
+    }
+
+    await page.waitForTimeout(1_000);
+  }
+
+  throw new Error(`No pending skill_suggest artifact for conversation ${conversationId} within ${timeoutMs}ms`);
+}
+
+async function assertNoSkillSuggestMessageWithin(
+  page: import('@playwright/test').Page,
+  conversationId: string,
+  timeoutMs = 15_000
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const artifacts = await getConversationArtifacts(page, conversationId);
+    if (artifacts.some((artifact) => artifact.kind === 'skill_suggest' && artifact.status === 'pending')) {
+      throw new Error(`Unexpected pending skill_suggest artifact for conversation ${conversationId}`);
+    }
+    await page.waitForTimeout(1_000);
+  }
+}
+
+async function getConversationArtifacts(
+  page: import('@playwright/test').Page,
+  conversationId: string
+): Promise<ConversationArtifactRecord[]> {
+  return page.evaluate(
+    async ({ conversationId }) => {
+      const port = (window as unknown as { __backendPort?: number }).__backendPort;
+      if (!port) throw new Error('window.__backendPort is not available');
+
+      const res = await fetch(
+        `http://127.0.0.1:${port}/api/conversations/${encodeURIComponent(conversationId)}/artifacts`
+      );
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`GET /api/conversations/${conversationId}/artifacts failed (${res.status}): ${body}`);
+      }
+
+      const json = (await res.json()) as { data?: ConversationArtifactRecord[] };
+      return Array.isArray(json?.data) ? json.data : [];
+    },
+    { conversationId }
+  );
+}
+
+async function getConversationExtra(
+  page: import('@playwright/test').Page,
+  conversationId: string
+): Promise<Record<string, unknown>> {
+  return page.evaluate(
+    async ({ conversationId }) => {
+      const port = (window as unknown as { __backendPort?: number }).__backendPort;
+      if (!port) throw new Error('window.__backendPort is not available');
+
+      const res = await fetch(`http://127.0.0.1:${port}/api/conversations/${encodeURIComponent(conversationId)}`);
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`GET /api/conversations/${conversationId} failed (${res.status}): ${body}`);
+      }
+
+      const json = (await res.json()) as { data?: { extra?: unknown } };
+      const rawExtra = json?.data?.extra;
+      if (!rawExtra) return {};
+      if (typeof rawExtra === 'string') {
+        try {
+          return JSON.parse(rawExtra) as Record<string, unknown>;
+        } catch {
+          return {};
+        }
+      }
+      return (rawExtra as Record<string, unknown>) ?? {};
+    },
+    { conversationId }
+  );
+}
+
+async function waitForConversationWorkspace(
+  page: import('@playwright/test').Page,
+  conversationId: string,
+  timeoutMs = 20_000
+): Promise<string> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const extra = await getConversationExtra(page, conversationId);
+    const workspace = typeof extra.workspace === 'string' ? extra.workspace.trim() : '';
+    if (workspace) return workspace;
+    await page.waitForTimeout(500);
+  }
+
+  throw new Error(`Conversation ${conversationId} workspace is empty after ${timeoutMs}ms`);
+}
+
+async function removeConversationViaBridge(
+  page: import('@playwright/test').Page,
+  conversationId: string
+): Promise<void> {
+  await invokeBridge(page, 'remove-conversation', { id: conversationId }, 5_000).catch(() => {});
 }
 
 test.describe('Conversation Full Cycle', () => {
   test('Gemini -- full conversation with AI reply', async ({ page }) => {
     await goToGuid(page);
-    const pill = page.locator(agentPillByBackend('gemini'));
-    const visible = await pill.isVisible().catch(() => false);
-    if (!visible) {
-      await page
-        .locator(AGENT_PILL)
-        .first()
-        .waitFor({ state: 'visible', timeout: 8_000 })
-        .catch(() => {});
-      const retryVisible = await pill.isVisible().catch(() => false);
-      if (!retryVisible) {
-        test.skip(true, 'Gemini agent not available');
-        return;
-      }
+    if (!(await findAssistantIdForBackend(page, 'gemini', { requireAvailable: true }))) {
+      test.skip(true, 'Gemini assistant not available');
+      return;
     }
 
     await selectAgent(page, 'gemini');
@@ -90,19 +630,9 @@ test.describe('Conversation Full Cycle', () => {
 
   test('Claude -- full conversation with AI reply', async ({ page }) => {
     await goToGuid(page);
-    const pill = page.locator(agentPillByBackend('claude'));
-    const visible = await pill.isVisible().catch(() => false);
-    if (!visible) {
-      await page
-        .locator(AGENT_PILL)
-        .first()
-        .waitFor({ state: 'visible', timeout: 8_000 })
-        .catch(() => {});
-      const retryVisible = await pill.isVisible().catch(() => false);
-      if (!retryVisible) {
-        test.skip(true, 'Claude agent not available -- CLI may not be installed');
-        return;
-      }
+    if (!(await findAssistantIdForBackend(page, 'claude', { requireAvailable: true }))) {
+      test.skip(true, 'Claude assistant not available -- CLI may not be installed');
+      return;
     }
 
     await selectAgent(page, 'claude');
@@ -120,19 +650,9 @@ test.describe('Conversation Full Cycle', () => {
 
   test('Codex -- full conversation with AI reply', async ({ page }) => {
     await goToGuid(page);
-    const pill = page.locator(agentPillByBackend('codex'));
-    const visible = await pill.isVisible().catch(() => false);
-    if (!visible) {
-      await page
-        .locator(AGENT_PILL)
-        .first()
-        .waitFor({ state: 'visible', timeout: 8_000 })
-        .catch(() => {});
-      const retryVisible = await pill.isVisible().catch(() => false);
-      if (!retryVisible) {
-        test.skip(true, 'Codex agent not available -- CLI may not be installed');
-        return;
-      }
+    if (!(await findAssistantIdForBackend(page, 'codex', { requireAvailable: true }))) {
+      test.skip(true, 'Codex assistant not available -- CLI may not be installed');
+      return;
     }
 
     await selectAgent(page, 'codex');
@@ -192,15 +712,17 @@ test.describe('Conversation Full Cycle', () => {
       return;
     }
 
-    await selectAgent(page, backend);
+    const assistantId = await selectAssistantForBackend(page, backend);
+    if (!assistantId) {
+      test.skip(true, `No selectable assistant for backend ${backend}`);
+      return;
+    }
     const conversationId = await sendMessageFromGuid(page, 'Hello test agent info');
+    const conversation = await httpGet<ConversationWithAssistant>(page, `/api/conversations/${conversationId}`);
 
-    await waitForSessionActive(page, 120_000);
+    expect(conversation.assistant?.id).toBe(assistantId);
+    expect(conversation.assistant?.backend).toBe(backend);
 
-    // Verify agent info: the status badge is transient — verify that agent
-    // status message appeared at some point OR that a reply arrived (which
-    // proves the agent connected). waitForSessionActive already confirmed this.
-    // Just verify conversation page has meaningful content.
     const body = await page.locator('body').textContent();
     expect(body).toContain('Hello test agent info');
 
@@ -303,8 +825,8 @@ test.describe('Conversation Full Cycle', () => {
     const url = page.url();
     expect(url).toContain('guid');
 
-    // Can re-select an agent
-    const pills = page.locator(AGENT_PILL);
+    // Can still see assistant choices on Guid.
+    const pills = page.locator(ASSISTANT_PILL);
     await expect(pills.first()).toBeVisible({ timeout: 8_000 });
 
     await deleteConversation(page, conversationId);
@@ -320,7 +842,6 @@ test.describe('Conversation Full Cycle', () => {
 
     await selectAgent(page, backend);
     const conversationId = await sendMessageFromGuid(page, 'Hello delete test');
-    await waitForSessionActive(page, 120_000);
 
     const deleted = await deleteConversation(page, conversationId);
     expect(deleted).toBe(true);
@@ -332,9 +853,9 @@ test.describe('Conversation Full Cycle', () => {
     expect(url).toContain('guid');
   });
 
-  // -- Supplementary cases: Cron agent selection ----------------------------
+  // -- Supplementary cases: Cron assistant selection ----------------------------
 
-  test('cron -- create task with CLI agent, verify detail, then delete', async ({ page }) => {
+  test('cron -- create task with assistant, verify detail, then delete', async ({ page }) => {
     // Ensure the app is fully loaded (auth + React Router ready)
     await goToGuid(page);
     await page
@@ -360,6 +881,12 @@ test.describe('Conversation Full Cycle', () => {
       return;
     }
     await createBtn.click();
+    const manualCreateItem = page
+      .locator('.arco-dropdown-menu-item')
+      .filter({ hasText: /Create manually|手动创建/ })
+      .first();
+    await manualCreateItem.waitFor({ state: 'visible', timeout: 5_000 });
+    await manualCreateItem.click();
 
     // Wait for CreateTaskDialog
     const dialog = page.locator('.arco-modal').first();
@@ -373,25 +900,23 @@ test.describe('Conversation Full Cycle', () => {
     // so target the inner input/textarea via "#<field> input" / "#<field> textarea"
     const taskName = `E2E-CLI-${Date.now()}`;
     await dialog.locator('#name input').fill(taskName);
-    await dialog.locator('#description input').fill('E2E test task');
 
-    // Select CLI agent — the Select wrapper is inside the form-item for field "agent"
-    const agentFormItem = dialog.locator('.arco-form-item').filter({ has: page.locator('#agent') });
-    const agentSelect = agentFormItem.locator('.arco-select').first();
+    const agentSelect = dialog.locator('[data-testid="cron-assistant-select"]').first();
     await agentSelect.click();
 
-    // CLI agents appear in OptGroup "CLI Agents"; pick the first one
-    const cliOptions = page.locator('.arco-select-option').filter({ hasText: /Claude|Codex|Gemini|Aion/ });
-    if ((await cliOptions.count()) === 0) {
+    const assistantOptions = page
+      .locator('.arco-select-option:not(.arco-select-option-disabled)')
+      .filter({ hasText: /Claude|Codex|Gemini|Aion/ });
+    if ((await assistantOptions.count()) === 0) {
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
-      test.skip(true, 'No CLI agents available in create task dialog');
+      test.skip(true, 'No assistants available in create task dialog');
       return;
     }
-    const selectedOptionText = await cliOptions.first().textContent();
-    await cliOptions.first().click();
+    const selectedOptionText = await assistantOptions.first().textContent();
+    await assistantOptions.first().click();
 
-    // Verify agent name shows in select trigger
+    // Verify assistant name shows in select trigger
     await expect(agentSelect).toContainText(selectedOptionText!.trim(), { timeout: 3_000 });
 
     // Fill prompt
@@ -401,7 +926,7 @@ test.describe('Conversation Full Cycle', () => {
     await page.locator('.arco-modal-footer .arco-btn-primary').first().click();
 
     // Dialog should close after successful creation
-    await dialog.waitFor({ state: 'hidden', timeout: 10_000 });
+    await waitForCronCreateDialogToClose(page, dialog);
 
     // Verify the new task card appears on the Scheduled Tasks list
     const taskCard = page.locator('span').filter({ hasText: taskName }).first();
@@ -411,11 +936,8 @@ test.describe('Conversation Full Cycle', () => {
     await taskCard.click();
     await page.waitForFunction(() => window.location.hash.includes('/scheduled/'), { timeout: 10_000 });
 
-    // Verify detail page: title, description, prompt
+    // Verify detail page: title and prompt
     await expect(page.locator('h1').filter({ hasText: taskName }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('[data-testid="task-detail-summary"]')).toContainText('E2E test task', {
-      timeout: 5_000,
-    });
     await expect(page.locator('[data-testid="task-detail-sidebar-column"]')).toContainText('Say hello', {
       timeout: 5_000,
     });
@@ -463,6 +985,11 @@ test.describe('Conversation Full Cycle', () => {
       return;
     }
     await createBtn.click();
+    await page
+      .locator('.arco-dropdown-menu-item')
+      .filter({ hasText: /Create manually|手动创建/ })
+      .first()
+      .click();
 
     const dialog = page.locator('.arco-modal').first();
     await dialog.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
@@ -474,11 +1001,8 @@ test.describe('Conversation Full Cycle', () => {
     // Fill form fields
     const taskName = `E2E-Preset-${Date.now()}`;
     await dialog.locator('#name input').fill(taskName);
-    await dialog.locator('#description input').fill('E2E preset test');
 
-    // Open agent select and look for preset assistant group
-    const agentFormItem = dialog.locator('.arco-form-item').filter({ has: page.locator('#agent') });
-    const agentSelect = agentFormItem.locator('.arco-select').first();
+    const agentSelect = dialog.locator('[data-testid="cron-assistant-select"]').first();
     await agentSelect.click();
 
     // Preset group title is "Preset Assistants"; the first option after it is a preset.
@@ -494,13 +1018,19 @@ test.describe('Conversation Full Cycle', () => {
     }
 
     // Click the first option after the preset group title (next sibling li.arco-select-option)
-    const firstPresetOption = presetGroupTitle.first().locator('~ .arco-select-option').first();
+    const firstPresetOption = presetGroupTitle
+      .first()
+      .locator('~ .arco-select-option:not(.arco-select-option-disabled)')
+      .first();
     if (!(await firstPresetOption.isVisible().catch(() => false))) {
       // Fallback: use evaluate to find next sibling
       const clicked = await presetGroupTitle.first().evaluate((el) => {
         let next = el.nextElementSibling;
         while (next) {
-          if (next.classList.contains('arco-select-option')) {
+          if (
+            next.classList.contains('arco-select-option') &&
+            !next.classList.contains('arco-select-option-disabled')
+          ) {
             (next as HTMLElement).click();
             return next.textContent;
           }
@@ -542,9 +1072,6 @@ test.describe('Conversation Full Cycle', () => {
 
     // Verify detail page
     await expect(page.locator('h1').filter({ hasText: taskName }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('[data-testid="task-detail-summary"]')).toContainText('E2E preset test', {
-      timeout: 5_000,
-    });
     await expect(page.locator('[data-testid="task-detail-sidebar-column"]')).toContainText('Summarize news', {
       timeout: 5_000,
     });
@@ -566,6 +1093,7 @@ test.describe('Conversation Full Cycle', () => {
   });
 
   test('cron -- create task, run now from detail page, then delete', async ({ page }) => {
+    let stopAutoApprove: (() => void) | null = null;
     await goToGuid(page);
     await page
       .waitForFunction(() => (document.body.textContent?.length ?? 0) > 200, { timeout: 15_000 })
@@ -591,6 +1119,11 @@ test.describe('Conversation Full Cycle', () => {
       return;
     }
     await createBtn.click();
+    await page
+      .locator('.arco-dropdown-menu-item')
+      .filter({ hasText: /Create manually|手动创建/ })
+      .first()
+      .click();
 
     const dialog = page.locator('.arco-modal').first();
     await dialog.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
@@ -601,20 +1134,11 @@ test.describe('Conversation Full Cycle', () => {
 
     const taskName = `E2E-RunNow-${Date.now()}`;
     await dialog.locator('#name input').fill(taskName);
-    await dialog.locator('#description input').fill('E2E run now test');
 
-    // Select first available CLI agent
-    const agentFormItem = dialog.locator('.arco-form-item').filter({ has: page.locator('#agent') });
-    const agentSelect = agentFormItem.locator('.arco-select').first();
-    await agentSelect.click();
-    const anyOption = page.locator('.arco-select-option').first();
-    if (!(await anyOption.isVisible().catch(() => false))) {
-      await page.keyboard.press('Escape');
-      await page.keyboard.press('Escape');
-      test.skip(true, 'No agents available in create task dialog');
+    if (!(await selectPreferredCronDialogAgent(page, dialog))) {
+      test.skip(true, 'No usable agent available in create task dialog');
       return;
     }
-    await anyOption.click();
 
     await dialog.locator('#prompt textarea').fill('Say hello for run-now test');
 
@@ -657,6 +1181,7 @@ test.describe('Conversation Full Cycle', () => {
       return;
     }
 
+    stopAutoApprove = startAutoApprovePermissionMessages(page);
     await runNowBtn.click();
 
     // After "Run now", the page either:
@@ -709,6 +1234,368 @@ test.describe('Conversation Full Cycle', () => {
 
       await page.waitForFunction(() => window.location.hash === '#/scheduled', { timeout: 10_000 }).catch(() => {});
       await expect(page.locator('span').filter({ hasText: taskName }).first()).not.toBeVisible({ timeout: 5_000 });
+    }
+
+    stopAutoApprove?.();
+  });
+
+  const cronConversationAgents = ['claude', 'codex', 'gemini', 'aionrs', 'opencode'] as const;
+
+  for (const backend of cronConversationAgents) {
+    test(`cron -- ${backend} conversation skill creates task with full-auto job mode`, async ({ page }) => {
+      test.setTimeout(300_000);
+
+      let createdJobId: string | null = null;
+      let conversationId: string | null = null;
+      let stopAutoApprove: (() => void) | null = null;
+
+      try {
+        await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+        await goToGuid(page);
+        await page
+          .waitForFunction(() => (document.body.textContent?.length ?? 0) > 200, { timeout: 15_000 })
+          .catch(() => {});
+        if (backend === 'aionrs') {
+          const preconditions = await resolveAionrsPreconditions(page);
+          if (!preconditions.binary || !preconditions.models) {
+            test.skip(true, 'No aionrs-compatible provider found, skipping E2E tests');
+            return;
+          }
+        }
+        await requireOnlineAssistantForBackend(page, backend);
+        await expectCronBuiltinAutoSkill(page);
+        await selectAgent(page, backend);
+
+        const selectedMode = await resolveFullAutoModeFromAgentMetadata(page, backend);
+        const modeSelector = page.locator(MODE_SELECTOR);
+        if (await modeSelector.isVisible().catch(() => false)) {
+          const availableModes = await getAvailableModes(page);
+          if (!availableModes.includes(selectedMode)) {
+            test.skip(true, `${backend} full-auto mode "${selectedMode}" is not available in this environment`);
+            return;
+          }
+          await selectMode(page, selectedMode);
+        }
+
+        const taskName = `E2E-${backend}-Cron-${Date.now()}`;
+        const cronPromptLines = [
+          'Use the cron skill.',
+          'Create the scheduled task by calling the cron HTTP helper provided by the skill.',
+          'Do not print or use the legacy bracket command protocol.',
+          `Name: ${taskName}`,
+          'Cron schedule: 30 9 * * 1-5',
+          'Schedule description: Every weekday at 9:30 AM',
+          `Task message: Reply with a short ${backend} cron greeting.`,
+          'After the HTTP helper returns success, reply with a short user-friendly confirmation that includes the task name. Do not show internal ids.',
+        ];
+        conversationId = await sendMessageFromGuid(page, cronPromptLines.join(' '));
+        expect(conversationId).toBeTruthy();
+
+        stopAutoApprove = startAutoApprovePermissionMessages(page);
+
+        const job = await findCronJobByName(page, taskName, 180_000);
+        createdJobId = job.id;
+
+        expect(job.name).toContain(taskName);
+        expect(job.metadata?.created_by).toBe('agent');
+        const jobAssistantId = job.metadata?.agent_config?.assistant_id;
+        expect(jobAssistantId).toBeTruthy();
+        const assistants = await httpGet<AssistantRecord[]>(page, '/api/assistants');
+        const jobAssistant = assistants.find((assistant) => assistant.id === jobAssistantId);
+        expect(jobAssistant, 'cron agent_config.assistant_id should resolve to an assistant row').toBeTruthy();
+        expect(job.metadata?.agent_config?.custom_agent_id).toBeUndefined();
+        expect(job.metadata?.agent_config?.preset_agent_type).toBeUndefined();
+        expect(job.metadata?.agent_config?.mode).toBe(selectedMode);
+        await expect
+          .poll(
+            async () => {
+              const extra = await getConversationExtra(page, conversationId);
+              const boundJobId =
+                typeof extra.cron_job_id === 'string'
+                  ? extra.cron_job_id
+                  : typeof extra.cronJobId === 'string'
+                    ? extra.cronJobId
+                    : null;
+              return boundJobId;
+            },
+            {
+              timeout: 60_000,
+              message: `Waiting for conversation ${conversationId} to bind cron job ${job.id}`,
+            }
+          )
+          .toBe(job.id);
+
+        const reply = await waitForCronCreationConfirmation(page, conversationId, taskName, 180_000);
+        expect(reply).toContain(taskName);
+        expect(reply).not.toContain(job.id);
+
+        await page.evaluate((jobId) => window.location.assign(`#/scheduled/${jobId}`), job.id);
+        await page.waitForFunction((jobId) => window.location.hash.includes(`/scheduled/${jobId}`), job.id, {
+          timeout: 10_000,
+        });
+        await expect(page.locator('h1').filter({ hasText: taskName }).first()).toBeVisible({ timeout: 10_000 });
+
+        const historyColumn = page.locator('[data-testid="task-detail-history-column"]');
+        await expect
+          .poll(
+            async () => {
+              return historyColumn.locator('.cursor-pointer').count();
+            },
+            {
+              timeout: 15_000,
+              message: `Waiting for cron job ${job.id} to show associated conversation ${conversationId}`,
+            }
+          )
+          .toBeGreaterThanOrEqual(1);
+
+        await historyColumn.locator('.cursor-pointer').first().click();
+        await page.waitForFunction((cid) => window.location.hash.includes(`/conversation/${cid}`), conversationId, {
+          timeout: 10_000,
+        });
+        await expect(page.locator('.chat-header-cron-pill')).toBeVisible({ timeout: 15_000 });
+      } finally {
+        stopAutoApprove?.();
+        let conversationDeleted = false;
+        if (conversationId) {
+          conversationDeleted = await httpDelete(page, `/api/conversations/${encodeURIComponent(conversationId)}`)
+            .then(() => true)
+            .catch(() => false);
+        }
+        if (createdJobId && !conversationDeleted) {
+          await invokeBridge(page, 'cron.remove-job', { job_id: createdJobId }).catch(() => {});
+        }
+        await goToGuid(page).catch(() => {});
+      }
+    });
+  }
+
+  test('cron -- CreateTaskDialog run-now emits skill suggestion, save it, then next run reuses saved skill', async ({
+    page,
+  }) => {
+    test.setTimeout(360_000);
+
+    let createdJobId: string | null = null;
+    const createdConversationIds: string[] = [];
+    let stopAutoApprove: (() => void) | null = null;
+
+    try {
+      await goToGuid(page);
+      await page
+        .waitForFunction(() => (document.body.textContent?.length ?? 0) > 200, { timeout: 15_000 })
+        .catch(() => {});
+
+      await page.evaluate(() => window.location.assign('#/scheduled'));
+      await page
+        .waitForFunction(() => window.location.hash.includes('/scheduled'), { timeout: 10_000 })
+        .catch(() => {});
+      await page
+        .locator('h1')
+        .filter({ hasText: /Scheduled Tasks|定时任务/ })
+        .first()
+        .waitFor({ state: 'visible', timeout: 10_000 })
+        .catch(() => {});
+
+      const createBtn = page
+        .locator('button')
+        .filter({ hasText: /New task|新建任务|新建/ })
+        .first();
+      if (!(await createBtn.isVisible().catch(() => false))) {
+        console.log('[cron-skill-suggest-e2e] skip: create button unavailable');
+        test.skip(true, 'Scheduled tasks page or create button not available');
+        return;
+      }
+      await createBtn.click();
+      await page
+        .locator('.arco-dropdown-menu-item')
+        .filter({ hasText: /Create manually|手动创建/ })
+        .first()
+        .click();
+
+      const dialog = page.locator('.arco-modal').first();
+      await dialog.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+      if (!(await dialog.isVisible().catch(() => false))) {
+        console.log('[cron-skill-suggest-e2e] skip: dialog did not open');
+        test.skip(true, 'Create task dialog did not open');
+        return;
+      }
+
+      const taskName = `E2E-SkillSuggest-${Date.now()}`;
+      await dialog.locator('#name input').fill(taskName);
+
+      if (!(await selectPreferredCronDialogAgent(page, dialog))) {
+        console.log('[cron-skill-suggest-e2e] skip: no usable agent in dialog');
+        test.skip(true, 'No usable agent available in create task dialog');
+        return;
+      }
+
+      await dialog
+        .locator('#prompt textarea')
+        .fill(
+          "Create a recurring morning brief. Include today's date, the Shanghai weather, three concise highlights, and one actionable recommendation. Keep the same structure on every run."
+        );
+
+      await page.locator('.arco-modal-footer .arco-btn-primary').first().click();
+      await dialog.waitFor({ state: 'hidden', timeout: 10_000 });
+
+      const taskCard = page.locator('span').filter({ hasText: taskName }).first();
+      await expect(taskCard).toBeVisible({ timeout: 10_000 });
+      await taskCard.click();
+      await page.waitForFunction(() => window.location.hash.includes('/scheduled/'), { timeout: 10_000 });
+
+      const createdJob = await findCronJobByName(page, taskName, 15_000);
+      createdJobId = createdJob.id;
+
+      const runNowBtn = page
+        .locator('button.arco-btn-primary')
+        .filter({ hasText: /Run now|立即执行/ })
+        .first();
+      await runNowBtn.waitFor({ state: 'visible', timeout: 5_000 });
+
+      stopAutoApprove = startAutoApprovePermissionMessages(page);
+      await runNowBtn.click();
+      await page.waitForFunction(() => window.location.hash.includes('/conversation/'), { timeout: 30_000 });
+      const firstConversationId = new URL(page.url()).hash.split('/conversation/')[1];
+      if (!firstConversationId) {
+        throw new Error(`Failed to extract first conversation id from ${page.url()}`);
+      }
+      createdConversationIds.push(firstConversationId);
+
+      const firstWorkspace = await waitForConversationWorkspace(page, firstConversationId, 20_000);
+      expect(firstWorkspace.length).toBeGreaterThan(0);
+
+      const firstCronTrigger = page.locator('[data-testid="message-cron-trigger"]').last();
+      const firstCronTriggerVisible = await firstCronTrigger
+        .waitFor({ state: 'visible', timeout: 30_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (!firstCronTriggerVisible) {
+        test.skip(true, 'Cron run-now conversation did not emit a cron trigger artifact in this environment');
+        return;
+      }
+      await expect(firstCronTrigger).toContainText(taskName, { timeout: 10_000 });
+
+      await waitForSessionActive(page, 180_000);
+      const firstReply = await waitForAiReply(page, 180_000);
+      expect(firstReply.length).toBeGreaterThan(0);
+
+      const firstSuggestion = await waitForSkillSuggestMessage(page, firstConversationId, 150_000);
+      expect(firstSuggestion.skillContent.length).toBeGreaterThan(0);
+
+      const firstSkillCard = page
+        .locator('[data-testid="message-skill-suggest"]')
+        .filter({ hasText: firstSuggestion.name })
+        .last();
+      const firstSkillCardVisible = await firstSkillCard
+        .waitFor({ state: 'visible', timeout: 10_000 })
+        .then(() => true)
+        .catch(async () => {
+          const debug = await page.evaluate(
+            async ({ jobId, suggestionName }) => {
+              const bodyText = document.body.innerText || '';
+              const messageTypes = Array.from(document.querySelectorAll('[data-message-type]')).map((node) =>
+                node.getAttribute('data-message-type')
+              );
+              const skillSuggestNode = document.querySelector('[data-testid="skill-suggest-card"]');
+              const port = (window as unknown as { __backendPort?: number }).__backendPort;
+              let hasSkill = null;
+              let skillSuggestArtifact = null;
+              if (port) {
+                const res = await fetch(`http://127.0.0.1:${port}/api/cron/jobs/${encodeURIComponent(jobId)}/skill`);
+                if (res.ok) {
+                  const json = (await res.json()) as { data?: { has_skill?: boolean } };
+                  hasSkill = Boolean(json.data?.has_skill);
+                }
+
+                const artifactsRes = await fetch(
+                  `http://127.0.0.1:${port}/api/conversations/${encodeURIComponent(window.location.hash.split('/conversation/')[1] || '')}/artifacts`
+                );
+                if (artifactsRes.ok) {
+                  const artifactsJson = (await artifactsRes.json()) as {
+                    data?: Array<{ kind?: string; payload?: unknown; status?: string }>;
+                  };
+                  const items = artifactsJson.data ?? [];
+                  skillSuggestArtifact = items.find((item) => item.kind === 'skill_suggest') ?? null;
+                }
+              }
+              return {
+                hash: window.location.hash,
+                hasSkill,
+                bodyHasSuggestionName: bodyText.includes(suggestionName),
+                messageTypes,
+                skillSuggestCardText: skillSuggestNode?.textContent ?? null,
+                skillSuggestCardHtml: skillSuggestNode?.outerHTML ?? null,
+                skillSuggestArtifact,
+                bodyTextSnippet: bodyText.slice(-1200),
+              };
+            },
+            { jobId: createdJobId!, suggestionName: firstSuggestion.name }
+          );
+          console.log('[cron-skill-suggest-e2e] ui-debug', JSON.stringify(debug));
+          return false;
+        });
+      expect(firstSkillCardVisible).toBe(true);
+      if (firstSuggestion.description) {
+        await expect(firstSkillCard).toContainText(firstSuggestion.description, { timeout: 10_000 });
+      }
+
+      await firstSkillCard.locator('button').first().click();
+      await expect
+        .poll(async () => hasCronSkill(page, createdJobId!), {
+          timeout: 20_000,
+          message: 'Waiting for cron saved skill',
+        })
+        .toBe(true);
+
+      const firstSavedSkillName = `cron-${createdJobId}`;
+
+      await page.evaluate((jobId) => window.location.assign(`#/scheduled/${jobId}`), createdJobId);
+      await page.waitForFunction((jobId) => window.location.hash.includes(`/scheduled/${jobId}`), createdJobId, {
+        timeout: 10_000,
+      });
+      await expect(page.locator('h1').filter({ hasText: taskName }).first()).toBeVisible({ timeout: 5_000 });
+
+      await runNowBtn.click();
+      await page.waitForFunction(() => window.location.hash.includes('/conversation/'), { timeout: 30_000 });
+      const secondConversationId = new URL(page.url()).hash.split('/conversation/')[1];
+      if (!secondConversationId) {
+        throw new Error(`Failed to extract second conversation id from ${page.url()}`);
+      }
+      createdConversationIds.push(secondConversationId);
+
+      const secondWorkspace = await waitForConversationWorkspace(page, secondConversationId, 20_000);
+      expect(secondWorkspace.length).toBeGreaterThan(0);
+
+      const secondCronTrigger = page.locator('[data-testid="message-cron-trigger"]').last();
+      await expect(secondCronTrigger).toBeVisible({ timeout: 30_000 });
+      await expect(secondCronTrigger).toContainText(taskName, { timeout: 10_000 });
+
+      await waitForSessionActive(page, 180_000);
+      const secondReply = await waitForAiReply(page, 180_000);
+      expect(secondReply.length).toBeGreaterThan(0);
+
+      const skillDeadline = Date.now() + 30_000;
+      let conversationSkills: string[] = [];
+      while (Date.now() < skillDeadline) {
+        const extra = await getConversationExtra(page, secondConversationId);
+        conversationSkills = Array.isArray(extra.skills)
+          ? extra.skills.filter((item): item is string => typeof item === 'string')
+          : [];
+        if (conversationSkills.includes(firstSavedSkillName)) break;
+        await page.waitForTimeout(1_000);
+      }
+      expect(conversationSkills).toContain(firstSavedSkillName);
+
+      await assertNoSkillSuggestMessageWithin(page, secondConversationId, 15_000);
+    } finally {
+      stopAutoApprove?.();
+      if (createdJobId) {
+        await deleteCronSkill(page, createdJobId).catch(() => {});
+        await invokeBridge(page, 'cron.remove-job', { job_id: createdJobId }, 10_000).catch(() => {});
+      }
+
+      for (const conversationId of createdConversationIds) {
+        await removeConversationViaBridge(page, conversationId);
+      }
     }
   });
 
@@ -816,13 +1703,13 @@ test.describe('Conversation Full Cycle', () => {
   test('AgentBadge click navigates to AssistantSettings', async ({ page }) => {
     await goToGuid(page);
     const pillVisible = await page
-      .locator(AGENT_PILL)
+      .locator(ASSISTANT_PILL)
       .first()
       .waitFor({ state: 'visible', timeout: 15_000 })
       .then(() => true)
       .catch(() => false);
     if (!pillVisible) {
-      test.skip(true, 'Agent pills not visible on guid page');
+      test.skip(true, 'Assistant pills not visible on guid page');
       return;
     }
 

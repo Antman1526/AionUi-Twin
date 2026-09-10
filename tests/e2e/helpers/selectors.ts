@@ -80,9 +80,20 @@ export function agentLogoByBackend(backend: string): string {
 /** Stable selector for all agent pills on guid page. */
 export const AGENT_PILL = '[data-agent-pill="true"]';
 
-/** Match an agent pill by backend (claude/gemini/...). */
+/**
+ * Match an agent pill by backend (claude/gemini/...).
+ *
+ * The guid pill bar used to expose `data-agent-backend`, but after the ACP
+ * unification it now consistently exposes `data-testid="agent-pill-${backend}"`
+ * and `data-agent-key`. Keep the old selector path as a fallback so older
+ * packaged builds remain testable.
+ */
 export function agentPillByBackend(backend: string): string {
-  return `${AGENT_PILL}[data-agent-backend="${backend}"]`;
+  return [
+    `[data-testid="agent-pill-${backend}"]`,
+    `${AGENT_PILL}[data-agent-key="${backend}"]`,
+    `${AGENT_PILL}[data-agent-backend="${backend}"]`,
+  ].join(', ');
 }
 
 /** Match currently selected agent pill. */
@@ -128,8 +139,20 @@ export function presetPillById(id: string): string {
   return `[data-testid="preset-pill-${id}"]`;
 }
 
-/** Assistant edit drawer. */
-export const ASSISTANT_EDIT_DRAWER = '[data-testid="assistant-edit-drawer"]';
+/** Overflow assistant pill by ID on guid page. */
+export function assistantOverflowPillById(id: string): string {
+  return `[data-testid="assistant-overflow-${id}"]`;
+}
+
+/** Stable selector for all assistant pills on guid page. */
+export const ASSISTANT_PILL = '[data-testid^="preset-pill-"], [data-testid^="assistant-overflow-"]';
+
+/** Match currently selected assistant pill. */
+export const ASSISTANT_PILL_SELECTED =
+  '[data-testid^="preset-pill-"][data-assistant-selected="true"], [data-testid^="assistant-overflow-"][data-assistant-selected="true"]';
+
+/** Assistant editor surface: full-page editor or legacy drawer wrapper. */
+export const ASSISTANT_EDITOR_SURFACE = '[data-testid="assistant-editor-page"], [data-testid="assistant-edit-drawer"]';
 
 /** Create assistant button. */
 export const BTN_CREATE_ASSISTANT = '[data-testid="btn-create-assistant"]';
@@ -140,7 +163,7 @@ export const BTN_SAVE_ASSISTANT = '[data-testid="btn-save-assistant"]';
 /** Delete assistant button. */
 export const BTN_DELETE_ASSISTANT = '[data-testid="btn-delete-assistant"]';
 
-/** Skills section in edit drawer. */
+/** Skills section in the assistant editor. */
 export const SKILLS_SECTION = '[data-testid="skills-section"]';
 
 /** Skills indicator on conversation page. */
@@ -168,16 +191,16 @@ export function assistantEditById(id: string): string {
   return `[data-testid="btn-edit-${id}"]`;
 }
 
-/** Name input in assistant edit drawer. */
+/** Name input in the assistant editor. */
 export const INPUT_ASSISTANT_NAME = '[data-testid="input-assistant-name"]';
 
-/** Description input in assistant edit drawer. */
+/** Description input in the assistant editor. */
 export const INPUT_ASSISTANT_DESC = '[data-testid="input-assistant-desc"]';
 
-/** Main Agent select in assistant edit drawer. */
+/** Main Agent select in the assistant editor. */
 export const SELECT_ASSISTANT_AGENT = '[data-testid="select-assistant-agent"]';
 
-/** Add Skills button in assistant edit drawer. */
+/** Add Skills button in the assistant editor. */
 export const BTN_ADD_SKILLS = '[data-testid="btn-add-skills"]';
 
 /** Skills collapse container. */

@@ -12,16 +12,16 @@ The preload bridge exposes `window.electronAPI`; `src/common/adapter/ipcBridge.t
 defines domain contracts and `src/process/bridge/*.ts` installs providers.
 Important local-model endpoints:
 
-| IPC provider | Input | Output | Notes |
-| ------------ | ----- | ------ | ----- |
-| `localModel.listModels` | none | `{ roots, models }` | Scans configured/default roots for `.gguf`. |
-| `localModel.start` | `{ modelPath, options? }` | runtime status | Validates root, starts `llama-server`, registers provider. |
-| `localModel.stop` | none | `{ running: false }` | Kills managed server and removes managed provider. |
-| `localModel.getStatus` | none | runtime status | Returns current in-memory process handle only. |
-| `localModel.getDirectories` | none | `string[]` | Returns configured roots or defaults. |
-| `localModel.setDirectories` | `{ directories }` | `string[]` | Normalizes/persists scan roots. |
-| `localModel.getRuntimeOptions` | none | map | Returns per-model options. |
-| `localModel.setRuntimeOptions` | `{ modelPath, options }` | normalized options | Clamps numeric values and accepts `reasoning` `off/on`. |
+| IPC provider                   | Input                     | Output               | Notes                                                      |
+| ------------------------------ | ------------------------- | -------------------- | ---------------------------------------------------------- |
+| `localModel.listModels`        | none                      | `{ roots, models }`  | Scans configured/default roots for `.gguf`.                |
+| `localModel.start`             | `{ modelPath, options? }` | runtime status       | Validates root, starts `llama-server`, registers provider. |
+| `localModel.stop`              | none                      | `{ running: false }` | Kills managed server and removes managed provider.         |
+| `localModel.getStatus`         | none                      | runtime status       | Returns current in-memory process handle only.             |
+| `localModel.getDirectories`    | none                      | `string[]`           | Returns configured roots or defaults.                      |
+| `localModel.setDirectories`    | `{ directories }`         | `string[]`           | Normalizes/persists scan roots.                            |
+| `localModel.getRuntimeOptions` | none                      | map                  | Returns per-model options.                                 |
+| `localModel.setRuntimeOptions` | `{ modelPath, options }`  | normalized options   | Clamps numeric values and accepts `reasoning` `off/on`.    |
 
 Runtime status shape:
 

@@ -30,16 +30,16 @@ High-value tests: DB corruption vs native ABI failures, auth constant-time paths
 
 ## Local Model Test Matrix
 
-| Layer | Test |
-| ----- | ---- |
-| Unit | `buildLlamaServerArgs` includes `-c`, `-ngl`, and optional `--reasoning off/on`. |
-| Unit | Runtime options clamp invalid context/timeout/GPU values. |
-| Unit | Managed provider replacement preserves user-defined providers. |
-| Unit | No-key provider support is limited to local/loopback base URLs. |
-| Bridge | `localModel.start` stops partial launches on error. |
-| Renderer DOM | Local GGUF settings saves directories and runtime options. |
-| E2E | Load `Qwen3.5-4B-Q4_K_M`, send `7+5`, assert UI and SQLite contain `12`. |
-| Manual | Test each discovered GGUF model with a short deterministic arithmetic prompt. |
+| Layer        | Test                                                                             |
+| ------------ | -------------------------------------------------------------------------------- |
+| Unit         | `buildLlamaServerArgs` includes `-c`, `-ngl`, and optional `--reasoning off/on`. |
+| Unit         | Runtime options clamp invalid context/timeout/GPU values.                        |
+| Unit         | Managed provider replacement preserves user-defined providers.                   |
+| Unit         | No-key provider support is limited to local/loopback base URLs.                  |
+| Bridge       | `localModel.start` stops partial launches on error.                              |
+| Renderer DOM | Local GGUF settings saves directories and runtime options.                       |
+| E2E          | Load `Qwen3.5-4B-Q4_K_M`, send `7+5`, assert UI and SQLite contain `12`.         |
+| Manual       | Test each discovered GGUF model with a short deterministic arithmetic prompt.    |
 
 ## Areas for Review
 

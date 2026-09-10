@@ -4,6 +4,7 @@ export {
   goToSettings,
   goToExtensionSettings,
   goToChannelsTab,
+  resetGuidLastSelectedAgent,
   resetChannelsTabCache,
   waitForSettle,
   waitForClassChange,
@@ -37,6 +38,9 @@ export {
   channelItemById,
   channelSwitchById,
   webuiTabByKey,
+  assistantOverflowPillById,
+  ASSISTANT_PILL,
+  ASSISTANT_PILL_SELECTED,
   type ChannelId,
 } from './selectors';
 export { expectBodyContainsAny, expectUrlContains, createErrorCollector } from './assertions';
@@ -48,8 +52,11 @@ export {
   type ChannelPluginStatus,
 } from './extensions';
 export { invokeBridge } from './bridge';
+export { httpInvoke, httpGet, httpPost, httpDelete } from './httpBridge';
 export {
   selectAgent,
+  findAssistantIdForBackend,
+  selectAssistantForBackend,
   selectModel,
   sendMessageFromGuid,
   waitForSessionActive,
@@ -58,10 +65,12 @@ export {
   goToNewChat,
   runConversationCycle,
 } from './conversation';
+export { startAutoApprovePermissionMessages, waitForPermissionMessageCard } from './permissions';
 export { TEAM_SUPPORTED_BACKENDS } from './teamConfig';
+export { createTeam, ensureTeam, deleteTeam, cleanupTeamsByName } from './teamHelpers';
 export {
   goToAssistantSettings,
-  openAssistantDrawer,
+  openAssistantEditor,
   clickCreateAssistant,
   fillAssistantName,
   fillAssistantDescription,
@@ -74,9 +83,9 @@ export {
   selectFilterTab,
   getVisibleAssistantIds,
   getVisibleAssistantNames,
-  isDrawerVisible,
-  waitForDrawerClose,
-  closeDrawer,
+  isAssistantEditorVisible,
+  waitForAssistantEditorClose,
+  closeAssistantEditor,
 } from './assistantSettings';
 export {
   assistantCardById,
@@ -84,7 +93,7 @@ export {
   assistantDuplicateById,
   assistantEditById,
   presetPillById,
-  ASSISTANT_EDIT_DRAWER,
+  ASSISTANT_EDITOR_SURFACE,
   BTN_CREATE_ASSISTANT,
   BTN_SAVE_ASSISTANT,
   BTN_DELETE_ASSISTANT,
@@ -101,3 +110,31 @@ export {
   SKILLS_INDICATOR_COUNT,
   AGENT_BADGE,
 } from './selectors';
+export {
+  resolveAionrsBinary,
+  getAionrsTestModels,
+  resolveAionrsPreconditions,
+  createAionrsConversationViaBridge,
+  sendAionrsMessage,
+  waitForAionrsReply,
+  getAionrsConversationDB,
+  getAionrsMessages,
+  cleanupE2EAionrsConversations,
+  createTempWorkspace,
+  selectAionrsAgent,
+  selectAionrsModel,
+  selectAionrsMode,
+  attachAionrsFolder,
+  uploadAionrsFiles,
+  type TProviderWithModel,
+  type AionrsTestModels,
+} from './chatAionrs';
+export {
+  installMonitorRecorder,
+  monitorRecorderStatus,
+  readMonitorEvents,
+  clearMonitorEvents,
+  uninstallMonitorRecorder,
+  type MonitorEvent,
+  type MonitorRecorderStatus,
+} from './monitorEvents';

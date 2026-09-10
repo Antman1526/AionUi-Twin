@@ -22,16 +22,16 @@ only for loopback/local URLs.
 
 Confirmed local GGUF files in `/Users/Antman/Desktop/AI_Models/GGUF`:
 
-| Model file | Status | Notes |
-| ---------- | ------ | ----- |
-| `Qwen3.5-4B-Q4_K_M.gguf` | confirmed | Recommended default; UI e2e answer verified. |
-| `Phi-4-mini-instruct-Q4_K_M.gguf` | confirmed | Fast fallback. |
-| `Llama-3.2-3B-Instruct-Q4_K_M.gguf` | confirmed | Small/fast option. |
-| `gemma-4-E4B-it-Q4_K_M.gguf` | confirmed | Mid-size option. |
-| `Qwen3.5-9B-Q4_K_M.gguf` | confirmed | Use `reasoning: off`. |
-| `gemma-4-12b-it-Q4_K_M.gguf` | confirmed | Use `reasoning: off`. |
-| `DeepSeek-R1-Distill-Qwen-14B-Q4_K_M.gguf` | confirmed | Use `reasoning: off`; heavier/verbose. |
-| `Qwen2.5-14B-Instruct-Q4_K_M.gguf` | confirmed | Stronger but heavier. |
+| Model file                                 | Status    | Notes                                        |
+| ------------------------------------------ | --------- | -------------------------------------------- |
+| `Qwen3.5-4B-Q4_K_M.gguf`                   | confirmed | Recommended default; UI e2e answer verified. |
+| `Phi-4-mini-instruct-Q4_K_M.gguf`          | confirmed | Fast fallback.                               |
+| `Llama-3.2-3B-Instruct-Q4_K_M.gguf`        | confirmed | Small/fast option.                           |
+| `gemma-4-E4B-it-Q4_K_M.gguf`               | confirmed | Mid-size option.                             |
+| `Qwen3.5-9B-Q4_K_M.gguf`                   | confirmed | Use `reasoning: off`.                        |
+| `gemma-4-12b-it-Q4_K_M.gguf`               | confirmed | Use `reasoning: off`.                        |
+| `DeepSeek-R1-Distill-Qwen-14B-Q4_K_M.gguf` | confirmed | Use `reasoning: off`; heavier/verbose.       |
+| `Qwen2.5-14B-Instruct-Q4_K_M.gguf`         | confirmed | Stronger but heavier.                        |
 
 ## Remote Channels
 

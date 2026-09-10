@@ -10,13 +10,7 @@
  * suggestion chips, and that clicking a suggestion fills the chat input.
  */
 import { test, expect } from '../fixtures';
-import { invokeBridge, navigateTo, TEAM_SUPPORTED_BACKENDS } from '../helpers';
-
-const AGENT_TYPE_MAP: Record<string, { agentType: string; conversationType: string }> = {
-  gemini: { agentType: 'gemini', conversationType: 'gemini' },
-  claude: { agentType: 'claude', conversationType: 'acp' },
-  codex: { agentType: 'codex', conversationType: 'acp' },
-};
+import { createTeam, deleteTeam, navigateTo, cleanupTeamsByName, TEAM_SUPPORTED_BACKENDS } from '../helpers';
 
 const SUGGESTION_KEYS = ['debate', 'interview', 'expert_review'] as const;
 const SUGGESTION_CLICK_KEY = 'debate';
@@ -27,44 +21,19 @@ for (const leaderType of TEAM_SUPPORTED_BACKENDS) {
 
   test(`team empty state: ${leaderType} leader renders greeting and suggestions`, async ({ page }) => {
     test.setTimeout(120_000);
-    const meta = AGENT_TYPE_MAP[leaderType];
-    if (!meta) {
-      test.skip(true, `Leader type "${leaderType}" not in AGENT_TYPE_MAP`);
-      return;
-    }
 
     // [setup] Always start from a clean slate — a half-initialized team from a prior
     // run can leave the leader conversation stuck on the loading spinner, which
     // prevents the empty state from ever mounting. Remove any same-named team first.
-    const teams = await invokeBridge<Array<{ id: string; name: string }>>(page, 'team.list', {
-      userId: 'system_default_user',
-    });
-    for (const stale of teams.filter((t) => t.name === teamName)) {
-      await invokeBridge(page, 'team.remove', { id: stale.id }).catch(() => {});
-    }
+    await cleanupTeamsByName(page, teamName);
 
-    const created = await invokeBridge<{ id: string } | null>(page, 'team.create', {
-      userId: 'system_default_user',
-      name: teamName,
-      workspace: '',
-      workspaceMode: 'shared',
-      agents: [
-        {
-          slotId: 'slot-lead',
-          conversationId: '',
-          role: 'leader',
-          agentType: meta.agentType,
-          agentName: 'Leader',
-          conversationType: meta.conversationType,
-          status: 'pending',
-        },
-      ],
-    });
-    if (!created?.id) {
-      test.skip(true, `team.create returned null for ${leaderType} — agent not installed`);
+    let teamId: string;
+    try {
+      teamId = await createTeam(page, teamName, leaderType);
+    } catch (error) {
+      test.skip(true, `Could not create an assistant-led team for ${leaderType}: ${(error as Error).message}`);
       return;
     }
-    const teamId = created.id;
     expect(teamId).toBeTruthy();
 
     await navigateTo(page, `#/team/${teamId}`);
@@ -105,6 +74,6 @@ for (const leaderType of TEAM_SUPPORTED_BACKENDS) {
 
     // Cleanup: remove the team so the sidebar (and global conversation list) doesn't
     // accumulate leftover items that can shadow locators in later runs.
-    await invokeBridge(page, 'team.remove', { id: teamId }).catch(() => {});
+    await deleteTeam(page, teamId).catch(() => {});
   });
 }

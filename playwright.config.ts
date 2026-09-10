@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  testMatch: '{specs,features}/**/*.e2e.ts',
+  testMatch: '**/*.e2e.ts',
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false, // Electron tests share one app instance
@@ -12,11 +12,11 @@ export default defineConfig({
     ? [['github'], ['html', { open: 'never', outputFolder: 'tests/e2e/report' }]]
     : [['list'], ['html', { open: 'never', outputFolder: 'tests/e2e/report' }]],
   use: {
-    trace: 'on-first-retry',
+    trace: process.env.E2E_TRACE === '1' ? 'retain-on-failure' : 'on-first-retry',
     // screenshot/video are handled by our custom Electron fixture (see fixtures.ts)
     // since Playwright's built-in auto-screenshot requires its own `page` fixture.
     screenshot: 'only-on-failure',
-    video: 'on-first-retry',
+    video: process.env.E2E_TRACE === '1' ? 'retain-on-failure' : 'on-first-retry',
   },
   outputDir: 'tests/e2e/results',
 });

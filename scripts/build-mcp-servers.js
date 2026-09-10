@@ -23,29 +23,19 @@ const SHARED_OPTIONS = {
   external: ['electron'],
   tsconfig: path.join(ROOT, 'tsconfig.json'),
   loader: { '.wasm': 'empty' },
-  define: {
-    // @office-ai/aioncli-core uses import.meta.url for version detection.
-    // Provide a valid file: URL so fileURLToPath() does not throw at startup.
-    'import.meta.url': JSON.stringify('file:///C:/placeholder'),
-  },
 };
 
 async function main() {
   await Promise.all([
     esbuild.build({
       ...SHARED_OPTIONS,
-      entryPoints: [path.join(ROOT, 'src/process/resources/builtinMcp/imageGenServer.ts')],
+      entryPoints: [path.join(ROOT, 'packages/desktop/src/process/resources/builtinMcp/imageGenServer.ts')],
       outfile: path.join(ROOT, 'out/main/builtin-mcp-image-gen.js'),
     }),
     esbuild.build({
       ...SHARED_OPTIONS,
-      entryPoints: [path.join(ROOT, 'src/process/team/mcp/team/teamMcpStdio.ts')],
-      outfile: path.join(ROOT, 'out/main/team-mcp-stdio.js'),
-    }),
-    esbuild.build({
-      ...SHARED_OPTIONS,
-      entryPoints: [path.join(ROOT, 'src/process/team/mcp/guide/teamGuideMcpStdio.ts')],
-      outfile: path.join(ROOT, 'out/main/team-guide-mcp-stdio.js'),
+      entryPoints: [path.join(ROOT, 'packages/desktop/src/process/resources/builtinMcp/browserServer.ts')],
+      outfile: path.join(ROOT, 'out/main/builtin-mcp-browser.js'),
     }),
   ]);
 }

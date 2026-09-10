@@ -14,7 +14,24 @@ bunx electron-vite build
 > `bun run start` (`electron-vite dev`) uses Vite's HMR and hot-reloads automatically.
 > E2E tests do NOT use Vite dev server — they load static files from `out/`.
 
-### 2. Run Tests
+### 2. Ensure `aioncore` is on PATH
+
+The Electron main process spawns the `aioncore` binary during startup and
+exposes its port to the renderer via `window.__backendPort`. The binary is
+located via `which aioncore`, so it must be reachable from the `PATH`
+inherited by the Playwright runner. If it isn't, `__backendPort` will be `0`
+and every HTTP call from the renderer (or from e2e helpers that use
+`tests/e2e/helpers/httpBridge.ts`) will fail with `Failed to fetch`.
+
+```bash
+# Install the backend binary (builds to ~/.cargo/bin/aioncore)
+cd ../AionCore && cargo install --path crates/aionui-app
+
+# Make sure it's on PATH when running tests
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+### 3. Run Tests
 
 ```bash
 # All E2E tests
@@ -124,7 +141,7 @@ test.describe('Feature Name', () => {
 | `invokeBridge(page, key, data)`  | Call main process IPC                              | `../helpers` |
 | `navigateTo(page, hash)`         | Navigate via sidebar UI                            | `../helpers` |
 | `waitForAiReply(page)`           | Wait for AI response (handles Shadow DOM)          | `../helpers` |
-| `selectAgent(page, backend)`     | Select agent pill by backend                       | `../helpers` |
+| `selectAgent(page, backend)`     | Select an available assistant for a backend        | `../helpers` |
 | `sendMessageFromGuid(page, msg)` | Send message and get conversation ID               | `../helpers` |
 | `deleteConversation(page, id)`   | Delete conversation by ID (cleanup)                | `../helpers` |
 | `MODE_SELECTOR`                  | Mode selector pill `[data-testid="mode-selector"]` | `../helpers` |

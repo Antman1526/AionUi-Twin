@@ -1,82 +1,110 @@
-import { render, screen } from '@testing-library/react';
 import React from 'react';
+import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@renderer/utils/model/agentLogo', () => ({
-  getAgentLogo: (type: string) => (type === 'no-logo' ? null : '/logo.svg'),
-}));
-
-const mockPresetInfo = vi.hoisted(() => ({ value: null as { name: string; logo: string; isEmoji: boolean } | null }));
-vi.mock('@renderer/hooks/agent/usePresetAssistantInfo', () => ({
-  usePresetAssistantInfo: () => ({ info: mockPresetInfo.value, isLoading: false }),
-}));
+const useSWRMock = vi.fn();
+const usePresetAssistantInfoMock = vi.fn();
+const getConversationOrNullMock = vi.fn();
+const resolveAgentAvatarMock = vi.fn(() => ({ kind: 'fallback' }) as const);
 
 vi.mock('swr', () => ({
-  default: () => ({ data: undefined, error: undefined, isLoading: false, mutate: vi.fn() }),
+  __esModule: true,
+  default: (...args: unknown[]) => useSWRMock(...args),
 }));
 
-vi.mock('@/common', () => ({
-  ipcBridge: {
-    conversation: {
-      get: { invoke: vi.fn(async () => null) },
-    },
-  },
+vi.mock('@/renderer/hooks/agent/usePresetAssistantInfo', () => ({
+  usePresetAssistantInfo: (...args: unknown[]) => usePresetAssistantInfoMock(...args),
+}));
+
+vi.mock('@/renderer/pages/conversation/utils/conversationCache', () => ({
+  getConversationOrNull: (...args: unknown[]) => getConversationOrNullMock(...args),
+}));
+
+vi.mock('@renderer/utils/model/agentLogo', () => ({
+  useAgentLogos: () => ({}),
+  resolveAgentLogo: () => null,
+  resolveAgentAvatar: (...args: unknown[]) => resolveAgentAvatarMock(...args),
+}));
+
+vi.mock('@renderer/utils/platform', () => ({
+  resolveBackendAssetUrl: (value: string | undefined) => value,
 }));
 
 import TeamAgentIdentity from '@/renderer/pages/team/components/TeamAgentIdentity';
 
 describe('TeamAgentIdentity', () => {
   beforeEach(() => {
-    mockPresetInfo.value = null;
+    useSWRMock.mockReset();
+    usePresetAssistantInfoMock.mockReset();
+    getConversationOrNullMock.mockReset();
+    resolveAgentAvatarMock.mockReturnValue({ kind: 'fallback' });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve('<svg></svg>') }))
+    );
   });
 
-  it('shows a crown next to the leader name', () => {
-    render(<TeamAgentIdentity agentName='alice' agentType='gemini' isLeader />);
+  it('prefers the team slot name over preset assistant name when conversation identity exists', () => {
+    useSWRMock.mockReturnValue({ data: { id: 'conv-1' } });
+    usePresetAssistantInfoMock.mockReturnValue({
+      info: { name: 'Writer Assistant', logo: '✍️', isEmoji: true },
+    });
 
-    expect(screen.getByText('alice')).toBeTruthy();
-    expect(screen.getByTestId('team-leader-crown')).toBeTruthy();
-    expect(screen.getByTestId('team-leader-crown-icon')).toBeTruthy();
-    expect(screen.getByTestId('team-leader-crown-icon').getAttribute('width')).toBe('15');
-    expect(screen.getByTestId('team-leader-crown-icon').getAttribute('height')).toBe('15');
+    render(
+      <TeamAgentIdentity assistant_name='Legacy Runtime Name' assistant_backend='claude' conversation_id='conv-1' />
+    );
+
+    expect(screen.getByText('Legacy Runtime Name')).toBeInTheDocument();
+    expect(screen.queryByText('Writer Assistant')).not.toBeInTheDocument();
   });
 
-  it('does not render the crown for teammates', () => {
-    render(<TeamAgentIdentity agentName='bob' agentType='gemini' />);
+  it('falls back to the runtime name when no preset assistant info exists', () => {
+    useSWRMock.mockReturnValue({ data: { id: 'conv-1' } });
+    usePresetAssistantInfoMock.mockReturnValue({ info: null });
 
-    expect(screen.getByText('bob')).toBeTruthy();
-    expect(screen.queryByTestId('team-leader-crown')).toBeNull();
+    render(
+      <TeamAgentIdentity assistant_name='Legacy Runtime Name' assistant_backend='claude' conversation_id='conv-1' />
+    );
+
+    expect(screen.getByText('Legacy Runtime Name')).toBeInTheDocument();
   });
 
-  it('falls back to the backend logo when no preset info is available', () => {
-    render(<TeamAgentIdentity agentName='carol' agentType='gemini' conversationId='c-1' />);
+  it('falls back to a safe assistant label when the runtime name is empty', () => {
+    useSWRMock.mockReturnValue({ data: { id: 'conv-1' } });
+    usePresetAssistantInfoMock.mockReturnValue({ info: null });
 
-    const logo = screen.getByAltText('gemini') as HTMLImageElement;
-    expect(logo.src).toContain('/logo.svg');
+    render(<TeamAgentIdentity assistant_name='' assistant_backend='claude' conversation_id='conv-1' />);
+
+    expect(screen.getByText('Assistant')).toBeInTheDocument();
   });
 
-  it('renders the preset emoji avatar instead of the backend logo', () => {
-    mockPresetInfo.value = { name: 'Word Creator', logo: '📝', isEmoji: true };
+  it('renders preset image logo through ThemedLogo', async () => {
+    useSWRMock.mockReturnValue({ data: { id: 'conv-1' } });
+    usePresetAssistantInfoMock.mockReturnValue({
+      info: {
+        name: 'Claude Code',
+        logo: 'http://127.0.0.1:1/api/assets/logos/ai-major/claude.svg',
+        isEmoji: false,
+        backend: 'claude',
+      },
+    });
+    getConversationOrNullMock.mockResolvedValue(undefined);
+    resolveAgentAvatarMock.mockReturnValue({
+      kind: 'image',
+      value: 'http://127.0.0.1:1/api/assets/logos/ai-major/claude.svg',
+    });
 
-    render(<TeamAgentIdentity agentName='Leader' agentType='gemini' conversationId='c-2' />);
+    const { container } = render(
+      <TeamAgentIdentity assistant_name='' assistant_backend='claude' conversation_id='conv-1' />
+    );
 
-    expect(screen.getByText('📝')).toBeTruthy();
-    // Backend logo must not render when preset info is present
-    expect(screen.queryByAltText('gemini')).toBeNull();
-  });
+    // Wait for ThemedLogo detection to settle
+    await act(async () => {
+      await Promise.resolve();
+    });
 
-  it('renders the preset image avatar when the preset provides a non-emoji logo', () => {
-    mockPresetInfo.value = { name: 'Cowork', logo: '/assets/cowork.svg', isEmoji: false };
-
-    render(<TeamAgentIdentity agentName='Assistant' agentType='gemini' conversationId='c-3' />);
-
-    const avatar = screen.getByAltText('Cowork') as HTMLImageElement;
-    expect(avatar.src).toContain('/assets/cowork.svg');
-  });
-
-  it('falls back to the first-letter circle when no preset and no backend logo exist', () => {
-    render(<TeamAgentIdentity agentName='dave' agentType='no-logo' />);
-
-    expect(screen.getByText('D')).toBeTruthy();
-    expect(screen.queryByAltText('no-logo')).toBeNull();
+    // Non-tintable SVG (no currentColor in stub) → renders as <img>
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
   });
 });

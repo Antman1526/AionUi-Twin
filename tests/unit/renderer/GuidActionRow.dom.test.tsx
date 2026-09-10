@@ -1,201 +1,273 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+/**
+ * @license
+ * Copyright 2025 AionUi (aionui.com)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import GuidActionRow from '@/renderer/pages/guid/components/GuidActionRow';
+import type { IMcpServer } from '@/common/config/storage';
+import { ipcBridge } from '@/common';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
-
-vi.mock('@arco-design/web-react', () => ({
-  Button: ({
-    children,
-    icon,
-    loading: _loading,
-    ...props
-  }: React.ComponentProps<'button'> & { icon?: React.ReactNode; loading?: boolean }) => (
-    <button {...props}>{icon ?? children}</button>
-  ),
-  Dropdown: ({ children, droplist }: React.PropsWithChildren & { droplist?: React.ReactNode }) => (
-    <>
-      {droplist}
-      {children}
-    </>
-  ),
-  Menu: Object.assign(({ children }: React.PropsWithChildren) => <div>{children}</div>, {
-    Item: ({ children, onClick }: React.PropsWithChildren & { onClick?: (e: any) => void }) => (
-      <div onClick={onClick}>{children}</div>
-    ),
-    SubMenu: ({ children, title }: React.PropsWithChildren & { title?: React.ReactNode }) => (
-      <div>
-        {title}
-        {children}
-      </div>
-    ),
-  }),
-  Checkbox: ({
-    children,
-    checked,
-    onChange,
-  }: React.PropsWithChildren & { checked?: boolean; onChange?: () => void }) => (
-    <label>
-      <input type='checkbox' checked={checked} onChange={onChange} />
-      {children}
-    </label>
-  ),
-  Message: {
-    error: vi.fn(),
-  },
-  Tooltip: ({ children }: React.PropsWithChildren) => <>{children}</>,
-}));
-
-vi.mock('@icon-park/react', () => ({
-  ArrowUp: () => <span>ArrowUp</span>,
-  Brain: () => <span>Brain</span>,
-  FolderOpen: () => <span>FolderOpen</span>,
-  Lightning: () => <span>Lightning</span>,
-  Plus: () => <span>Plus</span>,
-  Shield: () => <span>Shield</span>,
-  UploadOne: () => <span>UploadOne</span>,
-}));
-
-vi.mock('@/renderer/components/agent/AgentModeSelector', () => ({
-  default: () => <div>AgentModeSelector</div>,
-}));
-
-vi.mock('@/renderer/components/agent/AcpConfigSelector', () => ({
-  default: () => null,
-}));
-
-vi.mock('@/renderer/hooks/context/LayoutContext', () => ({
-  useLayoutContext: () => ({
-    isMobile: false,
-  }),
-}));
-
-vi.mock('@/renderer/services/FileService', () => ({
-  FileService: {
-    processDroppedFiles: vi.fn(),
-  },
-  getCleanFileNames: (files: string[]) => files,
-}));
-
-vi.mock('@/renderer/styles/colors', () => ({
-  iconColors: {
-    primary: '#000',
-    secondary: '#666',
-  },
-}));
-
-const mockIsElectronDesktop = vi.fn(() => true);
-vi.mock('@/renderer/utils/platform', () => ({
-  isElectronDesktop: () => mockIsElectronDesktop(),
-}));
-
-vi.mock('@/renderer/utils/model/agentModes', () => ({
-  getAgentModes: () => [{ label: 'Default', value: 'default' }],
-  supportsModeSwitch: () => false,
-}));
+const environment = vi.hoisted(() => ({ isMobile: false, isDesktop: true }));
 
 vi.mock('@/common', () => ({
   ipcBridge: {
     dialog: {
-      showOpen: {
-        invoke: vi.fn(),
-      },
+      showOpen: { invoke: vi.fn().mockResolvedValue([]) },
     },
   },
 }));
 
-import GuidActionRow from '@/renderer/pages/guid/components/GuidActionRow';
-import { FileService } from '@/renderer/services/FileService';
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key,
+  }),
+}));
 
-describe('GuidActionRow', () => {
-  const defaultProps = {
-    files: [],
-    onFilesUploaded: vi.fn(),
-    onSelectWorkspace: vi.fn(),
-    modelSelectorNode: <div>ModelSelector</div>,
-    selectedAgent: 'gemini',
-    selectedMode: 'default',
-    onModeSelect: vi.fn(),
-    isPresetAgent: false,
-    selectedAgentInfo: undefined,
-    customAgents: [],
-    localeKey: 'en-US',
-    onClosePresetTag: vi.fn(),
-    builtinAutoSkills: [] as Array<{ name: string; description: string }>,
-    disabledBuiltinSkills: [] as string[],
-    onToggleBuiltinSkill: vi.fn(),
-    loading: false,
-    isButtonDisabled: false,
-    speechInputNode: <button aria-label='speech-input'>Mic</button>,
-    onSend: vi.fn(),
+vi.mock('@/renderer/hooks/context/LayoutContext', () => ({
+  useLayoutContext: () => ({ isMobile: environment.isMobile }),
+}));
+
+vi.mock('@/renderer/components/agent/AgentModeSelector', () => ({
+  default: () => <div data-testid='agent-mode-selector' />,
+}));
+
+vi.mock('@/renderer/components/chat/MobileActionSheet', () => ({
+  default: ({ entries }: { entries: Array<{ key: string; label: string; onClick?: () => void }> }) => (
+    <div data-testid='mobile-action-sheet'>
+      {entries.map((entry) => (
+        <button key={entry.key} type='button' data-testid={entry.key} onClick={entry.onClick}>
+          {entry.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
+
+vi.mock('@/renderer/services/FileService', () => ({
+  getCleanFileNames: (files: string[]) => files,
+  FileService: { processDroppedFiles: vi.fn().mockResolvedValue([]) },
+}));
+
+vi.mock('@/renderer/utils/platform', () => ({
+  isElectronDesktop: () => environment.isDesktop,
+}));
+
+vi.mock('@icon-park/react', () => {
+  const Icon = () => <span aria-hidden='true' />;
+  return {
+    ArrowUp: Icon,
+    Brain: Icon,
+    FolderOpen: Icon,
+    FolderUpload: Icon,
+    Lightning: Icon,
+    Paperclip: Icon,
+    Plus: Icon,
+    Search: Icon,
+    Shield: Icon,
+    UploadOne: Icon,
   };
+});
 
-  it('renders the speech input control next to the send button', () => {
-    render(<GuidActionRow {...defaultProps} />);
-    expect(screen.getByLabelText('speech-input')).toBeInTheDocument();
-    expect(screen.getByText('ArrowUp')).toBeInTheDocument();
+vi.mock('@arco-design/web-react', () => {
+  const Menu = Object.assign(
+    ({ children, className }: { children?: React.ReactNode; className?: string }) => (
+      <div data-testid='dropdown-menu' className={className}>
+        {children}
+      </div>
+    ),
+    {
+      Item: ({
+        children,
+        className,
+        onClick,
+      }: {
+        children?: React.ReactNode;
+        className?: string;
+        onClick?: (e: React.MouseEvent) => void;
+      }) => (
+        <div role='menuitem' className={className} onClick={onClick}>
+          {children}
+        </div>
+      ),
+      // SubMenu renders both the title row and its children so tests can inspect both levels.
+      SubMenu: ({ children, title }: { children?: React.ReactNode; title?: React.ReactNode }) => (
+        <div role='group'>
+          <div data-testid='submenu-title'>{title}</div>
+          <div data-testid='submenu-body'>{children}</div>
+        </div>
+      ),
+    }
+  );
+  return {
+    Button: ({
+      children,
+      disabled,
+      onClick,
+      ...props
+    }: {
+      children?: React.ReactNode;
+      disabled?: boolean;
+      onClick?: () => void;
+      [key: string]: unknown;
+    }) => (
+      <button type='button' disabled={disabled} onClick={onClick} {...props}>
+        {children}
+      </button>
+    ),
+    Checkbox: ({
+      children,
+      checked,
+      onChange,
+    }: {
+      children?: React.ReactNode;
+      checked?: boolean;
+      onChange?: () => void;
+    }) => (
+      <label>
+        <input type='checkbox' checked={checked ?? false} onChange={() => onChange?.()} />
+        {children}
+      </label>
+    ),
+    Dropdown: ({ children, droplist }: { children?: React.ReactNode; droplist?: React.ReactNode }) => (
+      <div>
+        {children}
+        {droplist}
+      </div>
+    ),
+    Menu,
+    Message: { success: vi.fn(), error: vi.fn() },
+    Tooltip: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+  };
+});
+
+const makeSkills = (count: number) =>
+  Array.from({ length: count }, (_, i) => ({ name: `skill-${i}`, description: '', isAuto: false }));
+
+const makeMcpServers = (count: number): IMcpServer[] =>
+  Array.from({ length: count }, (_, i) => ({ id: `mcp-${i}`, name: `server-${i}` }) as IMcpServer);
+
+const renderActionRow = (overrides: Partial<React.ComponentProps<typeof GuidActionRow>> = {}) =>
+  render(
+    <GuidActionRow
+      files={[]}
+      onFilesUploaded={vi.fn()}
+      modelSelectorNode={null}
+      isGeminiMode={false}
+      modelList={[]}
+      current_model={undefined}
+      setCurrentModel={vi.fn()}
+      currentAcpCachedModelInfo={null}
+      selectedAcpModel={null}
+      setSelectedAcpModel={vi.fn()}
+      selectedMode=''
+      onModeSelect={vi.fn()}
+      allSkills={makeSkills(8)}
+      disabledBuiltinSkills={[]}
+      enabledSkills={[]}
+      onToggleSkill={vi.fn()}
+      mcpServers={makeMcpServers(8)}
+      selectedMcpServerIds={[]}
+      onToggleMcpServer={vi.fn()}
+      loading={false}
+      isButtonDisabled={false}
+      onSend={vi.fn()}
+      {...overrides}
+    />
+  );
+
+describe('GuidActionRow skill/MCP submenu search', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    environment.isMobile = false;
+    environment.isDesktop = true;
   });
 
-  it('displays skill count when builtin skills are provided', () => {
-    const skills = [
-      { name: 'web-search', description: 'Search the web' },
-      { name: 'code-interpreter', description: 'Run code' },
-    ];
+  it('offers both host files and device upload in the mobile WebUI action sheet', () => {
+    environment.isMobile = true;
+    environment.isDesktop = false;
+    renderActionRow({ allSkills: [], mcpServers: [] });
 
-    render(<GuidActionRow {...defaultProps} builtinAutoSkills={skills} />);
-
-    expect(screen.getByText('settings.autoInjectedSkills (2/2)', { exact: false })).toBeInTheDocument();
+    expect(screen.getByTestId('attach-host-files')).toHaveTextContent('Add files');
+    expect(screen.getByTestId('attach-my-device')).toHaveTextContent('Upload from device');
   });
 
-  it('calls onToggleBuiltinSkill when skill checkbox is toggled', () => {
-    const skills = [
-      { name: 'web-search', description: 'Search the web' },
-      { name: 'code-interpreter', description: 'Run code' },
-    ];
-    const onToggle = vi.fn();
+  it('adds files selected from the host picker in mobile WebUI', async () => {
+    environment.isMobile = true;
+    environment.isDesktop = false;
+    const onFilesPicked = vi.fn();
+    vi.mocked(ipcBridge.dialog.showOpen.invoke).mockResolvedValue(['/host/project/a.txt']);
+    renderActionRow({ allSkills: [], mcpServers: [], onFilesPicked });
 
-    render(<GuidActionRow {...defaultProps} builtinAutoSkills={skills} onToggleBuiltinSkill={onToggle} />);
+    fireEvent.click(screen.getByTestId('attach-host-files'));
 
-    const checkboxes = screen.getAllByRole('checkbox');
-    fireEvent.click(checkboxes[0]);
-
-    expect(onToggle).toHaveBeenCalledWith('web-search');
+    await waitFor(() => expect(onFilesPicked).toHaveBeenCalledWith(['/host/project/a.txt']));
   });
 
-  it('renders standalone workspace button and calls onSelectWorkspace on click', async () => {
-    const { ipcBridge } = await import('@/common');
-    const onSelectWorkspace = vi.fn();
-    vi.mocked(ipcBridge.dialog.showOpen.invoke).mockResolvedValueOnce(['/chosen/path']);
+  it('shows both search boxes when skills and MCP servers exceed the threshold', () => {
+    renderActionRow();
 
-    render(<GuidActionRow {...defaultProps} onSelectWorkspace={onSelectWorkspace} />);
-
-    const workspaceBtn = screen.getByText('conversation.welcome.specifyWorkspace');
-    fireEvent.click(workspaceBtn);
-
-    await vi.waitFor(() => {
-      expect(ipcBridge.dialog.showOpen.invoke).toHaveBeenCalledWith({
-        properties: ['openDirectory', 'createDirectory'],
-      });
-      expect(onSelectWorkspace).toHaveBeenCalledWith('/chosen/path');
-    });
+    expect(screen.getByTestId('guid-skill-search')).toBeInTheDocument();
+    expect(screen.getByTestId('guid-mcp-search')).toBeInTheDocument();
   });
 
-  it('shows generic error toast when file upload fails', async () => {
-    mockIsElectronDesktop.mockReturnValueOnce(false); // WebUI mode so file input is rendered
-    const { Message } = await import('@arco-design/web-react');
-    vi.mocked(FileService.processDroppedFiles).mockRejectedValueOnce(new Error('Upload failed'));
+  it('hides the search boxes when the lists are at or below the threshold', () => {
+    renderActionRow({ allSkills: makeSkills(5), mcpServers: makeMcpServers(5) });
 
-    render(<GuidActionRow {...defaultProps} />);
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(screen.queryByTestId('guid-skill-search')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('guid-mcp-search')).not.toBeInTheDocument();
+    // Lists still render in full.
+    expect(screen.getByText('skill-4')).toBeInTheDocument();
+    expect(screen.getByText('server-4')).toBeInTheDocument();
+  });
 
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' });
-    Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
-    await fireEvent.change(fileInput);
+  it('filters skills case-insensitively and keeps other items hidden', () => {
+    renderActionRow();
 
-    expect(Message.error).toHaveBeenCalledWith('common.fileAttach.failed');
+    fireEvent.change(screen.getByTestId('guid-skill-search'), { target: { value: 'SKILL-3' } });
+
+    expect(screen.getByText('skill-3')).toBeInTheDocument();
+    expect(screen.queryByText('skill-4')).not.toBeInTheDocument();
+    // MCP list is untouched by the skill query.
+    expect(screen.getByText('server-4')).toBeInTheDocument();
+  });
+
+  it('filters MCP servers independently from skills', () => {
+    renderActionRow();
+
+    fireEvent.change(screen.getByTestId('guid-mcp-search'), { target: { value: 'server-2' } });
+
+    expect(screen.getByText('server-2')).toBeInTheDocument();
+    expect(screen.queryByText('server-3')).not.toBeInTheDocument();
+    expect(screen.getByText('skill-3')).toBeInTheDocument();
+  });
+
+  it('shows an empty state when no skill matches', () => {
+    renderActionRow();
+
+    fireEvent.change(screen.getByTestId('guid-skill-search'), { target: { value: 'zzz' } });
+
+    expect(screen.getByText('No matching skills.')).toBeInTheDocument();
+  });
+
+  it('shows an empty state when no MCP server matches', () => {
+    renderActionRow();
+
+    fireEvent.change(screen.getByTestId('guid-mcp-search'), { target: { value: 'zzz' } });
+
+    expect(screen.getByText('No servers found matching your criteria')).toBeInTheDocument();
+  });
+
+  it('still toggles a skill from a filtered list', () => {
+    const onToggleSkill = vi.fn();
+    renderActionRow({ onToggleSkill });
+
+    fireEvent.change(screen.getByTestId('guid-skill-search'), { target: { value: 'skill-3' } });
+    fireEvent.click(screen.getByText('skill-3').closest('[role="menuitem"]')!);
+
+    expect(onToggleSkill).toHaveBeenCalledWith('skill-3', false);
   });
 });

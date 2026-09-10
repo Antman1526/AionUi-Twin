@@ -23,18 +23,18 @@ Rebuild order: configs, shared types, database, Electron process, preload bridge
 
 ## Feature Ownership Map
 
-| Feature | Main files |
-| ------- | ---------- |
+| Feature              | Main files                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
 | Local GGUF discovery | `src/process/services/localModels/LocalModelDiscoveryService.ts`, `defaultModelDirectories.ts` |
-| Local GGUF runtime | `src/process/services/localModels/LocalModelRuntimeService.ts` |
-| Local GGUF IPC | `src/process/bridge/localModelBridge.ts`, `src/common/adapter/ipcBridge.ts` |
-| Local GGUF UI | `src/renderer/components/settings/SettingsModal/contents/LocalGgufModels.tsx` |
-| Model selection | `src/renderer/pages/guid/hooks/useGuidModelSelection.ts` |
-| Provider config | `src/common/config/storage.ts`, `src/common/utils/localModelProviders.ts` |
-| AionRS env | `src/process/agent/aionrs/envBuilder.ts`, `src/process/task/AionrsManager.ts` |
-| Database | `src/process/services/database/schema.ts`, `migrations.ts`, repositories |
-| WebUI auth/API | `src/process/webserver/routes`, `src/process/webserver/auth` |
-| Packaging | `electron.vite.config.ts`, `electron-builder.yml`, `scripts/build-with-builder.js` |
+| Local GGUF runtime   | `src/process/services/localModels/LocalModelRuntimeService.ts`                                 |
+| Local GGUF IPC       | `src/process/bridge/localModelBridge.ts`, `src/common/adapter/ipcBridge.ts`                    |
+| Local GGUF UI        | `src/renderer/components/settings/SettingsModal/contents/LocalGgufModels.tsx`                  |
+| Model selection      | `src/renderer/pages/guid/hooks/useGuidModelSelection.ts`                                       |
+| Provider config      | `src/common/config/storage.ts`, `src/common/utils/localModelProviders.ts`                      |
+| AionRS env           | `src/process/agent/aionrs/envBuilder.ts`, `src/process/task/AionrsManager.ts`                  |
+| Database             | `src/process/services/database/schema.ts`, `migrations.ts`, repositories                       |
+| WebUI auth/API       | `src/process/webserver/routes`, `src/process/webserver/auth`                                   |
+| Packaging            | `electron.vite.config.ts`, `electron-builder.yml`, `scripts/build-with-builder.js`             |
 
 ## Areas for Review
 
