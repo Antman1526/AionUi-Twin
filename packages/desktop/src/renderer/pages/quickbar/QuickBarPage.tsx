@@ -117,22 +117,44 @@ export const QuickBarPage: React.FC = () => {
           className='flex items-center gap-4px rounded-6px'
           icon={<Lightning theme='outline' size='12' />}
           onClick={() => {
-            setSelectedSkill('brandkit');
+            setSelectedSkill('plan-ceo-review');
             soundEffects.playClick();
           }}
         >
-          Skill: Brandkit
+          CEO Review
         </Button>
         <Button
           size='mini'
           className='flex items-center gap-4px rounded-6px'
           icon={<Lightning theme='outline' size='12' />}
           onClick={() => {
-            setSelectedSkill('brutalist-ui');
+            setSelectedSkill('cso');
             soundEffects.playClick();
           }}
         >
-          Skill: Brutalist UI
+          CSO Security
+        </Button>
+        <Button
+          size='mini'
+          className='flex items-center gap-4px rounded-6px'
+          icon={<Lightning theme='outline' size='12' />}
+          onClick={() => {
+            setSelectedSkill('diagnosing-bugs');
+            soundEffects.playClick();
+          }}
+        >
+          Diagnose Bug
+        </Button>
+        <Button
+          size='mini'
+          className='flex items-center gap-4px rounded-6px'
+          icon={<Lightning theme='outline' size='12' />}
+          onClick={() => {
+            setSelectedSkill('brandkit');
+            soundEffects.playClick();
+          }}
+        >
+          Brandkit
         </Button>
         <Button
           size='mini'
@@ -143,7 +165,7 @@ export const QuickBarPage: React.FC = () => {
             soundEffects.playClick();
           }}
         >
-          Route to Local Neural Engine
+          Local Neural Engine
         </Button>
       </div>
 

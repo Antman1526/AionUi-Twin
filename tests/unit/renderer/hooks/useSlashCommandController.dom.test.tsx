@@ -32,6 +32,13 @@ describe('slash command fuzzy matching', () => {
     expect(filterSlashCommands(commands, 'rv').map((item) => item.name)).toEqual([]);
     expect(filterSlashCommands(commands, 'co').map((item) => item.name)).toEqual(['copy-last-output']);
   });
+
+  it('caps output to limit parameter for performance with large skill collections', () => {
+    const manyCommands = Array.from({ length: 100 }, (_, i) => command(`skill-${i}`));
+    expect(filterSlashCommands(manyCommands, '').length).toBe(50);
+    expect(filterSlashCommands(manyCommands, 'skill').length).toBe(50);
+    expect(filterSlashCommands(manyCommands, 'skill', 10).length).toBe(10);
+  });
 });
 
 describe('SlashCommandMenu highlights', () => {

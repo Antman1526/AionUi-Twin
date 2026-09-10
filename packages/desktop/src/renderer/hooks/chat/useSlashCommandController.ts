@@ -65,13 +65,28 @@ export function getFuzzyMatchIndices(value: string, query: string): number[] | n
   return Array.from({ length: keywordLower.length }, (_item, index) => startIndex + index);
 }
 
-export function filterSlashCommands(commands: SlashCommandItem[], query: string): SlashCommandItem[] {
+export const MAX_DISPLAYED_SLASH_COMMANDS = 50;
+
+export function filterSlashCommands(
+  commands: SlashCommandItem[],
+  query: string,
+  limit: number = MAX_DISPLAYED_SLASH_COMMANDS
+): SlashCommandItem[] {
   const keyword = query.trim();
   if (!keyword) {
-    return commands;
+    return commands.slice(0, limit);
   }
 
-  return commands.filter((command) => getFuzzyMatchIndices(command.name, keyword) !== null);
+  const result: SlashCommandItem[] = [];
+  for (const command of commands) {
+    if (getFuzzyMatchIndices(command.name, keyword) !== null) {
+      result.push(command);
+      if (result.length >= limit) {
+        break;
+      }
+    }
+  }
+  return result;
 }
 
 function getSelectionBehavior(command: SlashCommandItem): 'execute' | 'insert' {

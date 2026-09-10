@@ -29,6 +29,7 @@
     "packages/desktop/src/renderer/types.d.ts"
   ],
   "exclude": [
+    "packages/desktop/src/process/resources/**/*",
     "packages/desktop/src/process/services/database/drivers/BunSqliteDriver.ts",
     "packages/desktop/src/process/services/database/drivers/BunSqliteDriver.bun.test.ts"
   ]
