@@ -1452,6 +1452,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "Digite o caminho da pasta, ex: ~/models ou /Volumes/Models",
+    "browseFolder": "Procurar…",
+    "pathAlreadyAdded": "A pasta já está na lista",
+    "pathAdded": "Pasta adicionada com sucesso",
+    "invalidPath": "Por favor, insira um caminho de pasta válido"
   }
 }

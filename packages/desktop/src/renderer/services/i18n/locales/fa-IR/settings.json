@@ -1449,6 +1449,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "مسیر پوشه را وارد کنید، مثلاً ~/models یا /Volumes/Models",
+    "browseFolder": "مرور…",
+    "pathAlreadyAdded": "پوشه قبلاً در لیست موجود است",
+    "pathAdded": "پوشه با موفقیت اضافه شد",
+    "invalidPath": "لطفاً یک مسیر پوشه معتبر وارد کنید"
   }
 }

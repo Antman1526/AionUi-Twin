@@ -1449,6 +1449,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "Ordnerpfad eingeben, z.B. ~/models oder /Volumes/Models",
+    "browseFolder": "Durchsuchen…",
+    "pathAlreadyAdded": "Ordner ist bereits in der Liste",
+    "pathAdded": "Ordner erfolgreich hinzugefügt",
+    "invalidPath": "Bitte geben Sie einen gültigen Ordnerpfad ein"
   }
 }

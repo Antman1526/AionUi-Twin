@@ -1451,6 +1451,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "モデルフォルダのパスを入力してください（例: ~/models や /Volumes/Models）",
+    "browseFolder": "参照…",
+    "pathAlreadyAdded": "フォルダはすでに一覧に存在します",
+    "pathAdded": "フォルダを追加しました",
+    "invalidPath": "有効なフォルダパスを入力してください"
   }
 }

@@ -6,7 +6,7 @@
 
 import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeOptions } from '@/common/config/storage';
-import { Alert, Button, InputNumber, Message, Select, Tag, Tooltip } from '@arco-design/web-react';
+import { Alert, Button, Input, InputNumber, Message, Select, Tag, Tooltip } from '@arco-design/web-react';
 import { Close, Download, FolderOpen, Info, Play, Plus, Power, Refresh, SettingTwo } from '@icon-park/react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -80,10 +80,28 @@ const LocalGgufModels: React.FC = () => {
   const missingRoots = (scan?.roots ?? []).filter((root) => !root.exists);
   const runningPath = status?.running ? status.modelPath : undefined;
 
+  const [customPathInput, setCustomPathInput] = useState('');
+
   const applyDirectories = async (next: string[]): Promise<void> => {
     await ipcBridge.localModel.setDirectories.invoke({ directories: next });
     void mutateDirectories();
     void mutateScan();
+  };
+
+  const handleAddCustomPath = async (): Promise<void> => {
+    const trimmed = customPathInput.trim();
+    if (!trimmed) {
+      message.warning?.(t('settings.localGguf.invalidPath'));
+      return;
+    }
+    const current = directories ?? [];
+    if (current.includes(trimmed)) {
+      message.warning?.(t('settings.localGguf.pathAlreadyAdded'));
+      return;
+    }
+    await applyDirectories([...current, trimmed]);
+    setCustomPathInput('');
+    message.success?.(t('settings.localGguf.pathAdded'));
   };
 
   const handleAddFolder = async (): Promise<void> => {
@@ -311,9 +329,28 @@ const LocalGgufModels: React.FC = () => {
       <div className='text-12px text-t-secondary mb-12px'>{t('settings.localGguf.description')}</div>
 
       <div className='flex items-center justify-between mb-6px'>
-        <span className='text-12px text-t-secondary'>{t('settings.localGguf.foldersTitle')}</span>
-        <Button size='mini' icon={<Plus theme='outline' size='14' />} onClick={() => void handleAddFolder()}>
+        <span className='text-12px font-medium text-t-primary'>{t('settings.localGguf.foldersTitle')}</span>
+      </div>
+      <div className='flex items-center gap-8px mb-10px'>
+        <Input
+          size='small'
+          value={customPathInput}
+          placeholder={t('settings.localGguf.pathPlaceholder')}
+          onChange={(val) => setCustomPathInput(val)}
+          onPressEnter={() => void handleAddCustomPath()}
+          className='flex-1'
+          allowClear
+        />
+        <Button
+          size='small'
+          type='primary'
+          icon={<Plus theme='outline' size='14' />}
+          onClick={() => void handleAddCustomPath()}
+        >
           {t('settings.localGguf.addFolder')}
+        </Button>
+        <Button size='small' icon={<FolderOpen theme='outline' size='14' />} onClick={() => void handleAddFolder()}>
+          {t('settings.localGguf.browseFolder')}
         </Button>
       </div>
       <div className='flex flex-col gap-4px mb-12px'>

@@ -59,3 +59,19 @@ export function getDefaultLocalModelDirectories(): string[] {
   const existingStandard = standardModelDirectories(home).filter((dir) => existsSync(dir));
   return normalizeModelDirectories([...envDirs, ...existingStandard]);
 }
+
+/**
+ * Expands ~ (tilde) to user's home directory and normalizes path separators.
+ */
+export function expandHomeDirectory(dirPath: string): string {
+  if (typeof dirPath !== 'string') return '';
+  const trimmed = dirPath.trim();
+  if (!trimmed) return '';
+  if (trimmed === '~') {
+    return os.homedir();
+  }
+  if (trimmed.startsWith('~/') || trimmed.startsWith('~\\')) {
+    return path.resolve(path.join(os.homedir(), trimmed.slice(2)));
+  }
+  return path.resolve(trimmed);
+}

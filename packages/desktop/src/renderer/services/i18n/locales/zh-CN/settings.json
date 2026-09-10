@@ -1450,6 +1450,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "输入模型文件夹路径，例如 ~/models 或 /Volumes/Models",
+    "browseFolder": "浏览…",
+    "pathAlreadyAdded": "文件夹已在列表中",
+    "pathAdded": "文件夹添加成功",
+    "invalidPath": "请输入有效的文件夹路径"
   }
 }

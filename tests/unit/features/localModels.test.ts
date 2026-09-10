@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { scanLocalModelDirectories } from '../../../packages/desktop/src/process/services/localModels/LocalModelDiscoveryService';
+import { expandHomeDirectory } from '../../../packages/desktop/src/process/services/localModels/defaultModelDirectories';
 
 describe('LocalModelDiscoveryService', () => {
   it('discovers both GGUF files and Apple Silicon native MLX bundles', async () => {
@@ -36,5 +37,32 @@ describe('LocalModelDiscoveryService', () => {
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
+  });
+
+  it('discovers an MLX bundle when the root itself is the model directory', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'we-mlx-direct-test-'));
+
+    try {
+      await fs.writeFile(path.join(tmpDir, 'config.json'), '{"model_type":"llama"}');
+      await fs.writeFile(path.join(tmpDir, 'model.safetensors'), Buffer.alloc(1024 * 1024));
+
+      const result = await scanLocalModelDirectories({ roots: [tmpDir] });
+      expect(result.models.length).toBe(1);
+      expect(result.models[0]?.format).toBe('mlx');
+      expect(result.models[0]?.path).toBe(tmpDir);
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('expandHomeDirectory', () => {
+  it('expands ~ and ~/ paths correctly to home directory', () => {
+    const home = os.homedir();
+    expect(expandHomeDirectory('~')).toBe(home);
+    expect(expandHomeDirectory('~/my-models')).toBe(path.join(home, 'my-models'));
+    expect(expandHomeDirectory('~/AI/models/')).toBe(path.join(home, 'AI', 'models'));
+    expect(expandHomeDirectory('/Volumes/External/Models')).toBe('/Volumes/External/Models');
+    expect(expandHomeDirectory('')).toBe('');
   });
 });

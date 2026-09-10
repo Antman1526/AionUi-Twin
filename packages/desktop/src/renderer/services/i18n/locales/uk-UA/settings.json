@@ -1464,6 +1464,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "Введіть шлях до папки, наприклад ~/models або /Volumes/Models",
+    "browseFolder": "Огляд…",
+    "pathAlreadyAdded": "Папка вже є у списку",
+    "pathAdded": "Папку успішно додано",
+    "invalidPath": "Будь ласка, введіть дійсний шлях до папки"
   }
 }

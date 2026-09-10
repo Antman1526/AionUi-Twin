@@ -1451,6 +1451,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "輸入模型資料夾路徑，例如 ~/models 或 /Volumes/Models",
+    "browseFolder": "瀏覽…",
+    "pathAlreadyAdded": "資料夾已在清單中",
+    "pathAdded": "資料夾新增成功",
+    "invalidPath": "請輸入有效的資料夾路徑"
   }
 }

@@ -1451,6 +1451,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "모델 폴더 경로를 입력하세요(예: ~/models 또는 /Volumes/Models)",
+    "browseFolder": "찾아보기…",
+    "pathAlreadyAdded": "폴더가 이미 목록에 있습니다",
+    "pathAdded": "폴더가 성공적으로 추가되었습니다",
+    "invalidPath": "올바른 폴더 경로를 입력하세요"
   }
 }

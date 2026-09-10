@@ -1449,6 +1449,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "Ingrese la ruta de la carpeta, ej. ~/models o /Volumes/Models",
+    "browseFolder": "Examinar…",
+    "pathAlreadyAdded": "La carpeta ya está en la lista",
+    "pathAdded": "Carpeta añadida con éxito",
+    "invalidPath": "Por favor ingrese una ruta de carpeta válida"
   }
 }

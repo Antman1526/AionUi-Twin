@@ -4,11 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import os from 'node:os';
+import path from 'node:path';
 import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeStatus } from '@/common/adapter/ipcBridge';
 import type { IProvider, LocalModelRuntimeOptions } from '@/common/config/storage';
 import { normalizeModelDirectories, resolveModelDirectories } from '@/common/utils/localModelProviders';
-import { getDefaultLocalModelDirectories } from '@process/services/localModels/defaultModelDirectories';
+import {
+  getDefaultLocalModelDirectories,
+  expandHomeDirectory,
+} from '@process/services/localModels/defaultModelDirectories';
 import { ProcessConfig } from '@process/utils/initStorage';
 import { scanLocalModelDirectories } from '@process/services/localModels/LocalModelDiscoveryService';
 import {
@@ -20,9 +25,14 @@ import {
   type ManagedServerHandle,
 } from '@process/services/localModels/LocalModelRuntimeService';
 
+export { expandHomeDirectory };
+
 /** Effective scan directories: the user's configured list, or derived defaults. */
 async function getModelDirectories(): Promise<string[]> {
-  return resolveModelDirectories(await ProcessConfig.get('localModel.directories'), getDefaultLocalModelDirectories());
+  const configured = await ProcessConfig.get('localModel.directories');
+  const defaults = getDefaultLocalModelDirectories();
+  const rawList = resolveModelDirectories(configured, defaults);
+  return normalizeModelDirectories(rawList.map(expandHomeDirectory));
 }
 
 const MIN_CONTEXT_SIZE = 512;
@@ -165,7 +175,8 @@ export function initLocalModelBridge(): void {
 
   ipcBridge.localModel.setDirectories.provider(async ({ directories }) => {
     try {
-      await ProcessConfig.set('localModel.directories', normalizeModelDirectories(directories));
+      const expanded = (directories || []).map(expandHomeDirectory);
+      await ProcessConfig.set('localModel.directories', normalizeModelDirectories(expanded));
       return { success: true, data: await getModelDirectories() };
     } catch (error) {
       return { success: false, msg: error instanceof Error ? error.message : String(error) };

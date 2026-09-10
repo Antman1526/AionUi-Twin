@@ -153,6 +153,14 @@ async function scanRoot(
 ): Promise<LocalModelAsset[] | null> {
   if (depth > LOCAL_MODEL_SCAN_MAX_DEPTH || fileBudget.remaining <= 0) return [];
 
+  if (depth === 0) {
+    const rootDirName = path.basename(root);
+    const selfMlx = await classifyMlxDirectory(root, rootDirName);
+    if (selfMlx) {
+      return [selfMlx];
+    }
+  }
+
   let entries: import('node:fs').Dirent[];
   try {
     entries = await fs.readdir(root, { withFileTypes: true });

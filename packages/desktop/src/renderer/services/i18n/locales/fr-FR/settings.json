@@ -1449,6 +1449,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "Entrez le chemin du dossier, ex. ~/models ou /Volumes/Models",
+    "browseFolder": "Parcourir…",
+    "pathAlreadyAdded": "Le dossier est déjà dans la liste",
+    "pathAdded": "Dossier ajouté avec succès",
+    "invalidPath": "Veuillez entrer un chemin de dossier valide"
   }
 }

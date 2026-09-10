@@ -1463,6 +1463,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "Введите путь к папке, например ~/models или /Volumes/Models",
+    "browseFolder": "Обзор…",
+    "pathAlreadyAdded": "Папка уже добавлена в список",
+    "pathAdded": "Папка успешно добавлена",
+    "invalidPath": "Пожалуйста, укажите корректный путь к папке"
   }
 }

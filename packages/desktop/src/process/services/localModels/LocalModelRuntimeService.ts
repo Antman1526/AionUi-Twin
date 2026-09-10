@@ -196,7 +196,7 @@ function isPathInsideRoots(modelPath: string, allowedRoots: readonly string[]): 
   return allowedRoots.some((root) => {
     const resolvedRoot = path.resolve(root);
     const relative = path.relative(resolvedRoot, resolved);
-    return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+    return !relative.startsWith('..') && !path.isAbsolute(relative);
   });
 }
 

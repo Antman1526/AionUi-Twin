@@ -1449,6 +1449,11 @@
     "useInChatFailed": "Loaded provider was not found",
     "reasoning": "Reasoning",
     "reasoningOff": "Off",
-    "reasoningOn": "On"
+    "reasoningOn": "On",
+    "pathPlaceholder": "Klasör yolunu girin, örn. ~/models veya /Volumes/Models",
+    "browseFolder": "Gözat…",
+    "pathAlreadyAdded": "Klasör zaten listede",
+    "pathAdded": "Klasör başarıyla eklendi",
+    "invalidPath": "Lütfen geçerli bir klasör yolu girin"
   }
 }
