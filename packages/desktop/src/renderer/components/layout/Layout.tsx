@@ -132,9 +132,10 @@ const Layout: React.FC<{
   const navigate = useNavigate();
 
   useEffect(() => {
-    return ipcBridge.quickBar.promptReceived.on(({ prompt }) => {
+    return ipcBridge.quickBar.promptReceived.on(({ prompt, skillId }) => {
       if (prompt) {
-        void navigate('/guid', { state: { prefillPrompt: prompt, focusPrefill: true } });
+        const prefillPrompt = skillId ? `/${skillId} ${prompt}` : prompt;
+        void navigate('/guid', { state: { prefillPrompt, focusPrefill: true } });
       }
     });
   }, [navigate]);

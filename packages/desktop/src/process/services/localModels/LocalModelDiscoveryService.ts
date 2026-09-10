@@ -265,8 +265,20 @@ export async function scanLocalModelDirectories({
     })
   );
 
+  const rawModels = scanned.flatMap(({ assets }) => assets);
+  const seenCanonicalPaths = new Set<string>();
+  const deduplicatedModels: LocalModelAsset[] = [];
+
+  for (const model of rawModels) {
+    const canonical = await fs.realpath(model.path).catch(() => path.resolve(model.path));
+    if (!seenCanonicalPaths.has(canonical)) {
+      seenCanonicalPaths.add(canonical);
+      deduplicatedModels.push(model);
+    }
+  }
+
   return {
     roots: scanned.map(({ path: rootPath, exists }) => ({ path: rootPath, exists })),
-    models: scanned.flatMap(({ assets }) => assets),
+    models: deduplicatedModels,
   };
 }

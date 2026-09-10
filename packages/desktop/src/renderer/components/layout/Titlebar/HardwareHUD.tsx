@@ -55,7 +55,10 @@ export const HardwareHUD: React.FC = () => {
           <div className='mt-6px pt-6px border-t-1px border-solid border-[var(--color-border-2)]'>
             <div className='text-11px font-semibold text-t-primary mb-2px'>Active Neural Engine Model:</div>
             <div className='font-mono text-11px truncate text-t-secondary'>{metricsRes.activeLlama.alias}</div>
-            <div className='text-10px text-t-secondary'>PID: {metricsRes.activeLlama.pid} (Metal GPU offload)</div>
+            <div className='text-10px text-t-secondary'>
+              PID: {metricsRes.activeLlama.pid} (
+              {metricsRes.activeLlama.modelPath.endsWith('.gguf') ? 'Metal GPU Offload' : 'Apple Silicon MLX Metal'})
+            </div>
           </div>
         ) : (
           <div className='mt-4px text-11px text-t-secondary italic'>Local model engine idle.</div>

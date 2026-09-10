@@ -6,6 +6,7 @@
 
 import os from 'node:os';
 import path from 'node:path';
+import { existsSync, statSync } from 'node:fs';
 import { ipcBridge } from '@/common';
 import type { LocalModelRuntimeStatus } from '@/common/adapter/ipcBridge';
 import type { IProvider, LocalModelRuntimeOptions } from '@/common/config/storage';
@@ -145,8 +146,9 @@ export function initLocalModelBridge(): void {
             ? runtimeOptions.reasoning
             : undefined,
       });
+      const isMlx = existsSync(modelPath) && (statSync(modelPath).isDirectory() || modelPath.endsWith('.safetensors'));
       const provider = createLocalProviderFromRuntime({
-        runtime: 'llama.cpp',
+        runtime: isMlx ? 'mlx' : 'llama.cpp',
         name: handle.alias,
         baseUrl: handle.baseUrl,
         models: [handle.alias],

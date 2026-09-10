@@ -4,7 +4,12 @@ import path from 'node:path';
 import os from 'node:os';
 import { scanLocalModelDirectories } from '../../../packages/desktop/src/process/services/localModels/LocalModelDiscoveryService';
 import { expandHomeDirectory } from '../../../packages/desktop/src/process/services/localModels/defaultModelDirectories';
-import { buildMlxServerArgs } from '../../../packages/desktop/src/process/services/localModels/LocalModelRuntimeService';
+import {
+  buildMlxServerArgs,
+  createLocalProviderFromRuntime,
+  isManagedLocalProvider,
+  replaceManagedProvider,
+} from '../../../packages/desktop/src/process/services/localModels/LocalModelRuntimeService';
 
 describe('LocalModelDiscoveryService', () => {
   it('discovers both GGUF files and Apple Silicon native MLX bundles', async () => {
@@ -130,5 +135,81 @@ describe('buildMlxServerArgs', () => {
     expect(args).toContain('8192');
     expect(args).toContain('--chat-template-args');
     expect(args).toContain('{"enable_thinking":false}');
+  });
+});
+
+describe('Managed Local Provider Lifecycle', () => {
+  it('correctly identifies managed local providers across runtimes', () => {
+    expect(isManagedLocalProvider('local-llama-cpp-123')).toBe(true);
+    expect(isManagedLocalProvider('local-mlx-456')).toBe(true);
+    expect(isManagedLocalProvider('local-managed-mlx-789')).toBe(true);
+    expect(isManagedLocalProvider('local-managed-llama-cpp-abc')).toBe(true);
+    expect(isManagedLocalProvider('custom-openai-provider')).toBe(false);
+    expect(isManagedLocalProvider('gemini-official')).toBe(false);
+    expect(isManagedLocalProvider(undefined)).toBe(false);
+  });
+
+  it('creates distinctive provider labels and IDs for MLX vs GGUF', () => {
+    const mlxProvider = createLocalProviderFromRuntime({
+      runtime: 'mlx',
+      name: 'Qwen2.5-7B-4bit',
+      baseUrl: 'http://127.0.0.1:8080/v1',
+      models: ['Qwen2.5-7B-4bit'],
+    });
+    expect(mlxProvider.name).toBe('Local MLX Qwen2.5-7B-4bit');
+    expect(mlxProvider.id).toContain('local-managed-mlx-');
+    expect(mlxProvider.models).toEqual(['Qwen2.5-7B-4bit']);
+    expect(mlxProvider.enabled).toBe(true);
+
+    const ggufProvider = createLocalProviderFromRuntime({
+      runtime: 'llama.cpp',
+      name: 'Llama-3.2-3B',
+      baseUrl: 'http://127.0.0.1:8081/v1',
+      models: ['Llama-3.2-3B'],
+    });
+    expect(ggufProvider.name).toBe('Local Llama-3.2-3B');
+    expect(ggufProvider.id).toContain('local-managed-llama-cpp-');
+  });
+
+  it('replaces managed providers cleanly while preserving user providers', () => {
+    const userProvider = {
+      id: 'custom-openai-user',
+      name: 'My OpenAI',
+      platform: 'custom' as const,
+      base_url: 'https://api.openai.com/v1',
+      api_key: 'sk-test',
+      models: ['gpt-4o'],
+      enabled: true,
+    };
+    const oldManaged = {
+      id: 'local-managed-llama-cpp-old',
+      name: 'Local Old GGUF',
+      platform: 'custom' as const,
+      base_url: 'http://127.0.0.1:8080/v1',
+      api_key: '',
+      models: ['old-model'],
+      enabled: true,
+    };
+    const newMlxManaged = {
+      id: 'local-managed-mlx-new',
+      name: 'Local MLX New',
+      platform: 'custom' as const,
+      base_url: 'http://127.0.0.1:8082/v1',
+      api_key: '',
+      models: ['new-mlx-model'],
+      enabled: true,
+    };
+
+    const initialList = [userProvider, oldManaged];
+    const updated = replaceManagedProvider(initialList, newMlxManaged);
+
+    expect(updated.length).toBe(2);
+    expect(updated).toContain(userProvider);
+    expect(updated).toContain(newMlxManaged);
+    expect(updated.find((p) => p.id === 'local-managed-llama-cpp-old')).toBeUndefined();
+
+    const stopped = replaceManagedProvider(updated, null);
+    expect(stopped.length).toBe(1);
+    expect(stopped[0]?.id).toBe('custom-openai-user');
   });
 });

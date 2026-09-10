@@ -45,6 +45,8 @@ import styles from './index.module.css';
 type GuidNavigationState = {
   resetAssistant?: boolean;
   selectedAssistantId?: string;
+  targetProviderId?: string;
+  targetModelId?: string;
   prefillPrompt?: string;
   prefillFiles?: string[];
   preservePrefillDraft?: boolean;
@@ -502,6 +504,36 @@ const GuidPage: React.FC = () => {
     },
     [hasSelectedAssistant, modelSelection, selectedAssistantId]
   );
+
+  const consumedTargetModelKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const nav = location.state as GuidNavigationState | null;
+    const targetModelId = nav?.targetModelId;
+    const targetProviderId = nav?.targetProviderId;
+    if (!targetModelId && !targetProviderId) return;
+    if (consumedTargetModelKeyRef.current === location.key) return;
+
+    if (modelSelection.modelList.length > 0) {
+      const matched = modelSelection.modelList.find(
+        (p) =>
+          (targetProviderId && p.id === targetProviderId) ||
+          (targetModelId && Array.isArray(p.models) && p.models.includes(targetModelId))
+      );
+      if (matched) {
+        consumedTargetModelKeyRef.current = location.key;
+        manualModelSelectionAssistantRef.current = selectedAssistantId;
+        const modelToUse =
+          targetModelId && matched.models.includes(targetModelId) ? targetModelId : (matched.models[0] ?? '');
+        void modelSelection.setCurrentModel(
+          {
+            ...matched,
+            use_model: modelToUse,
+          },
+          { persistPreference: false }
+        );
+      }
+    }
+  }, [location.key, location.state, modelSelection.modelList, modelSelection.setCurrentModel, selectedAssistantId]);
 
   // Reset guid-local UI state before paint so same-route navigations do not
   // briefly show the previous draft or preset assistant layout. When a caller

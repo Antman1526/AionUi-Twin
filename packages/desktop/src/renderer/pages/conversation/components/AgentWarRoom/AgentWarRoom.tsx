@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Tag, Tooltip } from '@arco-design/web-react';
+import { Button, Tag, Tooltip } from '@arco-design/web-react';
 import { Robot, Code, CheckOne, Shield, Brain, Lightning, FullScreen, OffScreen } from '@icon-park/react';
 import { soundEffects } from '@/renderer/utils/audio/soundEffects';
 
@@ -104,24 +104,21 @@ export const AgentWarRoom: React.FC<AgentWarRoomProps> = ({ agents = DEFAULT_AGE
         </div>
 
         <div className='flex items-center gap-6px'>
-          <button
-            type='button'
+          <Button
+            size='mini'
+            type='text'
+            shape='circle'
+            icon={isFullView ? <OffScreen theme='outline' size='14' /> : <FullScreen theme='outline' size='14' />}
             onClick={() => {
               setIsFullView(!isFullView);
               soundEffects.playClick();
             }}
-            className='p-4px rounded-6px hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border-none bg-transparent cursor-pointer'
-          >
-            {isFullView ? <OffScreen theme='outline' size='14' /> : <FullScreen theme='outline' size='14' />}
-          </button>
+            className='text-slate-400 hover:text-white'
+          />
           {onClose && (
-            <button
-              type='button'
-              onClick={onClose}
-              className='px-8px py-4px rounded-6px bg-slate-800 hover:bg-slate-700 text-slate-300 text-11px border-none cursor-pointer'
-            >
+            <Button size='mini' onClick={onClose} className='bg-slate-800 hover:bg-slate-700 text-slate-300'>
               Exit Canvas
-            </button>
+            </Button>
           )}
         </div>
       </div>

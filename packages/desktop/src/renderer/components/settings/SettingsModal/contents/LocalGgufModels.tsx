@@ -167,14 +167,35 @@ const LocalGgufModels: React.FC = () => {
     return provider ? { id: provider.id, useModel: runtime.name } : null;
   };
 
-  const handleUseInChat = async (): Promise<void> => {
-    const modelRef = await findLoadedProviderRef(status);
-    if (!modelRef) {
-      message.error?.(t('settings.localGguf.useInChatFailed'));
-      return;
-    }
+  const handleUseInChat = async (targetRuntime?: { baseUrl?: string; name?: string }): Promise<void> => {
+    const rt = targetRuntime ?? status;
+    const modelRef = await findLoadedProviderRef(rt);
     message.success?.(t('settings.localGguf.useInChatReady'));
-    void navigate('/guid');
+    void navigate('/guid', {
+      state: {
+        targetProviderId: modelRef?.id,
+        targetModelId: modelRef?.useModel ?? rt?.name,
+      },
+    });
+  };
+
+  const handleLoadAndChat = async (modelPath: string, name: string): Promise<void> => {
+    setBusyPath(modelPath);
+    try {
+      const options = runtimeOptions?.[modelPath];
+      const res = await ipcBridge.localModel.start.invoke({ modelPath, options });
+      if (res.success && res.data) {
+        message.success?.(t('settings.localGguf.loadedMessage', { name }));
+        refreshProviders();
+        await handleUseInChat(res.data);
+      } else {
+        message.error?.(res.msg || t('settings.localGguf.loadFailed'));
+      }
+    } catch (error) {
+      message.error?.(error instanceof Error ? error.message : t('settings.localGguf.loadFailed'));
+    } finally {
+      setBusyPath(null);
+    }
   };
 
   const handleLoad = async (modelPath: string, name: string): Promise<void> => {
@@ -515,16 +536,25 @@ const LocalGgufModels: React.FC = () => {
                             </Button>
                           </>
                         ) : (
-                          <Button
-                            size='mini'
-                            type='primary'
-                            icon={<Play theme='outline' size='14' />}
-                            loading={isBusy}
-                            disabled={busyPath !== null && !isBusy}
-                            onClick={() => void handleLoad(model.path, model.name)}
-                          >
-                            {isBusy ? t('settings.localGguf.loadingState') : t('settings.localGguf.load')}
-                          </Button>
+                          <>
+                            <Button
+                              size='mini'
+                              type='primary'
+                              icon={<Play theme='outline' size='14' />}
+                              loading={isBusy}
+                              disabled={busyPath !== null && !isBusy}
+                              onClick={() => void handleLoadAndChat(model.path, model.name)}
+                            >
+                              {isBusy ? t('settings.localGguf.loadingState') : t('settings.localGguf.useInChat')}
+                            </Button>
+                            <Button
+                              size='mini'
+                              disabled={busyPath !== null && !isBusy}
+                              onClick={() => void handleLoad(model.path, model.name)}
+                            >
+                              {t('settings.localGguf.load')}
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>

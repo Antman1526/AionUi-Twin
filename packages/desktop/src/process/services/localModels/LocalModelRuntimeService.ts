@@ -20,17 +20,29 @@ import type { LocalModelRuntime } from './LocalModelDiscoveryService';
  */
 export type LocalRuntimeProvider = IProvider & { useModel: string; use_model?: string };
 
-/** Id prefix for the single auto-managed local provider entry. */
+/** Id prefix for legacy local-llama-cpp provider entry. */
 export const MANAGED_LOCAL_PROVIDER_PREFIX = 'local-llama-cpp-';
 
 /**
+ * Check if a provider ID belongs to a managed local runtime (llama.cpp or MLX).
+ */
+export function isManagedLocalProvider(providerId?: string): boolean {
+  if (!providerId) return false;
+  return (
+    providerId.startsWith(MANAGED_LOCAL_PROVIDER_PREFIX) ||
+    providerId.startsWith('local-mlx-') ||
+    providerId.startsWith('local-managed-')
+  );
+}
+
+/**
  * Return a new provider list with the managed local provider replaced by `next`
- * (or removed when `next` is null). Only entries whose id starts with
- * {@link MANAGED_LOCAL_PROVIDER_PREFIX} are touched — user-defined providers are
+ * (or removed when `next` is null). Only entries recognized by
+ * {@link isManagedLocalProvider} are touched — user-defined providers are
  * preserved untouched, so registration is idempotent and non-destructive.
  */
 export function replaceManagedProvider(list: IProvider[], next: IProvider | null): IProvider[] {
-  const withoutManaged = list.filter((provider) => !provider.id?.startsWith(MANAGED_LOCAL_PROVIDER_PREFIX));
+  const withoutManaged = list.filter((provider) => !isManagedLocalProvider(provider.id));
   return next ? [...withoutManaged, next] : withoutManaged;
 }
 
@@ -51,9 +63,10 @@ export function createLocalProviderFromRuntime({
   models: string[];
 }): LocalRuntimeProvider {
   const runtimeSlug = runtime.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  const providerLabel = runtime === 'mlx' ? `Local MLX ${name}` : `Local ${name}`;
   return {
-    id: `local-${runtimeSlug}-${uuid()}`,
-    name: `Local ${name}`,
+    id: `local-managed-${runtimeSlug}-${uuid()}`,
+    name: providerLabel,
     platform: 'custom',
     base_url: baseUrl,
     api_key: '',

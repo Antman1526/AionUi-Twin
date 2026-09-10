@@ -5,7 +5,8 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Tag } from '@arco-design/web-react';
+import { Button, Input, Tag } from '@arco-design/web-react';
+import type { RefInputType } from '@arco-design/web-react/es/Input/interface';
 import { Lightning, Brain, Copy, Send, Close } from '@icon-park/react';
 import { ipcBridge } from '@/common';
 import { soundEffects } from '@/renderer/utils/audio/soundEffects';
@@ -13,7 +14,7 @@ import { soundEffects } from '@/renderer/utils/audio/soundEffects';
 export const QuickBarPage: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<RefInputType>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -60,42 +61,35 @@ export const QuickBarPage: React.FC = () => {
             <div className='w-7px h-7px rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]' />
             <span className='font-semibold text-13px tracking-wide'>WE Spotlight</span>
           </div>
-          <button
-            type='button'
+          <Button
+            size='mini'
+            type='text'
+            shape='circle'
+            icon={<Close theme='outline' size='14' />}
             onClick={() => void ipcBridge.quickBar.hide.invoke()}
-            className='p-4px rounded-full hover:bg-fill-2 text-t-secondary transition-colors cursor-pointer border-none bg-transparent'
-          >
-            <Close theme='outline' size='14' />
-          </button>
+          />
         </div>
 
-        <div className='relative flex items-center gap-8px px-12px py-10px rounded-10px bg-fill-2 border-1px border-solid border-[var(--color-border-2)]'>
-          <input
+        <div className='flex items-center gap-8px'>
+          <Input
             ref={inputRef}
-            type='text'
+            size='large'
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void handleSubmit();
-              }
-            }}
+            onChange={(val) => setPrompt(val)}
+            onPressEnter={() => void handleSubmit()}
             placeholder='Ask anything, delegate to local model, or run a skill...'
-            className='w-full bg-transparent border-none outline-none text-15px text-[var(--color-text-1)] placeholder-[var(--color-text-4)] font-normal'
+            className='flex-1 rounded-10px'
+            suffix={
+              <Button
+                size='mini'
+                type='primary'
+                shape='round'
+                icon={<Send theme='outline' size='13' />}
+                disabled={!prompt.trim()}
+                onClick={() => void handleSubmit()}
+              />
+            }
           />
-          <button
-            type='button'
-            onClick={() => void handleSubmit()}
-            disabled={!prompt.trim()}
-            className={`p-6px rounded-8px border-none transition-colors cursor-pointer ${
-              prompt.trim()
-                ? 'bg-primary-6 text-white hover:bg-primary-7'
-                : 'bg-fill-3 text-[var(--color-text-4)] cursor-not-allowed'
-            }`}
-          >
-            <Send theme='outline' size='14' />
-          </button>
         </div>
 
         {/* Selected Skill Badge */}
@@ -110,47 +104,47 @@ export const QuickBarPage: React.FC = () => {
 
       {/* Action Chips */}
       <div className='flex flex-wrap items-center gap-6px my-10px'>
-        <button
-          type='button'
+        <Button
+          size='mini'
+          className='flex items-center gap-4px rounded-6px'
+          icon={<Copy theme='outline' size='12' />}
           onClick={() => void handlePasteClipboard()}
-          className='flex items-center gap-4px px-8px py-4px rounded-6px bg-fill-2 hover:bg-fill-3 border-1px border-solid border-[var(--color-border-2)] text-11px text-t-secondary cursor-pointer transition-colors'
         >
-          <Copy theme='outline' size='12' />
-          <span>Paste Clipboard</span>
-        </button>
-        <button
-          type='button'
+          Paste Clipboard
+        </Button>
+        <Button
+          size='mini'
+          className='flex items-center gap-4px rounded-6px'
+          icon={<Lightning theme='outline' size='12' />}
           onClick={() => {
             setSelectedSkill('brandkit');
             soundEffects.playClick();
           }}
-          className='flex items-center gap-4px px-8px py-4px rounded-6px bg-fill-2 hover:bg-fill-3 border-1px border-solid border-[var(--color-border-2)] text-11px text-t-secondary cursor-pointer transition-colors'
         >
-          <Lightning theme='outline' size='12' />
-          <span>Skill: Brandkit</span>
-        </button>
-        <button
-          type='button'
+          Skill: Brandkit
+        </Button>
+        <Button
+          size='mini'
+          className='flex items-center gap-4px rounded-6px'
+          icon={<Lightning theme='outline' size='12' />}
           onClick={() => {
             setSelectedSkill('brutalist-ui');
             soundEffects.playClick();
           }}
-          className='flex items-center gap-4px px-8px py-4px rounded-6px bg-fill-2 hover:bg-fill-3 border-1px border-solid border-[var(--color-border-2)] text-11px text-t-secondary cursor-pointer transition-colors'
         >
-          <Lightning theme='outline' size='12' />
-          <span>Skill: Brutalist UI</span>
-        </button>
-        <button
-          type='button'
+          Skill: Brutalist UI
+        </Button>
+        <Button
+          size='mini'
+          className='flex items-center gap-4px rounded-6px'
+          icon={<Brain theme='outline' size='12' />}
           onClick={() => {
-            setPrompt((p) => (p ? `${p} (Use local GGUF)` : 'Run with local GGUF: '));
+            setPrompt((p) => (p ? `${p} (Use local model)` : 'Run with local model: '));
             soundEffects.playClick();
           }}
-          className='flex items-center gap-4px px-8px py-4px rounded-6px bg-fill-2 hover:bg-fill-3 border-1px border-solid border-[var(--color-border-2)] text-11px text-t-secondary cursor-pointer transition-colors'
         >
-          <Brain theme='outline' size='12' />
-          <span>Route to Local Neural Engine</span>
-        </button>
+          Route to Local Neural Engine
+        </Button>
       </div>
 
       {/* Footer Instructions */}
