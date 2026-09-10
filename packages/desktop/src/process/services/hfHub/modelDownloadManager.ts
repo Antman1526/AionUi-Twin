@@ -133,7 +133,25 @@ export async function startModelDownload({
 
   const isBundle = isMlx && !fileName;
   const resolvedFileName = fileName || (isMlx ? `${modelId.split('/').pop()}-mlx` : `${modelId.split('/').pop()}.gguf`);
-  const targetDir = isMlx ? path.join(rootDir, 'mlx', modelId.replace('/', '--')) : rootDir;
+
+  let targetDir = rootDir;
+  if (isMlx) {
+    if (fs.existsSync(path.join(rootDir, 'MLX'))) {
+      targetDir = path.join(rootDir, 'MLX', modelId.replace('/', '--'));
+    } else if (fs.existsSync(path.join(rootDir, 'mlx'))) {
+      targetDir = path.join(rootDir, 'mlx', modelId.replace('/', '--'));
+    } else {
+      targetDir = path.join(rootDir, modelId.replace('/', '--'));
+    }
+  } else {
+    if (fs.existsSync(path.join(rootDir, 'GGUF'))) {
+      targetDir = path.join(rootDir, 'GGUF');
+    } else if (fs.existsSync(path.join(rootDir, 'gguf'))) {
+      targetDir = path.join(rootDir, 'gguf');
+    } else {
+      targetDir = rootDir;
+    }
+  }
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });

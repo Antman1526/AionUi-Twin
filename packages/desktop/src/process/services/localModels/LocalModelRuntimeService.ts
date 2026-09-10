@@ -82,7 +82,11 @@ let currentSession: ManagedSession | null = null;
 const DEFAULT_EXECUTABLE_CANDIDATES = ['llama-server', '/opt/homebrew/bin/llama-server', '/usr/local/bin/llama-server'];
 const DEFAULT_MLX_CANDIDATES = [
   'mlx_lm.server',
+  path.join(process.env.HOME || '', 'Desktop', 'MacBook AI models', '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
+  path.join(process.env.HOME || '', 'AI_Models', '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
+  path.join(process.env.HOME || '', '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
   '/opt/homebrew/bin/mlx_lm.server',
+  '/usr/local/bin/mlx_lm.server',
   path.join(process.env.HOME || '', '.local/bin/mlx_lm.server'),
   path.join(process.env.HOME || '', 'Library/Python/3.11/bin/mlx_lm.server'),
   path.join(process.env.HOME || '', 'Library/Python/3.12/bin/mlx_lm.server'),
@@ -281,7 +285,15 @@ export async function startManagedLlamaServer({
   let args: string[] = [];
 
   if (isMlx) {
-    executable = resolveExecutable(DEFAULT_MLX_CANDIDATES);
+    const mlxCandidates = [
+      ...DEFAULT_MLX_CANDIDATES,
+      ...allowedRoots.flatMap((root) => [
+        path.join(root, '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
+        path.join(root, '.venv', 'bin', 'mlx_lm.server'),
+        path.join(path.dirname(root), '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
+      ]),
+    ];
+    executable = resolveExecutable(mlxCandidates);
     if (!executable) {
       throw new Error(
         'mlx_lm.server executable not found. Install mlx-lm by running `pip install mlx-lm` to serve Apple Silicon native MLX models.'

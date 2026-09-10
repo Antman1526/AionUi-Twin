@@ -73,6 +73,20 @@ function isMacMetadataFile(fileName: string): boolean {
   return fileName.startsWith('._') || fileName === '.DS_Store';
 }
 
+const IGNORED_DIR_NAMES = new Set([
+  'node_modules',
+  '__pycache__',
+  '.git',
+  '.cache',
+  '.hf_cache',
+  '.hf_tools_venv',
+  '.mlx_lm_venv',
+  'venv',
+  '.venv',
+  'env',
+  '.env',
+]);
+
 async function classifyMlxDirectory(dirPath: string, dirName: string): Promise<LocalModelAsset | null> {
   if (isMacMetadataFile(dirName)) return null;
 
@@ -99,7 +113,11 @@ async function classifyMlxDirectory(dirPath: string, dirName: string): Promise<L
       }
     }
 
-    const displayName = dirName.replace(/^mlx-community--/, '').replace(/--/g, '/');
+    const displayName = dirName
+      .replace(/^mlx-community--/, '')
+      .replace(/^lmstudio-community--/, '')
+      .replace(/--/g, '/')
+      .replace(/__/g, ' / ');
 
     return {
       path: dirPath,
@@ -126,9 +144,22 @@ async function classifyFile(fullPath: string, fileName: string): Promise<LocalMo
     return null;
   }
 
+  const parentDir = path.basename(path.dirname(fullPath));
+  let name = path.basename(fileName, path.extname(fileName));
+  if (
+    parentDir &&
+    parentDir !== 'GGUF' &&
+    parentDir !== 'models' &&
+    parentDir !== 'Models' &&
+    (parentDir.includes('__') || parentDir.includes('--'))
+  ) {
+    const parentFormatted = parentDir.replace(/(__|--)/g, ' / ');
+    name = `${parentFormatted} (${name})`;
+  }
+
   return {
     path: fullPath,
-    name: path.basename(fileName, path.extname(fileName)),
+    name,
     kind: rule.kind,
     format: rule.format,
     suggestedRuntime: rule.suggestedRuntime,
@@ -171,11 +202,30 @@ async function scanRoot(
   const assets: LocalModelAsset[] = [];
   for (const entry of entries) {
     if (fileBudget.remaining <= 0) break;
+    if (isMacMetadataFile(entry.name)) continue;
 
+    let isDirectory = entry.isDirectory();
+    let isFile = entry.isFile();
     const fullPath = path.join(root, entry.name);
-    if (entry.isDirectory()) {
+
+    if (entry.isSymbolicLink()) {
+      try {
+        const stat = await fs.stat(fullPath);
+        isDirectory = stat.isDirectory();
+        isFile = stat.isFile();
+      } catch {
+        continue;
+      }
+    }
+
+    if (isDirectory) {
+      if (entry.name.startsWith('.') || IGNORED_DIR_NAMES.has(entry.name)) {
+        continue;
+      }
+
       const mlxAsset = await classifyMlxDirectory(fullPath, entry.name);
       if (mlxAsset) {
+        fileBudget.remaining -= 1;
         assets.push(mlxAsset);
         continue;
       }
@@ -184,11 +234,14 @@ async function scanRoot(
       if (childAssets) assets.push(...childAssets);
       continue;
     }
-    if (!entry.isFile()) continue;
 
-    fileBudget.remaining -= 1;
+    if (!isFile) continue;
+
     const asset = await classifyFile(fullPath, entry.name);
-    if (asset) assets.push(asset);
+    if (asset) {
+      fileBudget.remaining -= 1;
+      assets.push(asset);
+    }
   }
 
   return assets;

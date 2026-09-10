@@ -54,6 +54,48 @@ describe('LocalModelDiscoveryService', () => {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('discovers all models when GGUF and MLX sit in the same location alongside venvs, non-model files and symlinks', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'we-unified-location-test-'));
+
+    try {
+      // Create non-model directories that should be skipped (e.g. venv, cache)
+      const venvDir = path.join(tmpDir, '.mlx_lm_venv', 'lib');
+      await fs.mkdir(venvDir, { recursive: true });
+      for (let i = 0; i < 50; i++) {
+        await fs.writeFile(path.join(venvDir, `file_${i}.py`), 'print("venv")');
+      }
+
+      // Create GGUF in root
+      await fs.writeFile(path.join(tmpDir, 'Llama-3.2-3B.gguf'), Buffer.alloc(1024 * 512));
+
+      // Create GGUF in subfolder (e.g. repo folder)
+      const repoDir = path.join(tmpDir, 'Author__Repo-Model-GGUF');
+      await fs.mkdir(repoDir, { recursive: true });
+      await fs.writeFile(path.join(repoDir, 'model.gguf'), Buffer.alloc(1024 * 512));
+
+      // Create MLX bundle directly in same location
+      const mlxDir = path.join(tmpDir, 'Qwen-MLX-4bit');
+      await fs.mkdir(mlxDir, { recursive: true });
+      await fs.writeFile(path.join(mlxDir, 'config.json'), '{"model_type":"qwen"}');
+      await fs.writeFile(path.join(mlxDir, 'weights.safetensors'), Buffer.alloc(1024 * 512));
+
+      // Create a symlinked directory containing another model
+      const externalDir = await fs.mkdtemp(path.join(os.tmpdir(), 'we-external-target-'));
+      await fs.writeFile(path.join(externalDir, 'symlinked-model.gguf'), Buffer.alloc(1024 * 512));
+      await fs.symlink(externalDir, path.join(tmpDir, 'SymlinkedFolder'));
+
+      const result = await scanLocalModelDirectories({ roots: [tmpDir] });
+      expect(result.models.length).toBe(4);
+
+      const formats = result.models.map((m) => m.format).toSorted();
+      expect(formats).toEqual(['gguf', 'gguf', 'gguf', 'mlx']);
+
+      await fs.rm(externalDir, { recursive: true, force: true });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('expandHomeDirectory', () => {

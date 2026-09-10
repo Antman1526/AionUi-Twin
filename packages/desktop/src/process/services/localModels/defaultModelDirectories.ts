@@ -19,15 +19,22 @@ export const MODEL_DIRS_ENV = 'AIONUI_MODEL_DIRS';
  */
 function standardModelDirectories(home: string): string[] {
   const dirs = [
+    path.join(home, 'Desktop', 'MacBook AI models'),
+    path.join(home, 'Desktop', 'MacBook AI models', 'GGUF'),
+    path.join(home, 'Desktop', 'MacBook AI models', 'MLX'),
+    path.join(home, 'Desktop', 'AI models'),
+    path.join(home, 'Desktop', 'models'),
     path.join(home, 'AI_Models', 'GGUF'),
     path.join(home, 'AI_Models'),
     path.join(home, 'Models', 'GGUF'),
+    path.join(home, 'Models', 'MLX'),
     path.join(home, 'Models'),
     path.join(home, 'Desktop', 'AI_Models', 'GGUF'),
     path.join(home, 'Desktop', 'AI_Models'),
     path.join(home, '.ollama', 'models'),
     path.join(home, '.cache', 'lm-studio', 'models'),
     path.join(home, '.lmstudio', 'models'),
+    path.join(home, '.cache', 'huggingface', 'hub'),
   ];
   dirs.push(
     process.platform === 'darwin'
