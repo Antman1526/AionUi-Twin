@@ -1180,9 +1180,7 @@ async function tunnelDaemonState(): Promise<ServerState | null> {
 
 /** Fetch active agent clientIds (sessions + pending setup keys). Returns
  * null when the list can't be read — callers must not treat that as empty. */
-async function fetchAgentList(
-  state: ServerState
-): Promise<Array<{
+async function fetchAgentList(state: ServerState): Promise<Array<{
   clientId: string;
   scopes: string[];
   domains?: string[];

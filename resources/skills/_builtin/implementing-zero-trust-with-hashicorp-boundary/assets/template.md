@@ -2,9 +2,9 @@
 
 ## Deployment Information
 
-- **Organization**: ******\_\_\_******
+- **Organization**: **\*\***\_\_\_**\*\***
 - **Deployment Type**: [ ] Self-hosted [ ] HCP Boundary
-- **Identity Provider**: ******\_\_\_******
+- **Identity Provider**: **\*\***\_\_\_**\*\***
 - **Vault Integration**: [ ] Yes [ ] No
 
 ## Scope Hierarchy

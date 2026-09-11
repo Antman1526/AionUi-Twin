@@ -1,10 +1,10 @@
 # SCIM Provisioning Implementation Checklist
 
-## Project: ******\_\_\_******
+## Project: **\*\***\_\_\_**\*\***
 
-## Date: ******\_\_\_******
+## Date: **\*\***\_\_\_**\*\***
 
-## Engineer: ******\_\_\_******
+## Engineer: **\*\***\_\_\_**\*\***
 
 ## Pre-Implementation
 

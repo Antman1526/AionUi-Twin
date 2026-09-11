@@ -80,7 +80,7 @@ export const HardwareHUD: React.FC = () => {
             size='mini'
             showText={false}
             status={percent > 85 ? 'warning' : 'normal'}
-            color={percent > 85 ? '#f59e0b' : '#3b82f6'}
+            color={percent > 85 ? 'rgb(var(--warning-6))' : 'rgb(var(--primary-6))'}
           />
         </div>
       </div>

@@ -20,9 +20,9 @@
 - [ ] External issues identified and documented
 - [ ] PESTLE analysis completed
 - [ ] Issues regularly reviewed and updated
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
-- **Notes**: ******\_\_\_******
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 4.2 Understanding the Needs and Expectations of Interested Parties
 
@@ -30,7 +30,7 @@
 - [ ] Requirements of interested parties documented
 - [ ] Legal, regulatory, and contractual requirements identified
 - [ ] Requirements reviewed periodically
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 4.3 Determining the Scope of the ISMS
@@ -40,7 +40,7 @@
 - [ ] Scope considers interested party requirements (4.2)
 - [ ] Scope considers interfaces and dependencies
 - [ ] Scope available as documented information
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 4.4 Information Security Management System
@@ -48,7 +48,7 @@
 - [ ] ISMS processes established
 - [ ] ISMS implemented and maintained
 - [ ] Continual improvement processes in place
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ---
@@ -65,7 +65,7 @@
 - [ ] ISMS achieves its intended outcomes
 - [ ] Persons directed and supported to contribute to ISMS effectiveness
 - [ ] Continual improvement promoted
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 5.2 Information Security Policy
@@ -77,7 +77,7 @@
 - [ ] Policy available as documented information
 - [ ] Policy communicated within the organization
 - [ ] Policy available to interested parties as appropriate
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 5.3 Organizational Roles, Responsibilities and Authorities
@@ -85,7 +85,7 @@
 - [ ] Information security roles and responsibilities assigned and communicated
 - [ ] Responsibility for ISMS conformance assigned
 - [ ] Responsibility for reporting ISMS performance assigned
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ---
@@ -98,7 +98,7 @@
 - [ ] Actions planned to address risks and opportunities
 - [ ] Plans for integrating actions into ISMS processes
 - [ ] Plans for evaluating effectiveness of actions
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 6.1.2 Information Security Risk Assessment
@@ -112,7 +112,7 @@
 - [ ] Risk likelihood and impact assessed
 - [ ] Risk levels determined
 - [ ] Risk assessment results documented
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 6.1.3 Information Security Risk Treatment
@@ -123,7 +123,7 @@
 - [ ] Statement of Applicability produced
 - [ ] Risk treatment plan formulated
 - [ ] Risk owners approve risk treatment plan and residual risks
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 6.2 Information Security Objectives and Planning to Achieve Them
@@ -135,13 +135,13 @@
 - [ ] Objectives communicated
 - [ ] Objectives updated as appropriate
 - [ ] Plans: what will be done, resources, responsibilities, timelines, evaluation
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 6.3 Planning of Changes
 
 - [ ] Changes to ISMS carried out in a planned manner
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ---
@@ -151,7 +151,7 @@
 ### 7.1 Resources
 
 - [ ] Resources needed for ISMS determined and provided
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 7.2 Competence
@@ -160,7 +160,7 @@
 - [ ] Competence ensured through education, training, or experience
 - [ ] Actions taken to acquire competence where needed
 - [ ] Evidence of competence retained
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 7.3 Awareness
@@ -168,7 +168,7 @@
 - [ ] Persons aware of information security policy
 - [ ] Persons aware of their contribution to ISMS effectiveness
 - [ ] Persons aware of implications of not conforming to ISMS requirements
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 7.4 Communication
@@ -178,7 +178,7 @@
 - [ ] When to communicate defined
 - [ ] With whom to communicate defined
 - [ ] How to communicate defined
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 7.5 Documented Information
@@ -194,7 +194,7 @@
 - [ ] Storage and preservation controlled
 - [ ] Control of changes maintained
 - [ ] Retention and disposition determined
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ---
@@ -210,7 +210,7 @@
 - [ ] Planned changes controlled
 - [ ] Unintended changes reviewed and actions taken to mitigate adverse effects
 - [ ] Outsourced processes controlled
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 8.2 Information Security Risk Assessment
@@ -218,14 +218,14 @@
 - [ ] Risk assessments performed at planned intervals
 - [ ] Risk assessments performed when significant changes occur
 - [ ] Results of risk assessments documented
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 8.3 Information Security Risk Treatment
 
 - [ ] Risk treatment plan implemented
 - [ ] Results of risk treatment documented
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ---
@@ -241,7 +241,7 @@
 - [ ] When results shall be analysed and evaluated determined
 - [ ] Who shall analyse and evaluate results determined
 - [ ] Results of monitoring and measurement documented
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 9.2 Internal Audit
@@ -252,7 +252,7 @@
 - [ ] Auditors selected to ensure objectivity and impartiality
 - [ ] Audit results reported to relevant management
 - [ ] Documented information retained as evidence of audit programme and results
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 9.3 Management Review
@@ -266,7 +266,7 @@
 - [ ] Review considers opportunities for continual improvement
 - [ ] Decisions on improvement opportunities documented
 - [ ] Decisions on changes needed to ISMS documented
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ---
@@ -276,7 +276,7 @@
 ### 10.1 Continual Improvement
 
 - [ ] Suitability, adequacy, and effectiveness of ISMS continually improved
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ### 10.2 Nonconformity and Corrective Action
@@ -289,7 +289,7 @@
 - [ ] Effectiveness of corrective actions reviewed
 - [ ] Changes to ISMS made if necessary
 - [ ] Documented information retained on nature of nonconformities, actions taken, and results
-- **Evidence**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
 - **Status**: Conforming / Minor NC / Major NC / Not Assessed
 
 ---

@@ -20,8 +20,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 2. Requirement 2: Apply secure configurations to all system components
 
@@ -30,8 +30,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 3. Requirement 3: Protect stored account data
 
@@ -40,8 +40,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 4. Requirement 4: Protect cardholder data with strong cryptography during transmission
 
@@ -50,8 +50,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 5. Requirement 5: Protect all systems and networks from malicious software
 
@@ -60,8 +60,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 6. Requirement 6: Develop and maintain secure systems and software
 
@@ -70,8 +70,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 7. Requirement 7: Restrict access by business need to know
 
@@ -80,8 +80,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 8. Requirement 8: Identify users and authenticate access
 
@@ -90,8 +90,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 9. Requirement 9: Restrict physical access to cardholder data
 
@@ -100,8 +100,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 10. Requirement 10: Log and monitor all access to system components
 
@@ -110,8 +110,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 11. Requirement 11: Test security of systems and networks regularly
 
@@ -120,8 +120,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ### 12. Requirement 12: Support information security with policies and programs
 
@@ -130,8 +130,8 @@
 - [ ] Evidence available
 - [ ] Tested and verified
 - **Status**: Compliant / Partially Compliant / Non-Compliant / N/A
-- **Evidence**: ******\_\_\_******
-- **Notes**: ******\_\_\_******
+- **Evidence**: **\*\***\_\_\_**\*\***
+- **Notes**: **\*\***\_\_\_**\*\***
 
 ---
 

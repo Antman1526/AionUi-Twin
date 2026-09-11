@@ -238,13 +238,16 @@ function isPathInsideRoots(modelPath: string, allowedRoots: readonly string[]): 
   });
 }
 
-function resolveExecutable(candidates: readonly string[]): string | null {
+export function resolveExecutable(candidates: readonly string[]): string | null {
+  // First pass: prefer concrete file paths that actually exist on disk (e.g. venvs, brew binaries)
   for (const candidate of candidates) {
-    // Absolute/relative paths must exist on disk; bare command names are left for
-    // PATH resolution by the spawned shell environment.
-    if (candidate.includes(path.sep)) {
-      if (existsSync(candidate)) return candidate;
-    } else {
+    if (candidate.includes(path.sep) && existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  // Second pass: fallback to bare command names to let spawn resolve from enhanced PATH
+  for (const candidate of candidates) {
+    if (!candidate.includes(path.sep)) {
       return candidate;
     }
   }
@@ -320,12 +323,14 @@ export async function startManagedLlamaServer({
 
   if (isMlx) {
     const mlxCandidates = [
-      ...DEFAULT_MLX_CANDIDATES,
+      path.join(path.dirname(modelPath), '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
+      path.join(path.dirname(modelPath), '.venv', 'bin', 'mlx_lm.server'),
       ...allowedRoots.flatMap((root) => [
         path.join(root, '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
         path.join(root, '.venv', 'bin', 'mlx_lm.server'),
         path.join(path.dirname(root), '.mlx_lm_venv', 'bin', 'mlx_lm.server'),
       ]),
+      ...DEFAULT_MLX_CANDIDATES,
     ];
     executable = resolveExecutable(mlxCandidates);
     if (!executable) {

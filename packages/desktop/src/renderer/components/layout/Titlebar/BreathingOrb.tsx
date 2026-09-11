@@ -6,10 +6,12 @@
 
 import React from 'react';
 import { Tooltip } from '@arco-design/web-react';
+import { useNavigate } from 'react-router-dom';
 import { ipcBridge } from '@/common';
 import useSWR from 'swr';
 
 export const BreathingOrb: React.FC = () => {
+  const navigate = useNavigate();
   const { data: statusRes } = useSWR('local-model.status', () => ipcBridge.localModel.getStatus.invoke(), {
     refreshInterval: 3000,
   });
@@ -25,7 +27,17 @@ export const BreathingOrb: React.FC = () => {
           : 'WE Neural Engine: Standby (Click to launch or load models)'
       }
     >
-      <div className='flex items-center gap-6px px-8px py-3px rounded-full bg-fill-2 border-1px border-solid border-[var(--color-border-2)] cursor-pointer hover:bg-fill-3 transition-colors'>
+      <div
+        role='button'
+        tabIndex={0}
+        onClick={() => void navigate('/settings/model')}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            void navigate('/settings/model');
+          }
+        }}
+        className='flex items-center gap-6px px-8px py-3px rounded-full bg-fill-2 border-1px border-solid border-[var(--color-border-2)] cursor-pointer hover:bg-fill-3 transition-colors focus:outline-none'
+      >
         <div className='relative flex items-center justify-center w-8px h-8px'>
           {isRunning ? (
             <>

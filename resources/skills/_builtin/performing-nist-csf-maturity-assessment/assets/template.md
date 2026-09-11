@@ -1,10 +1,10 @@
 # NIST CSF 2.0 Maturity Assessment Scorecard
 
-## Organization: ******\_\_\_\_******
+## Organization: **\*\***\_\_\_\_**\*\***
 
-## Assessment Date: ******\_\_\_\_******
+## Assessment Date: **\*\***\_\_\_\_**\*\***
 
-## Assessor: ******\_\_\_\_******
+## Assessor: **\*\***\_\_\_\_**\*\***
 
 ---
 

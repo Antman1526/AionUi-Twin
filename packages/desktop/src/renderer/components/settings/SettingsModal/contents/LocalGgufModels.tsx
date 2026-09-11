@@ -478,9 +478,11 @@ const LocalGgufModels: React.FC = () => {
                     key={model.path}
                     className='rounded-6px border-1px border-solid border-[var(--color-border-2)] overflow-hidden'
                   >
-                    <div className='flex items-center justify-between gap-8px px-12px py-8px'>
-                      <div className='flex items-center gap-8px min-w-0'>
-                        <span className='truncate text-13px'>{model.name}</span>
+                    <div className='flex items-center justify-between gap-8px px-12px py-8px flex-wrap sm:flex-nowrap'>
+                      <div className='flex items-center gap-8px min-w-0 flex-1'>
+                        <span className='truncate text-13px font-medium' title={model.path}>
+                          {model.name}
+                        </span>
                         <Tag size='small' color={model.format === 'mlx' ? 'arcoblue' : 'purple'}>
                           {model.format.toUpperCase()}
                         </Tag>

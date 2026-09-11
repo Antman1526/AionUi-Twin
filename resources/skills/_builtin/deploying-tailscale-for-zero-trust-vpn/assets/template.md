@@ -2,10 +2,10 @@
 
 ## Network Architecture
 
-- **Organization**: ******\_\_\_******
-- **Tailnet Name**: ******\_\_\_******
-- **Identity Provider**: ******\_\_\_******
-- **Key Expiry Policy**: ******\_\_\_******
+- **Organization**: **\*\***\_\_\_**\*\***
+- **Tailnet Name**: **\*\***\_\_\_**\*\***
+- **Identity Provider**: **\*\***\_\_\_**\*\***
+- **Key Expiry Policy**: **\*\***\_\_\_**\*\***
 - **Self-hosted (Headscale)**: [ ] Yes [ ] No
 
 ## User Groups

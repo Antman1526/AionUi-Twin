@@ -2,7 +2,7 @@
 
 ## Deployment Configuration
 
-- **AWS Region**: ******\_\_\_******
+- **AWS Region**: **\*\***\_\_\_**\*\***
 - **Account Type**: [ ] Single-account [ ] Multi-account (RAM)
 - **Identity Provider**: [ ] IAM Identity Center [ ] Okta [ ] Other OIDC
 - **Device Trust Provider**: [ ] CrowdStrike [ ] Jamf [ ] JumpCloud

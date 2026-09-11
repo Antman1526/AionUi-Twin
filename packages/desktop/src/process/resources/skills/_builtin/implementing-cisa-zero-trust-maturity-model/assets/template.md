@@ -2,15 +2,15 @@
 
 ## Organization Information
 
-- **Organization Name**: ******\_\_\_******
-- **Assessment Date**: ******\_\_\_******
-- **Assessment Lead**: ******\_\_\_******
+- **Organization Name**: **\*\***\_\_\_**\*\***
+- **Assessment Date**: **\*\***\_\_\_**\*\***
+- **Assessment Lead**: **\*\***\_\_\_**\*\***
 - **Pillar Owners**:
-  - Identity: ******\_\_\_******
-  - Devices: ******\_\_\_******
-  - Networks: ******\_\_\_******
-  - Applications: ******\_\_\_******
-  - Data: ******\_\_\_******
+  - Identity: **\*\***\_\_\_**\*\***
+  - Devices: **\*\***\_\_\_**\*\***
+  - Networks: **\*\***\_\_\_**\*\***
+  - Applications: **\*\***\_\_\_**\*\***
+  - Data: **\*\***\_\_\_**\*\***
 
 ## Pillar Assessment Worksheet
 

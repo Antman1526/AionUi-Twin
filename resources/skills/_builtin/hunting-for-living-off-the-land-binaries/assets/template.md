@@ -38,7 +38,7 @@
 - [ ] msbuild.exe (T1127.001)
 - [ ] installutil.exe (T1218.004)
 - [ ] forfiles.exe (T1202)
-- [ ] Other: ******\_\_\_******
+- [ ] Other: **\*\***\_\_\_**\*\***
 
 **Time Range**: [Start Date/Time] to [End Date/Time]
 **Endpoints in Scope**: [All / Specific OUs / High-Value Targets]
@@ -49,7 +49,7 @@
 - [ ] Sysmon Event ID 7 (Image Loaded)
 - [ ] Sysmon Event ID 11 (File Create)
 - [ ] Windows Security 4688
-- [ ] EDR Telemetry: ******\_\_\_******
+- [ ] EDR Telemetry: **\*\***\_\_\_**\*\***
 - [ ] Network Proxy Logs
 - [ ] DNS Query Logs
 - [ ] Firewall Logs

@@ -27,8 +27,8 @@
 
 - [ ] Sysmon Event Logs
 - [ ] Windows Security Event Logs
-- [ ] EDR Telemetry (Platform: ******\_******)
-- [ ] SIEM (Platform: ******\_******)
+- [ ] EDR Telemetry (Platform: **\*\***\_**\*\***)
+- [ ] SIEM (Platform: **\*\***\_**\*\***)
 - [ ] Network Logs (Proxy/Firewall/DNS)
 - [ ] Cloud Audit Logs
 - [ ] Email Gateway Logs

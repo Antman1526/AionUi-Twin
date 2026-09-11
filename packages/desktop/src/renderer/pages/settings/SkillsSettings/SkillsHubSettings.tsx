@@ -1,7 +1,7 @@
 import { ipcBridge } from '@/common';
 import type { Assistant } from '@/common/types/agent/assistantTypes';
 import { useLayoutContext } from '@/renderer/hooks/context/LayoutContext';
-import { Button, Checkbox, Message, Modal } from '@arco-design/web-react';
+import { Button, Checkbox, Message, Modal, Pagination } from '@arco-design/web-react';
 import { Delete, Help, Lightning, Puzzle } from '@icon-park/react';
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,8 @@ import TalkToButlerButton from '@/renderer/components/base/TalkToButlerButton';
 import { AionSearchInput } from '@/renderer/components/base';
 import { formatDateTime } from '@/renderer/services/i18n/format';
 import { buildSkillImportNotice, getSkillImportErrorMessage } from './skillImportMessages';
+
+const OFFICIAL_PAGE_SIZE = 24;
 
 // Skill 信息类型 / Skill info type
 interface SkillInfo {
@@ -153,6 +155,7 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
   const [loading, setLoading] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<SkillInfo[]>([]);
   const [search_query, setSearchQuery] = useState('');
+  const [officialPage, setOfficialPage] = useState(1);
   const [importHistory, setImportHistory] = useState<SkillImportRecord[]>([]);
   const [importLimits, setImportLimits] = useState<SkillImportLimits | null>(null);
   const [activeTab, setActiveTab] = useState<SkillsTab>(() => getSkillsTabFromState(location.state));
@@ -196,6 +199,10 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
 
   const filteredSkills = useMemo(() => matchesQuery(mySkills), [matchesQuery, mySkills]);
   const filteredOfficialSkills = useMemo(() => matchesQuery(officialSkills), [matchesQuery, officialSkills]);
+  const pagedOfficialSkills = useMemo(() => {
+    const start = (officialPage - 1) * OFFICIAL_PAGE_SIZE;
+    return filteredOfficialSkills.slice(start, start + OFFICIAL_PAGE_SIZE);
+  }, [filteredOfficialSkills, officialPage]);
   const filteredExtensionSkills = useMemo(() => matchesQuery(extensionSkills), [matchesQuery, extensionSkills]);
   const filteredAutoSkills = useMemo(() => matchesQuery(builtinAutoSkills), [matchesQuery, builtinAutoSkills]);
 
@@ -230,7 +237,11 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
     if (target) {
       setActiveTab(target.source === 'custom' ? 'custom' : 'official');
     }
-  }, [highlightName, loading, availableSkills]);
+    const targetIdx = filteredOfficialSkills.findIndex((s) => s.name === highlightName);
+    if (targetIdx >= 0) {
+      setOfficialPage(Math.floor(targetIdx / OFFICIAL_PAGE_SIZE) + 1);
+    }
+  }, [highlightName, loading, availableSkills, filteredOfficialSkills]);
 
   // Scroll to and highlight a skill when navigated with ?highlight=skillName
   useEffect(() => {
@@ -575,13 +586,13 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
                 })}
               </p>
             </div>
-            <button
+            <Button
               data-testid='btn-back-to-skills'
-              className='flex items-center justify-center px-14px py-7px bg-base border border-border-1 hover:border-border-2 hover:bg-fill-1 text-t-primary rd-8px shadow-sm transition-all focus:outline-none shrink-0 cursor-pointer whitespace-nowrap text-13px font-medium'
+              className='shrink-0 whitespace-nowrap text-13px font-medium'
               onClick={showSkillList}
             >
               {t('settings.skillsHub.backToSkills', { defaultValue: 'Back to skills' })}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -697,7 +708,10 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
       data-testid={testId}
       placeholder={t('settings.skillsHub.searchPlaceholder', { defaultValue: 'Search skills...' })}
       value={search_query}
-      onChange={setSearchQuery}
+      onChange={(val) => {
+        setSearchQuery(val);
+        setOfficialPage(1);
+      }}
     />
   );
 
@@ -872,9 +886,14 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
               {!batchMode && (
                 <div className='shrink-0 sm:self-center flex items-center justify-end gap-10px mt-12px sm:mt-0 ps-4px'>
                   <SkillUsedByStack assistants={getAssistantsUsingSkill(skill.name, assistantCatalog ?? [])} />
-                  <button
+                  <Button
+                    type='text'
+                    status='danger'
+                    size='small'
+                    shape='circle'
                     data-testid={`btn-delete-${normalizeTestId(skill.name)}`}
-                    className='p-8px hover:bg-danger-1 hover:text-danger-6 text-t-tertiary rd-6px outline-none flex items-center justify-center border border-transparent cursor-pointer transition-colors shadow-sm bg-base sm:bg-transparent sm:shadow-none opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity'
+                    className='!p-8px text-t-tertiary hover:!bg-danger-1 hover:!text-danger-6 !rd-6px flex items-center justify-center !border-transparent cursor-pointer shadow-sm sm:!bg-transparent sm:shadow-none opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity'
+                    icon={<Delete size={16} />}
                     onClick={(e) => {
                       e.stopPropagation();
                       Modal.confirm({
@@ -902,9 +921,7 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
                       });
                     }}
                     title={t('common.delete', { defaultValue: 'Delete' })}
-                  >
-                    <Delete size={16} />
-                  </button>
+                  />
                 </div>
               )}
             </div>
@@ -938,8 +955,20 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
                 {t('settings.skillsHub.noSearchResults', { defaultValue: 'No matching skills.' })}
               </div>
             )}
-            {filteredOfficialSkills.map((skill) =>
+            {pagedOfficialSkills.map((skill) =>
               renderReadonlySkillCard(skill, 'official', `official-skill-card-${normalizeTestId(skill.name)}`)
+            )}
+            {filteredOfficialSkills.length > OFFICIAL_PAGE_SIZE && (
+              <div className='flex justify-center pt-16px pb-8px border-t border-border-2 mt-8px'>
+                <Pagination
+                  size='small'
+                  current={officialPage}
+                  pageSize={OFFICIAL_PAGE_SIZE}
+                  total={filteredOfficialSkills.length}
+                  onChange={(p) => setOfficialPage(p)}
+                  showTotal
+                />
+              </div>
             )}
           </div>
         ) : (

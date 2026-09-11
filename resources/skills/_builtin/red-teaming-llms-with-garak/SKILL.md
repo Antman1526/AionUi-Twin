@@ -121,6 +121,7 @@ This skill uses MITRE ATLAS (the adversarial-ML companion to ATT&CK) technique I
 ### Phase 3: Probe an OpenAI-Compatible API
 
 1. Export the key and run injection + leakage probes:
+
    ```bash
    export OPENAI_API_KEY="sk-..."
    python -m garak \

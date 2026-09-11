@@ -1,6 +1,6 @@
 # Simplification Specialist Review Checklist
 
-Scope: Conditional (DIFF_LINES > 100). This lens hunts unrequested _structure_ only: abstractions with one implementation, hand-rolled stdlib, dependencies duplicating platform features, dead flexibility. Coverage gaps are out of scope — the Completeness Gaps checklist category owns those. Never flag a test, an error path, or an edge-case branch for deletion.
+Scope: Conditional (DIFF*LINES > 100). This lens hunts unrequested \_structure* only: abstractions with one implementation, hand-rolled stdlib, dependencies duplicating platform features, dead flexibility. Coverage gaps are out of scope — the Completeness Gaps checklist category owns those. Never flag a test, an error path, or an edge-case branch for deletion.
 Output: JSON objects, one finding per line. Schema:
 {"severity":"INFORMATIONAL","confidence":N,"path":"file","line":N,"category":"delete|stdlib|native|speculative|shrink","summary":"...","fix":"...","lines_removable":N,"advisory":true,"fingerprint":"path:line:category","specialist":"simplification"}
 Required: severity (always INFORMATIONAL), confidence, path, category, summary, advisory (always true), specialist.

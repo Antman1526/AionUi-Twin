@@ -51,8 +51,15 @@ export const GhostModeToggle: React.FC = () => {
       }
     >
       <div
+        role='button'
+        tabIndex={0}
         onClick={() => void handleToggle()}
-        className={`flex items-center gap-4px px-8px py-3px rounded-full border-1px border-solid cursor-pointer transition-all duration-200 select-none ${
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            void handleToggle();
+          }
+        }}
+        className={`flex items-center gap-4px px-8px py-3px rounded-full border-1px border-solid cursor-pointer transition-all duration-200 select-none focus:outline-none ${
           enabled
             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
             : 'bg-fill-2 border-[var(--color-border-2)] text-t-secondary hover:bg-fill-3'

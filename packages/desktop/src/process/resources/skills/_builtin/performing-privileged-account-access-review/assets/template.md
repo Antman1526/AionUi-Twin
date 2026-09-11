@@ -8,7 +8,7 @@
 | Review Period | **_/_**/20** to \_**/**\_/20**      |
 | Due Date      | **_/_**/20\_\_                      |
 | Scope         | All privileged accounts             |
-| Reviewer      | ******\_\_\_******                  |
+| Reviewer      | **\*\***\_\_\_**\*\***              |
 
 ## Review Summary
 

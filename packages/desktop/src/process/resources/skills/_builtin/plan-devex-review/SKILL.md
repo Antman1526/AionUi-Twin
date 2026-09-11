@@ -951,6 +951,7 @@ vehicle options with tradeoffs.
 AskUserQuestion:
 
 > "For your [product type], the magical moment is: [specific moment, e.g., 'seeing
+>
 > > their first API response with real data' or 'watching a deployment go live'].
 >
 > How should your [persona from 0A] experience this moment?

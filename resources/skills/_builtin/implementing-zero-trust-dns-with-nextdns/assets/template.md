@@ -2,7 +2,7 @@
 
 ## Configuration
 
-- **NextDNS Config ID**: ******\_\_\_******
+- **NextDNS Config ID**: **\*\***\_\_\_**\*\***
 - **Plan**: [ ] Free [ ] Pro [ ] Business [ ] Enterprise
 - **Log Retention**: **\_** days
 - **Log Storage Region**: [ ] US [ ] EU [ ] UK [ ] Switzerland

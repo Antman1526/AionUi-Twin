@@ -9,6 +9,7 @@ import {
   createLocalProviderFromRuntime,
   isManagedLocalProvider,
   replaceManagedProvider,
+  resolveExecutable,
 } from '../../../packages/desktop/src/process/services/localModels/LocalModelRuntimeService';
 
 describe('LocalModelDiscoveryService', () => {
@@ -213,3 +214,48 @@ describe('Managed Local Provider Lifecycle', () => {
     expect(stopped[0]?.id).toBe('custom-openai-user');
   });
 });
+
+describe('resolveExecutable', () => {
+  it('prioritizes existing concrete file paths on disk over bare command names', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'we-exec-test-'));
+    try {
+      const concreteBin = path.join(tmpDir, 'bin', 'mlx_lm.server');
+      await fs.mkdir(path.dirname(concreteBin), { recursive: true });
+      await fs.writeFile(concreteBin, '#!/bin/sh\necho "test"');
+
+      // Given a list where bare command is first or non-existent paths exist
+      const candidates = [
+        'mlx_lm.server',
+        '/non/existent/path/mlx_lm.server',
+        concreteBin,
+      ];
+
+      const resolved = resolveExecutable(candidates);
+      expect(resolved).toBe(concreteBin);
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to bare command name if no concrete path exists on disk', () => {
+    const candidates = [
+      '/non/existent/path/llama-server',
+      '/another/fake/path/llama-server',
+      'llama-server',
+    ];
+
+    const resolved = resolveExecutable(candidates);
+    expect(resolved).toBe('llama-server');
+  });
+
+  it('returns null when no candidate exists and no bare command is provided', () => {
+    const candidates = [
+      '/non/existent/path/mlx_lm.server',
+      '/another/fake/path/mlx_lm.server',
+    ];
+
+    const resolved = resolveExecutable(candidates);
+    expect(resolved).toBeNull();
+  });
+});
+

@@ -66,7 +66,7 @@
 - [ ] Account Compromise
 - [ ] Web Application Attack
 - [ ] Privilege Escalation
-- [ ] Other: ****\_\_\_****
+- [ ] Other: \***\*\_\_\_\*\***
 
 ### MITRE ATT&CK Mapping
 
