@@ -471,7 +471,19 @@ function prepareAioncore(options) {
   removeDirectorySafe(targetDir);
   ensureDirectory(targetDir);
 
-  const localBundleDir = (process.env.AIONUI_BACKEND_LOCAL_BUNDLE_DIR || '').trim();
+  let localBundleDir = (process.env.AIONUI_BACKEND_LOCAL_BUNDLE_DIR || '').trim();
+  if (!localBundleDir) {
+    const candidateDirs = [
+      path.join(projectRoot, 'resources', 'bundled-aioncore-cache', runtimeKey),
+      path.join(projectRoot, 'out', 'mac-arm64', 'WE.app', 'Contents', 'Resources', 'bundled-aioncore', runtimeKey),
+    ];
+    for (const cand of candidateDirs) {
+      if (fs.existsSync(cand) && fs.statSync(cand).isDirectory()) {
+        localBundleDir = cand;
+        break;
+      }
+    }
+  }
   if (localBundleDir) {
     const resolvedLocalBundleDir = path.resolve(localBundleDir);
     const localBinaryPath = path.join(resolvedLocalBundleDir, binaryName);
