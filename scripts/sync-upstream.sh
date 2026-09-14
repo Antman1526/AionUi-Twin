@@ -38,29 +38,55 @@ else
   fi
 fi
 
+MODE="merge"
+TARGET="upstream/main"
+
+if [[ "${1:-}" == "--check" || "${1:-}" == "--check-only" ]]; then
+  MODE="check"
+elif [[ -n "${1:-}" ]]; then
+  TARGET="${1}"
+fi
+
 # 2. Fetch latest upstream commits and tags
 echo -e "${CYAN}Fetching latest upstream commits, branches, and release tags...${NC}"
 git fetch upstream main --tags
 
-# 3. Check diff between current HEAD and upstream/main
-BEHIND_COUNT="$(git rev-list --count HEAD..upstream/main 2>/dev/null || echo "0")"
-AHEAD_COUNT="$(git rev-list --count upstream/main..HEAD 2>/dev/null || echo "0")"
+# Resolve target ref
+if ! git rev-parse --verify "${TARGET}" >/dev/null 2>&1; then
+  if git rev-parse --verify "upstream/${TARGET}" >/dev/null 2>&1; then
+    TARGET="upstream/${TARGET}"
+  else
+    echo -e "${RED}Error: Target '${TARGET}' not found in local or upstream repository.${NC}"
+    exit 1
+  fi
+fi
 
-echo -e "Upstream Status:"
-echo -e "  - Commits in upstream not in current branch: ${YELLOW}${BEHIND_COUNT}${NC}"
-echo -e "  - Custom WE commits ahead of upstream: ${GREEN}${AHEAD_COUNT}${NC}"
+# 3. Check diff between current HEAD and target
+BEHIND_COUNT="$(git rev-list --count HEAD..${TARGET} 2>/dev/null || echo "0")"
+AHEAD_COUNT="$(git rev-list --count ${TARGET}..HEAD 2>/dev/null || echo "0")"
 
-if [[ "${BEHIND_COUNT}" -eq 0 ]]; then
-  echo -e "${GREEN}✓ You are fully up to date with upstream/main! No new changes to pull.${NC}"
+echo -e "Upstream Target: ${CYAN}${TARGET}${NC}"
+echo -e "Status:"
+echo -e "  - Commits in target not in current branch: ${YELLOW}${BEHIND_COUNT}${NC}"
+echo -e "  - Custom WE commits ahead of target: ${GREEN}${AHEAD_COUNT}${NC}"
+
+if [[ "${BEHIND_COUNT}" -eq 0 && "${MODE}" != "check" ]]; then
+  echo -e "${GREEN}✓ You are fully up to date with ${TARGET}! No new changes to pull.${NC}"
   exit 0
 fi
 
-echo -e "\n${YELLOW}Latest commits available in upstream/main:${NC}"
-git log -n 10 --oneline HEAD..upstream/main
+if [[ "${BEHIND_COUNT}" -gt 0 ]]; then
+  echo -e "\n${YELLOW}Latest commits available in ${TARGET}:${NC}"
+  git log -n 10 --oneline HEAD..${TARGET}
+fi
 
 # Check if user requested check-only mode
-if [[ "${1:-}" == "--check" || "${1:-}" == "--check-only" ]]; then
-  echo -e "\n${CYAN}Check completed. Run 'bun run sync-upstream' or './scripts/sync-upstream.sh --merge' to pull changes.${NC}"
+if [[ "${MODE}" == "check" ]]; then
+  if [[ "${BEHIND_COUNT}" -eq 0 ]]; then
+    echo -e "${GREEN}✓ Current branch is up to date with upstream/main.${NC}"
+  else
+    echo -e "\n${CYAN}Check completed. Run 'bun run sync-upstream' to pull changes.${NC}"
+  fi
   exit 0
 fi
 
@@ -78,8 +104,8 @@ echo -e "\n${CYAN}Creating safety rollback tag: ${BACKUP_TAG}${NC}"
 git tag "${BACKUP_TAG}"
 
 # 6. Perform merge
-echo -e "${CYAN}Merging upstream/main into ${CURRENT_BRANCH}...${NC}"
-if git merge upstream/main -m "merge(upstream): pull latest changes from iofficeai/aionui"; then
+echo -e "${CYAN}Merging ${TARGET} into ${CURRENT_BRANCH}...${NC}"
+if git merge "${TARGET}" -m "merge(upstream): pull changes from ${TARGET}"; then
   echo -e "${GREEN}✓ Upstream merge completed cleanly.${NC}"
 else
   echo -e "\n${RED}Merge encountered conflicts!${NC}"
