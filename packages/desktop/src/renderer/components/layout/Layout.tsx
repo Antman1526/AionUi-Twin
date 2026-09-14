@@ -38,6 +38,7 @@ import { useConversationShortcuts } from '@renderer/hooks/ui/useConversationShor
 import { isElectronDesktop } from '@renderer/utils/platform';
 import { IS_DISCONTINUED_BUILD } from '@/renderer/utils/discontinuedBuild';
 import UpdateMigrationDialog from '@/renderer/components/settings/UpdateMigrationDialog';
+import WeLogo from '@/renderer/components/base/WeLogo';
 import '@renderer/styles/layout.css';
 
 const SidebarIcon: React.FC<{ size?: number; strokeWidth?: number }> = ({ size = 18, strokeWidth = 4 }) => (
@@ -408,38 +409,20 @@ const Layout: React.FC<{
                 )}
               >
                 <div
-                  className={classNames('bg-black shrink-0 size-32px relative rd-0.5rem', {
-                    '!size-24px': collapsed,
-                  })}
+                  className={classNames(
+                    'bg-black shrink-0 size-32px relative rd-0.5rem flex items-center justify-center cursor-pointer shadow-sm',
+                    {
+                      '!size-24px': collapsed,
+                    }
+                  )}
                   onClick={onClick}
                 >
-                  <svg
-                    className={classNames('w-5.5 h-5.5 absolute inset-0 m-auto', {
-                      'scale-140': !collapsed,
-                    })}
-                    viewBox='0 0 80 80'
-                    fill='none'
-                  >
-                    <path
-                      key='logo-path-1'
-                      d='M40 20 Q38 22 25 40 Q23 42 26 42 L30 42 Q32 40 40 30 Q48 40 50 42 L54 42 Q57 42 55 40 Q42 22 40 20'
-                      fill='white'
-                    ></path>
-                    <circle key='logo-circle' cx='40' cy='46' r='3' fill='white'></circle>
-                    <path
-                      key='logo-path-2'
-                      d='M18 50 Q40 70 62 50'
-                      stroke='white'
-                      strokeWidth='3.5'
-                      fill='none'
-                      strokeLinecap='round'
-                    ></path>
-                  </svg>
+                  <WeLogo size={collapsed ? 20 : 26} withGlow={true} />
                 </div>
                 {isSettingsRoute ? (
                   <Tooltip content={t('common.back', { defaultValue: 'Back to Chat' })} position='bottom'>
                     <div
-                      className='text-16px text-t-primary collapsed-hidden font-semibold cursor-pointer'
+                      className='text-16px text-t-primary collapsed-hidden font-bold tracking-wider cursor-pointer'
                       role='button'
                       tabIndex={0}
                       aria-label={t('common.back', { defaultValue: 'Back to Chat' })}
@@ -451,11 +434,11 @@ const Layout: React.FC<{
                         }
                       }}
                     >
-                      AionUi
+                      WE
                     </div>
                   </Tooltip>
                 ) : (
-                  <div className='text-16px text-t-primary collapsed-hidden font-semibold'>AionUi</div>
+                  <div className='text-16px text-t-primary collapsed-hidden font-bold tracking-wider'>WE</div>
                 )}
                 {isMobile && !collapsed && (
                   <button

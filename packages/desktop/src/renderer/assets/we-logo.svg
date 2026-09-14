@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="weBrandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="60%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+    <filter id="weGlowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#10B981" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <!-- WE Monogram Mark -->
+  <path
+    d="M16 32 L28 68 L42 38 L54 68 L63 42"
+    stroke="url(#weBrandGrad)"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#weGlowFilter)"
+  />
+  <path
+    d="M66 32 L86 32 M66 32 L66 68 M66 50 L82 50 M66 68 L86 68"
+    stroke="url(#weBrandGrad)"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#weGlowFilter)"
+  />
+  <circle cx="42" cy="38" r="3" fill="#FFFFFF" />
+</svg>

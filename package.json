@@ -13,6 +13,7 @@
   ],
   "main": "./out/main/index.js",
   "scripts": {
+    "sync-upstream": "bash scripts/sync-upstream.sh",
     "dev": "electron-vite dev --config packages/desktop/electron.vite.config.ts",
     "start": "electron-vite dev --config packages/desktop/electron.vite.config.ts",
     "start:multi": "cross-env AIONUI_MULTI_INSTANCE=1 electron-vite dev --config packages/desktop/electron.vite.config.ts",

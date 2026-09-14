@@ -224,11 +224,7 @@ describe('resolveExecutable', () => {
       await fs.writeFile(concreteBin, '#!/bin/sh\necho "test"');
 
       // Given a list where bare command is first or non-existent paths exist
-      const candidates = [
-        'mlx_lm.server',
-        '/non/existent/path/mlx_lm.server',
-        concreteBin,
-      ];
+      const candidates = ['mlx_lm.server', '/non/existent/path/mlx_lm.server', concreteBin];
 
       const resolved = resolveExecutable(candidates);
       expect(resolved).toBe(concreteBin);
@@ -238,24 +234,16 @@ describe('resolveExecutable', () => {
   });
 
   it('falls back to bare command name if no concrete path exists on disk', () => {
-    const candidates = [
-      '/non/existent/path/llama-server',
-      '/another/fake/path/llama-server',
-      'llama-server',
-    ];
+    const candidates = ['/non/existent/path/llama-server', '/another/fake/path/llama-server', 'llama-server'];
 
     const resolved = resolveExecutable(candidates);
     expect(resolved).toBe('llama-server');
   });
 
   it('returns null when no candidate exists and no bare command is provided', () => {
-    const candidates = [
-      '/non/existent/path/mlx_lm.server',
-      '/another/fake/path/mlx_lm.server',
-    ];
+    const candidates = ['/non/existent/path/mlx_lm.server', '/another/fake/path/mlx_lm.server'];
 
     const resolved = resolveExecutable(candidates);
     expect(resolved).toBeNull();
   });
 });
-

@@ -233,10 +233,10 @@
 I hereby authorize [RED TEAM COMPANY/TEAM] to conduct the red team engagement
 as described in this document against [ORGANIZATION NAME] assets.
 
-**Signature:** ****\*\*\*\*****\_\_\_****\*\*\*\*****
-**Name:** ****\*\*\*\*****\_\_\_****\*\*\*\*****
-**Title:** ****\*\*\*\*****\_\_\_****\*\*\*\*****
-**Date:** ****\*\*\*\*****\_\_\_****\*\*\*\*****
+**Signature:** \***\*\*\*\*\*\*\***\_\_\_\***\*\*\*\*\*\*\***
+**Name:** \***\*\*\*\*\*\*\***\_\_\_\***\*\*\*\*\*\*\***
+**Title:** \***\*\*\*\*\*\*\***\_\_\_\***\*\*\*\*\*\*\***
+**Date:** \***\*\*\*\*\*\*\***\_\_\_\***\*\*\*\*\*\*\***
 
 ### 7.2 Attached Documents
 
