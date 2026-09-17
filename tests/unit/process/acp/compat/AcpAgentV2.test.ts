@@ -2,11 +2,13 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AcpAgentV2 } from '@process/acp/compat/AcpAgentV2';
-import type { SessionCallbacks } from '@process/acp/types';
-import type { OldAcpAgentConfig } from '@process/acp/compat/typeBridge';
+import type { AgentConfig, SessionCallbacks } from '@process/acp/types';
+import { loadAuthCredentials, type OldAcpAgentConfig } from '@process/acp/compat/typeBridge';
+import type { AcpSessionRow, IAcpSessionRepository } from '@process/services/database/IAcpSessionRepository';
 
 // Mock dependencies
 let capturedCallbacks: SessionCallbacks;
+let capturedSessionConfig: AgentConfig;
 let mockSessionMethods: {
   start: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
@@ -21,7 +23,8 @@ let mockSessionMethods: {
 
 vi.mock('@process/acp/session/AcpSession', () => ({
   AcpSession: class MockAcpSession {
-    constructor(_config: unknown, _factory: unknown, callbacks: SessionCallbacks) {
+    constructor(config: AgentConfig, _factory: unknown, callbacks: SessionCallbacks) {
+      capturedSessionConfig = config;
       capturedCallbacks = callbacks;
     }
 
@@ -1067,5 +1070,187 @@ describe('AcpAgentV2 - Config/Model/Mode Methods', () => {
 
       await expect(promise).resolves.toBeUndefined();
     });
+  });
+});
+
+/** In-memory IAcpSessionRepository used to assert persistence behaviour. */
+class FakeAcpSessionRepository implements IAcpSessionRepository {
+  readonly rows = new Map<string, AcpSessionRow>();
+
+  getSession(conversationId: string): AcpSessionRow | null {
+    return this.rows.get(conversationId) ?? null;
+  }
+  upsertSession(session: AcpSessionRow): void {
+    this.rows.set(session.conversation_id, { ...session });
+  }
+  updateSessionId(conversationId: string, sessionId: string): void {
+    const row = this.rows.get(conversationId);
+    if (row) row.session_id = sessionId;
+  }
+  updateStatus(
+    conversationId: string,
+    status: 'idle' | 'active' | 'suspended' | 'error',
+    suspendedAt?: number | null
+  ): void {
+    const row = this.rows.get(conversationId);
+    if (row) {
+      row.session_status = status;
+      row.suspended_at = suspendedAt ?? null;
+    }
+  }
+  updateSessionConfig(conversationId: string, config: string): void {
+    const row = this.rows.get(conversationId);
+    if (row) row.session_config = config;
+  }
+  touchLastActive(conversationId: string): void {
+    const row = this.rows.get(conversationId);
+    if (row) row.last_active_at = Date.now();
+  }
+  getSuspendedSessions(): AcpSessionRow[] {
+    return [...this.rows.values()].filter((r) => r.session_status === 'suspended');
+  }
+  deleteSession(conversationId: string): void {
+    this.rows.delete(conversationId);
+  }
+}
+
+function makeRow(overrides: Partial<AcpSessionRow>): AcpSessionRow {
+  return {
+    conversation_id: 'test-conv-1',
+    agent_backend: 'claude',
+    agent_source: 'extension',
+    agent_id: 'claude',
+    session_id: null,
+    session_status: 'idle',
+    session_config: '{}',
+    last_active_at: null,
+    suspended_at: null,
+    ...overrides,
+  };
+}
+
+/** Repository writes are queued on a promise chain — let the microtasks run. */
+function flushWrites(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+describe('AcpAgentV2 - acp_session persistence', () => {
+  let repo: FakeAcpSessionRepository;
+
+  beforeEach(() => {
+    mockSessionMethods = {
+      start: vi.fn(),
+      stop: vi.fn().mockResolvedValue(undefined),
+      cancelPrompt: vi.fn(),
+      sendMessage: vi.fn(),
+      confirmPermission: vi.fn(),
+      setModel: vi.fn(),
+      setMode: vi.fn(),
+      setConfigOption: vi.fn(),
+      getConfigOptions: vi.fn().mockReturnValue([]),
+    };
+    repo = new FakeAcpSessionRepository();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllTimers();
+  });
+
+  async function startAgent(overrides?: Partial<OldAcpAgentConfig>): Promise<AcpAgentV2> {
+    const agent = new AcpAgentV2(
+      {
+        id: 'test-conv-1',
+        backend: 'claude',
+        workingDir: '/workspace/test',
+        onStreamEvent: vi.fn(),
+        ...overrides,
+      },
+      repo
+    );
+    mockSessionMethods.start.mockImplementation(() => {
+      setTimeout(() => capturedCallbacks.onStatusChange('active'), 0);
+    });
+    await agent.start();
+    return agent;
+  }
+
+  it('upserts a session row on init keyed by agent id, not conversation id', async () => {
+    await startAgent();
+    await flushWrites();
+
+    const row = repo.getSession('test-conv-1');
+    expect(row).not.toBeNull();
+    expect(row?.conversation_id).toBe('test-conv-1');
+    expect(row?.agent_id).toBe('claude');
+  });
+
+  it('persists the ACP session id reported by the session', async () => {
+    await startAgent();
+    await flushWrites();
+
+    capturedCallbacks.onSessionId('acp-session-99');
+    await flushWrites();
+
+    expect(repo.getSession('test-conv-1')?.session_id).toBe('acp-session-99');
+  });
+
+  it('persists status transitions as stable DB states', async () => {
+    await startAgent();
+    await flushWrites();
+
+    expect(repo.getSession('test-conv-1')?.session_status).toBe('active');
+
+    capturedCallbacks.onStatusChange('suspended');
+    await flushWrites();
+    expect(repo.getSession('test-conv-1')?.session_status).toBe('suspended');
+  });
+
+  it('resumes from the persisted session id when the agent ids match', async () => {
+    repo.upsertSession(makeRow({ agent_id: 'claude', session_id: 'persisted-session' }));
+
+    await startAgent();
+
+    expect(capturedSessionConfig.resumeSessionId).toBe('persisted-session');
+  });
+
+  it('ignores the persisted session id when the agent ids differ', async () => {
+    repo.upsertSession(makeRow({ agent_id: 'codex', session_id: 'persisted-session' }));
+
+    await startAgent();
+
+    expect(capturedSessionConfig.resumeSessionId).toBeUndefined();
+  });
+
+  it('prefers the legacy acpSessionId over the persisted one', async () => {
+    repo.upsertSession(makeRow({ agent_id: 'claude', session_id: 'persisted-session' }));
+
+    await startAgent({ extra: { backend: 'claude', acpSessionId: 'legacy-session' } });
+
+    expect(capturedSessionConfig.resumeSessionId).toBe('legacy-session');
+  });
+
+  it('never writes authCredentials into session_config', async () => {
+    vi.mocked(loadAuthCredentials).mockResolvedValueOnce({ ANTHROPIC_API_KEY: 'super-secret' });
+
+    await startAgent();
+    await flushWrites();
+
+    expect(repo.getSession('test-conv-1')?.session_config).not.toContain('super-secret');
+  });
+
+  it('starts the session even when the repository throws', async () => {
+    vi.spyOn(repo, 'getSession').mockImplementation(() => {
+      throw new Error('db is gone');
+    });
+    vi.spyOn(repo, 'upsertSession').mockImplementation(() => {
+      throw new Error('db is gone');
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(startAgent()).resolves.toBeInstanceOf(AcpAgentV2);
+    await flushWrites();
+
+    warn.mockRestore();
   });
 });

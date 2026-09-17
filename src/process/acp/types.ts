@@ -23,6 +23,14 @@ export type AgentConfig = {
   agentBackend: string;
   agentSource: AgentSource;
   agentId: string;
+  /**
+   * The conversation this session belongs to. Distinct from `agentId`, which
+   * identifies the agent *implementation* (e.g. "claude" or a custom agent id)
+   * and is shared across every conversation using that agent. `MessageTranslator`
+   * stamps this onto every message it emits, so it must be the conversation id,
+   * never `agentId`.
+   */
+  conversationId: string;
 
   // 连接信息（决定使用哪种 Connector）
   command?: string; // 由 AcpDetector 解析后的完整命令

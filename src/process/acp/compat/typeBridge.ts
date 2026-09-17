@@ -32,6 +32,8 @@ export type OldAcpAgentConfig = {
     customEnv?: Record<string, string>;
     yoloMode?: boolean;
     agentName?: string;
+    /** Stable identifier of the agent implementation (e.g. `ext:my-extension:adapter-1`). */
+    customAgentId?: string;
     acpSessionId?: string;
     acpSessionConversationId?: string;
     acpSessionUpdatedAt?: number;
@@ -91,10 +93,11 @@ export function toAgentConfig(old: OldAcpAgentConfig): AgentConfig {
   return {
     agentBackend: old.backend,
     agentSource: agentSource,
-    // TODO(ACP Discovery): old.id is conversation_id, not a real agent identifier.
-    // Should be old.extra?.customAgentId ?? old.backend (or an agent registry ID).
-    // See docs/specs/acp-rewrite/TODO.md.
-    agentId: old.id,
+    // `old.id` is the conversation id, not an agent identifier. `agentId` must
+    // identify the agent *implementation*: the custom agent id when present,
+    // otherwise the backend name (e.g. "claude") for built-in backends.
+    agentId: old.extra?.customAgentId ?? old.backend,
+    conversationId: old.id,
 
     command: old.extra?.cliPath ?? old.cliPath,
     args: old.extra?.customArgs ?? old.customArgs,

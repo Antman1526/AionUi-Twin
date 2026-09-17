@@ -18,8 +18,8 @@ import {
 import { AcpError as AcpSessionError } from '@process/acp/errors/AcpError';
 import { AcpSession, type SessionOptions } from '@process/acp/session/AcpSession';
 import { readClaudeModelInfoFromCcSwitch } from '@process/services/ccSwitchModelSource';
-// TODO(ACP Discovery): Re-enable when acp_session persistence is restored.
-// import type { IAcpSessionRepository } from '@process/services/database/IAcpSessionRepository';
+import { getAcpSessionRepository, serializeSessionConfig } from '@process/acp/acpSessionRepo';
+import type { IAcpSessionRepository } from '@process/services/database/IAcpSessionRepository';
 import { getTeamGuideStdioConfig } from '@/process/team/mcp/guide/teamGuideSingleton';
 import { waitForMcpReady } from '@/process/team/mcpReadiness';
 import { shouldInjectTeamGuideMcp } from '@/process/team/prompts/teamGuideCapability';
@@ -127,14 +127,47 @@ export class AcpAgentV2 {
   // Used to re-assert model before every prompt in case CLI loses state
   // (e.g. Claude internal compaction resets model to default).
   private userModelOverride: string | null = null;
+  /** Resolves to `null` when persistence is unavailable — never rejects. */
+  private readonly acpSessionRepo: Promise<IAcpSessionRepository | null>;
 
-  constructor(config: OldAcpAgentConfig) {
+  constructor(config: OldAcpAgentConfig, acpSessionRepo?: IAcpSessionRepository) {
     this.conversationId = config.id;
     this.onStreamEvent = config.onStreamEvent as (data: IResponseMessage) => void;
     this.onSignalEvent = config.onSignalEvent as ((data: IResponseMessage) => void) | undefined;
     this.onSessionIdUpdate = config.onSessionIdUpdate;
     this.onAvailableCommandsUpdate = config.onAvailableCommandsUpdate;
     this.agentConfig = toAgentConfig(config);
+    this.acpSessionRepo = acpSessionRepo ? Promise.resolve(acpSessionRepo) : getAcpSessionRepository();
+  }
+
+  /**
+   * Run a write against the acp_session table. Failures are logged and
+   * swallowed so persistence can never break the conversation flow.
+   */
+  private writeSessionRow(op: string, fn: (repo: IAcpSessionRepository) => void): void {
+    void this.acpSessionRepo
+      .then((repo) => {
+        if (repo) fn(repo);
+      })
+      .catch((err) => {
+        console.warn(`[AcpAgentV2] acp_session ${op} failed:`, err);
+      });
+  }
+
+  /**
+   * Read back the ACP session id persisted for this conversation.
+   * Returns `null` unless the stored row belongs to the same agent — a row
+   * left behind by a different agent must not be resumed into.
+   */
+  private async readPersistedSessionId(): Promise<string | null> {
+    try {
+      const repo = await this.acpSessionRepo;
+      const row = repo?.getSession(this.conversationId);
+      if (row?.session_id && row.agent_id === this.agentConfig.agentId) return row.session_id;
+    } catch (err) {
+      console.warn('[AcpAgentV2] acp_session read failed:', err);
+    }
+    return null;
   }
 
   /**
@@ -207,7 +240,30 @@ export class AcpAgentV2 {
       initialDesired: this.agentConfig.initialDesired,
     };
 
+    // Restore hook: SessionLifecycle seeds its session id from
+    // `agentConfig.resumeSessionId` inside its constructor, so a persisted id
+    // has to be applied before `new AcpSession(...)` below. The id carried by
+    // the legacy config (`extra.acpSessionId`) always wins.
+    if (!this.agentConfig.resumeSessionId) {
+      const persisted = await this.readPersistedSessionId();
+      if (persisted) this.agentConfig.resumeSessionId = persisted;
+    }
+
     this.session = new AcpSession(this.agentConfig, clientFactory, callbacks, sessionOptions);
+
+    this.writeSessionRow('upsert', (repo) =>
+      repo.upsertSession({
+        conversation_id: this.conversationId,
+        agent_backend: this.agentConfig.agentBackend,
+        agent_source: this.agentConfig.agentSource,
+        agent_id: this.agentConfig.agentId,
+        session_id: this.agentConfig.resumeSessionId ?? null,
+        session_status: 'idle',
+        session_config: serializeSessionConfig(this.agentConfig),
+        last_active_at: Date.now(),
+        suspended_at: null,
+      })
+    );
 
     // Wait for team MCP tools to complete handshake before allowing messages.
     // The stdio script sends mcp_ready with TEAM_AGENT_SLOT_ID after server.connect().
@@ -255,6 +311,7 @@ export class AcpAgentV2 {
 
       onSessionId: (sessionId: string) => {
         this.lastSessionId = sessionId;
+        this.writeSessionRow('updateSessionId', (repo) => repo.updateSessionId(this.conversationId, sessionId));
         if (this.onSessionIdUpdate) {
           this.onSessionIdUpdate(sessionId);
         }
@@ -488,11 +545,10 @@ export class AcpAgentV2 {
    * Map new 7-state FSM to old status names
    */
   /** Persist status: 7 in-memory states → 4 stable DB states. */
-  private persistStatus(_status: SessionStatus): void {
-    // TODO(ACP Discovery): Re-enable after fixing agent_id.
-    // const stable = this.toStableStatus(status);
-    // const suspendedAt = status === 'suspended' ? Date.now() : null;
-    // this.acpSessionRepo?.updateStatus(this.conversationId, stable, suspendedAt);
+  private persistStatus(status: SessionStatus): void {
+    const stable = this.toStableStatus(status);
+    const suspendedAt = status === 'suspended' ? Date.now() : null;
+    this.writeSessionRow('updateStatus', (repo) => repo.updateStatus(this.conversationId, stable, suspendedAt));
   }
 
   private toStableStatus(status: SessionStatus): 'idle' | 'active' | 'suspended' | 'error' {

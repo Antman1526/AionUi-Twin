@@ -1,11 +1,46 @@
 # ACP Rewrite — TODO
 
-## acp_session 表持久化暂停
+## ~~acp_session 表持久化暂停~~
 
-**状态**: 已注释，等待 ACP Discovery 一起处理
-**标记**: `TODO(ACP Discovery)`
+**状态**: 已完成
+**标记**: ~~`TODO(ACP Discovery)`~~（`grep -rn "TODO(ACP Discovery)" src` 返回 0 行）
 
-### 问题 1: agent_id 语义错误
+### 完成内容
+
+1. **agent_id 语义已修复** — `typeBridge.ts` 的 `toAgentConfig()` 现在使用
+   `agentId: old.extra?.customAgentId ?? old.backend`。内建 backend 的 `agent_id`
+   为 backend 名（如 `"claude"`），自定义 agent 为 `customAgentId`。
+   `OldAcpAgentConfig.extra` 新增 `customAgentId?: string` 字段。
+
+   > 注意：`AcpAgentManager.initAgent()` 目前尚未把 `customAgentId` 透传进 `extra`，
+   > 因此当前所有会话都走 backend 名 fallback。等 Agent Hub 落地后补上透传即可生效。
+
+2. **写入已全部恢复** — `AcpAgentV2`（upsert / updateSessionId / updateStatus）与
+   `AcpRuntime`（upsert / deleteSession / touchLastActive / updateSessionId /
+   updateSessionConfig / persistStatus）。仓储实例通过新的
+   `src/process/acp/acpSessionRepo.ts` 惰性单例获取（动态 import 数据库模块，
+   避免把 better-sqlite3 / Electron 拉进 ACP 模块图），构造函数可注入以便测试。
+   仓储不可用或抛错时只记日志，永不打断会话流程。
+   `session_config` 序列化时会剥离 `authCredentials`，密钥不落库。
+
+3. **读取方已落地（表不再是只写）** — `AcpRuntime.createConversation()` 与
+   `AcpAgentV2.ensureSession()` 在创建 `AcpSession` 之前调用
+   `getSession(conversationId)`：当存储行的 `agent_id` 与当前 `agentId` 一致且存在
+   ACP `session_id` 时，将其作为 `agentConfig.resumeSessionId`，由现有
+   `SessionLifecycle` 恢复逻辑消费。`agent_id` 不匹配时忽略该行（不会串到别的 agent）。
+   调用方显式传入的 `resumeSessionId`（旧链路的 `extra.acpSessionId`）优先级更高。
+
+   **选择该 hook 的原因**：`SessionLifecycle` 在其构造函数里用
+   `host.agentConfig.resumeSessionId` 初始化 `_sessionId`，所以持久化的 session id
+   必须在 `new AcpSession(...)` 之前写入 config —— 这是改动最小的接入点，
+   无需新增 resume API。
+
+4. **测试** — `tests/unit/process/acp/runtime/AcpRuntime.test.ts`（新增，使用内存版
+   `IAcpSessionRepository` fake）、`tests/unit/process/acp/compat/AcpAgentV2.test.ts`
+   新增 `acp_session persistence` 块、`tests/unit/process/acp/compat/typeBridge.test.ts`
+   新增 agentId 映射用例。
+
+### 历史背景：问题 1 — agent_id 语义错误
 
 `typeBridge.ts` 的 `toAgentConfig()` 中 `agentId` 被设为 `old.id`（即 `conversation_id`），
 导致 `acp_session` 表中 `conversation_id` 和 `agent_id` 的值完全相同。
@@ -37,28 +72,17 @@ upsertSession():
 - `src/process/acp/compat/typeBridge.ts` — `toAgentConfig()` 中 `agentId` 赋值
 - `src/process/acp/types.ts` — `AgentConfig.agentId` 字段定义
 
-### 问题 2: acp_session 表目前无读取方
+### 历史背景：问题 2 — acp_session 表无读取方
 
 `IAcpSessionRepository` 定义了 `getSession()` / `getSuspendedSessions()` 等读取方法，
-但在 `AcpAgentV2` 和 `AcpRuntime` 中 **从未被调用**。表只有写入、没有消费，属于死代码。
+但在 `AcpAgentV2` 和 `AcpRuntime` 中从未被调用，表只有写入、没有消费。
+现已由上文第 3 点的 resume 读取路径消费。
 
-等 ACP Discovery 需求落地时，会有真正的消费方（如 session 恢复、idle reclaim 等），届时再恢复写入。
+### 遗留项
 
-### 当前处理
-
-所有 `acpSessionRepo` 的写入代码已注释（非删除），在以下位置标注了 `TODO(ACP Discovery)`:
-
-- `src/process/acp/compat/AcpAgentV2.ts` — 字段声明、初始化、upsert、updateSessionId、updateStatus、deleteSession
-- `src/process/acp/runtime/AcpRuntime.ts` — 构造函数参数、upsert、delete、touchLastActive、updateSessionId、updateSessionConfig、persistStatus
-- `src/process/acp/compat/typeBridge.ts` — `agentId: old.id` 处标注了语义问题
-
-### 恢复步骤
-
-1. 在 ACP Discovery 需求中确定 `agentId` 的正确语义和来源
-2. 修复 `toAgentConfig()` 中 `agentId` 的赋值逻辑
-3. 取消注释所有 `TODO(ACP Discovery)` 标记的代码
-4. 添加读取方的消费逻辑
-5. 补充相关测试
+- `getSuspendedSessions()` 仍无消费方（idle reclaim 目前只看内存里的 `SessionEntry`）。
+- `AcpAgentManager.initAgent()` 需要把 `customAgentId` 透传进 `extra` 才能让自定义 agent
+  写入真正的 agent 标识。
 
 ---
 

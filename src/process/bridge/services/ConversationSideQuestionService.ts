@@ -90,6 +90,7 @@ export class ConversationSideQuestionService {
         agentBackend: context.backend,
         agentSource: 'builtin',
         agentId: `btw-${conversationId}`,
+        conversationId,
         cwd: context.workspace,
         command: context.cliPath,
         args: context.customArgs,
