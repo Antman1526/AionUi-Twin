@@ -69,16 +69,52 @@ bash plugins/codex/install.sh
 
 Do not run private transcripts, project files, or API-backed optimizer loops through upstream tools without explicit user approval.
 
-## Future Product Enhancements
+## Native Sleep Review (implemented)
 
-The next deeper integration should be a native AionUi "Sleep Review" feature:
+The deeper integration now exists as a first-class page at `/sleep-review`
+(sider entry "Sleep Review", route registered in
+`src/renderer/components/layout/Router.tsx`). It runs entirely inside AionUi:
 
-- Local transcript selector with redaction preview.
-- Skill proposal diff UI.
-- Held-out prompt/test library per project.
-- Local-only mode using installed GGUF models through the managed llama.cpp provider.
-- Optional cloud optimizer mode with explicit API cost and data disclosure.
-- Accept/reject history with rollback.
+- **Transcript selector with redaction preview.** `sleepReview.listConversations`
+  lists stored conversations; `sleepReview.previewTranscript` returns the
+  **redacted** transcript plus a redaction count. Raw transcript text never
+  crosses the IPC boundary — `src/process/services/sleepReview/redaction.ts`
+  strips OpenAI/Anthropic/AWS/GitHub/Slack keys, bearer tokens, JWTs, emails,
+  IPv4 addresses, and collapses absolute home paths to `~`.
+- **Target selection.** `sleepReview.listTargets` lists user and bundled
+  `SKILL.md` files (excluding the app-managed `_builtin` set) plus workspace
+  memory files (`AGENTS.md`, `CLAUDE.md`, `README.md`, `.aionui/memory.md`).
+- **Held-out prompt/test library per project.** Stored at
+  `<workspace>/.aionui/held-out-prompts.json` with a global fallback at
+  `<userData>/sleep-review/held-out-prompts.json`. Edited from the
+  "Held-out prompts" tab.
+- **Local-only mode.** A switch filters the provider list to providers that run
+  on this machine: the managed llama.cpp provider (`local-llama-cpp-*`), Ollama
+  and LM Studio platforms, or a loopback base URL. A run with `localOnly` set
+  refuses any other provider.
+- **Skill proposal diff UI.** A run asks the model for one bounded
+  add/delete/replace edit as a single JSON object. The proposal is staged with
+  the SHA-256 of the target file and shown as a unified diff
+  (`diff.createTwoFilesPatch`) computed from the current file content with the
+  edit applied in memory.
+- **Accept/reject history with rollback.** Accepting re-hashes the target: if it
+  drifted from `baselineSha256` the proposal is marked `failed` and nothing is
+  written. Otherwise the file is copied to
+  `<userData>/sleep-review/backups/<proposalId>/<basename>` before the edit
+  lands, and "Roll back" restores that backup. Proposals live in
+  `<userData>/sleep-review/proposals.json` (atomic write: temp file + rename).
+- **Optional "Run checks".** `sleepReview.runHeldOut` runs each of a proposal's
+  held-out checks twice — once with the pre-edit target as system context, once
+  with the post-edit target — and shows both outputs side by side. There is no
+  automatic scoring; a human compares the columns.
+
+Model calls reuse the app's existing rotating client stack
+(`ClientFactory.createRotatingClient` → `createChatCompletion`); no new HTTP
+client was added.
+
+### Still open
+
+- Cloud optimizer mode with explicit API cost and data disclosure.
 - Scheduled sleep cycles that stage changes but never apply them automatically.
 
 ## Areas for Review
