@@ -5,7 +5,7 @@
  */
 
 import type { AcpBackend, AcpBackendAll, AcpBackendConfig } from '@/common/types/acpTypes';
-import type { SpeechToTextConfig } from '@/common/types/speech';
+import type { SpeechToTextConfig, TextToSpeechConfig } from '@/common/types/speech';
 import { storage } from '@office-ai/platform';
 
 /**
@@ -27,6 +27,8 @@ export interface LocalModelRuntimeOptions {
   gpuLayers?: number;
   readinessTimeoutMs?: number;
   reasoning?: 'auto' | 'off' | 'on';
+  /** Pass `--embedding` to llama-server so it also serves /v1/embeddings. */
+  embedding?: boolean;
 }
 
 export interface IConfigStorageRefer {
@@ -85,8 +87,22 @@ export interface IConfigStorageRefer {
   'localModel.directories'?: string[];
   /** Per-model llama.cpp runtime overrides, keyed by absolute model path. Missing values use safe defaults. */
   'localModel.runtimeOptions'?: Record<string, LocalModelRuntimeOptions>;
+  /** User-picked absolute path to the `llama-server` executable. Unset → auto-detect on PATH and platform defaults. */
+  'localModel.executablePath'?: string;
+  /** Opt-in local semantic search over conversation history and workspace files (default false). */
+  'semanticSearch.enabled'?: boolean;
+  /** Absolute path to a GGUF embedding model served by a dedicated `llama-server --embedding`. */
+  'semanticSearch.embeddingModelPath'?: string;
+  /** Id of a configured OpenAI-compatible provider used for embeddings instead of a managed GGUF. */
+  'semanticSearch.providerId'?: string;
+  /** Embedding width recorded from the first successful embedding call. */
+  'semanticSearch.dimensions'?: number;
   'mcp.config': IMcpServer[];
   'mcp.agentInstallStatus': Record<string, string[]>;
+  /** Opt-in crash/usage reporting via Sentry (default false = disabled). Forced off in Private Mode. */
+  'telemetry.enabled'?: boolean;
+  /** Private Mode: restricts model selectors to local providers, disables telemetry, skips public-IP lookup, and blocks remote extension hub fetches (default false). */
+  'privacy.privateMode'?: boolean;
   language: string;
   theme: string;
   colorScheme: string;
@@ -112,6 +128,8 @@ export interface IConfigStorageRefer {
     switch?: boolean;
   };
   'tools.speechToText'?: SpeechToTextConfig;
+  /** Local, offline text-to-speech settings (browser `speechSynthesis`). */
+  'tools.textToSpeech'?: TextToSpeechConfig;
   // 是否在粘贴文件到工作区时询问确认（true = 不再询问）
   'workspace.pasteConfirm'?: boolean;
   // 上传的文件是否保存到工作区目录（true = 保存到工作区，false = 保存到缓存目录）
@@ -207,6 +225,14 @@ export interface IConfigStorageRefer {
   // Desktop Pet: whether tool-call confirmations are routed to the pet's bubble
   // (true) or remain in the main chat window (false). Default true.
   'pet.confirmEnabled'?: boolean;
+  // Extensions: names the user explicitly consented to run channel plugins with
+  // full main-process privileges (no verified hub install record).
+  // @deprecated Name-only consent — superseded by 'extensions.trustedChannelPluginEntries',
+  // which binds each consent to the extension directory's content digest.
+  'extensions.trustedChannelPlugins'?: string[];
+  // Extensions: channel-plugin consents bound to the directory digest recorded
+  // when the user agreed. A replaced directory no longer matches and is asked again.
+  'extensions.trustedChannelPluginEntries'?: Array<{ name: string; directoryDigest: string }>;
 }
 
 export interface IEnvStorageRefer {
