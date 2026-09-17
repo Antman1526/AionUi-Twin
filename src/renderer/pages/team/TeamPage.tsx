@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import useSWR, { useSWRConfig } from 'swr';
 import { useAuth } from '@renderer/hooks/context/AuthContext';
+import { useLatestCallback } from '@renderer/hooks/ui/useLatestRef';
 import { ipcBridge } from '@/common';
 import type { TeamAgent, TTeam } from '@/common/types/teamTypes';
 import type { IProvider, TChatConversation, TProviderWithModel } from '@/common/config/storage';
@@ -49,15 +50,52 @@ const AionrsHeaderModelSelector: React.FC<{ conversationId: string; initialModel
   return <AionrsModelSelector selection={modelSelection} />;
 };
 
-/** Fetches conversation for a single agent and renders TeamChatView */
-const AgentChatSlot: React.FC<{
+type AgentChatSlotProps = {
   agent: TeamAgent;
   teamId: string;
   isLeader: boolean;
   isFullscreen?: boolean;
-  onToggleFullscreen?: () => void;
-  onRemove?: () => void;
-}> = ({ agent, teamId, isLeader, isFullscreen = false, onToggleFullscreen, onRemove }) => {
+  onToggleFullscreen?: (slotId: string) => void;
+  onRemove?: (slotId: string) => void;
+};
+
+/**
+ * Shallow-compares only the fields AgentChatSlot actually renders, so that an
+ * unrelated agent's status/name/etc changing (which rebuilds the parent's
+ * `agents` array) doesn't force every other slot to re-render. Callback props
+ * are intentionally excluded — they're event handlers, not visual state, and
+ * the parent now passes stable (slotId-taking) function references anyway.
+ */
+const areAgentChatSlotPropsEqual = (prev: AgentChatSlotProps, next: AgentChatSlotProps): boolean => {
+  if (prev.teamId !== next.teamId || prev.isLeader !== next.isLeader || prev.isFullscreen !== next.isFullscreen) {
+    return false;
+  }
+  const a = prev.agent;
+  const b = next.agent;
+  if (a === b) return true;
+  return (
+    a.slotId === b.slotId &&
+    a.role === b.role &&
+    a.agentType === b.agentType &&
+    a.agentName === b.agentName &&
+    a.conversationId === b.conversationId &&
+    a.conversationType === b.conversationType &&
+    a.status === b.status &&
+    a.cliPath === b.cliPath &&
+    a.customAgentId === b.customAgentId &&
+    a.model === b.model
+  );
+};
+
+/** Fetches conversation for a single agent and renders TeamChatView */
+const AgentChatSlotInner: React.FC<AgentChatSlotProps> = ({
+  agent,
+  teamId,
+  isLeader,
+  isFullscreen = false,
+  onToggleFullscreen,
+  onRemove,
+}) => {
   const { data: conversation } = useSWR(agent.conversationId ? ['team-conversation', agent.conversationId] : null, () =>
     ipcBridge.conversation.get.invoke({ id: agent.conversationId })
   );
@@ -138,14 +176,14 @@ const AgentChatSlot: React.FC<{
           {!isLeader && onRemove && (
             <div
               className='shrink-0 cursor-pointer hover:bg-[var(--fill-3)] p-4px rd-4px text-[color:var(--color-text-3)] hover:text-[color:var(--color-danger-6)] transition-colors'
-              onClick={onRemove}
+              onClick={() => onRemove(agent.slotId)}
             >
               <CloseSmall size='16' fill='currentColor' />
             </div>
           )}
           <div
             className='shrink-0 cursor-pointer hover:bg-[var(--fill-3)] p-4px rd-4px text-[color:var(--color-text-3)] hover:text-[color:var(--color-text-1)] transition-colors'
-            onClick={() => onToggleFullscreen?.()}
+            onClick={() => onToggleFullscreen?.(agent.slotId)}
           >
             {isFullscreen ? <OffScreen size='16' fill='currentColor' /> : <FullScreen size='16' fill='currentColor' />}
           </div>
@@ -168,6 +206,12 @@ const AgentChatSlot: React.FC<{
     </div>
   );
 };
+
+/**
+ * Memoized so that one agent's status/name/etc changing doesn't force every
+ * other slot in the team grid to re-render (see docs/architecture/team-mode-performance.md #2).
+ */
+export const AgentChatSlot = React.memo(AgentChatSlotInner, areAgentChatSlotPropsEqual);
 
 /** Inner component that reads active tab from context and renders the chat layout */
 const TeamPageContent: React.FC<TeamPageContentProps> = ({ team, onRenameTeam }) => {
@@ -200,21 +244,30 @@ const TeamPageContent: React.FC<TeamPageContentProps> = ({ team, onRenameTeam })
     [team.id, activeSlotId, leadAgent?.slotId, switchTab, fullscreenSlotId, t]
   );
 
-  const handleRemoveAgent = useCallback(
-    (slotId: string) => {
-      const status = statusMap.get(slotId)?.status;
-      if (status === 'active') {
-        Modal.confirm({
-          title: t('team.removeAgent.confirmTitle'),
-          content: t('team.removeAgent.confirmContent'),
-          onOk: () => doRemoveAgent(slotId),
-        });
-      } else {
-        void doRemoveAgent(slotId);
-      }
-    },
-    [statusMap, doRemoveAgent, t]
-  );
+  // `AgentChatSlot` is memoized and its comparator deliberately ignores callback
+  // props, trusting them to be referentially stable. `useCallback` here is not
+  // stable (it closes over `statusMap`/`doRemoveAgent`, both of which change),
+  // so a stale reference would read a stale `statusMap` and could skip the
+  // "agent is running" confirmation entirely. `useLatestCallback` gives a truly
+  // stable reference that always runs the current closure.
+  const handleRemoveAgent = useLatestCallback((slotId: string) => {
+    const status = statusMap.get(slotId)?.status;
+    if (status === 'active') {
+      Modal.confirm({
+        title: t('team.removeAgent.confirmTitle'),
+        content: t('team.removeAgent.confirmContent'),
+        onOk: () => doRemoveAgent(slotId),
+      });
+    } else {
+      void doRemoveAgent(slotId);
+    }
+  });
+
+  // Stable (slotId-taking) callbacks passed to AgentChatSlot so React.memo can
+  // skip re-rendering slots whose own agent data hasn't changed.
+  const handleEnterFullscreen = useCallback((slotId: string) => setFullscreenSlotId(slotId), []);
+  const handleExitFullscreen = useCallback(() => setFullscreenSlotId(null), []);
+
   const leaderConversationId = leadAgent?.conversationId ?? '';
   const isLeaderAgent = activeAgent?.role === 'leader';
   const allConversationIds = useMemo(() => agents.map((a) => a.conversationId).filter(Boolean), [agents]);
@@ -387,8 +440,8 @@ const TeamPageContent: React.FC<TeamPageContentProps> = ({ team, onRenameTeam })
                     teamId={team.id}
                     isLeader={isLeaderSlot}
                     isFullscreen
-                    onToggleFullscreen={() => setFullscreenSlotId(null)}
-                    onRemove={() => handleRemoveAgent(agent.slotId)}
+                    onToggleFullscreen={handleExitFullscreen}
+                    onRemove={handleRemoveAgent}
                   />
                 </div>
               );
@@ -439,8 +492,8 @@ const TeamPageContent: React.FC<TeamPageContentProps> = ({ team, onRenameTeam })
                         agent={agent}
                         teamId={team.id}
                         isLeader={isLeaderSlot}
-                        onToggleFullscreen={() => setFullscreenSlotId(agent.slotId)}
-                        onRemove={() => handleRemoveAgent(agent.slotId)}
+                        onToggleFullscreen={handleEnterFullscreen}
+                        onRemove={handleRemoveAgent}
                       />
                     </div>
                   );

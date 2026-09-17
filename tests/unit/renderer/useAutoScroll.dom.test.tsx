@@ -30,7 +30,7 @@ class MockResizeObserver {
 // Override the mock from setup to capture callback
 global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
-import { useAutoScroll } from '@/renderer/pages/conversation/Messages/useAutoScroll';
+import { getStreamingSignature, useAutoScroll } from '@/renderer/pages/conversation/Messages/useAutoScroll';
 
 const makeTextMessage = (id: string, content: string): TMessage =>
   ({
@@ -103,6 +103,9 @@ describe('useAutoScroll — streaming content scroll', () => {
 
     act(() => {
       rerender(<HarnessInner messages={messages2} itemCount={1} scrollerRef={scrollerRef} />);
+      // The scroll write is now scheduled via requestAnimationFrame so it can
+      // coalesce multiple chunks per frame; flush the fake-timer frame to run it.
+      vi.advanceTimersToNextFrame();
     });
 
     // The effect should have scrolled to bottom: scrollTop = scrollHeight - clientHeight = 600
@@ -141,6 +144,7 @@ describe('useAutoScroll — streaming content scroll', () => {
 
     act(() => {
       rerender(<HarnessInner messages={messages1} itemCount={1} scrollerRef={scrollerRef} />);
+      vi.advanceTimersToNextFrame();
     });
 
     // scrollTop should stay at 600 (no gap)
@@ -161,6 +165,7 @@ describe('useAutoScroll — streaming content scroll', () => {
 
     act(() => {
       rerender(<HarnessInner messages={messages2} itemCount={1} scrollerRef={scrollerRef} />);
+      vi.advanceTimersToNextFrame();
     });
 
     // scrollTop should remain 600 (already at bottom)
@@ -179,6 +184,7 @@ describe('useAutoScroll — streaming content scroll', () => {
 
     act(() => {
       rerender(<HarnessInner messages={messages2} itemCount={1} scrollerRef={scrollerRef} />);
+      vi.advanceTimersToNextFrame();
     });
 
     // Should scroll to bottom: 1200 - 400 = 800
@@ -190,9 +196,42 @@ describe('useAutoScroll — streaming content scroll', () => {
 
     act(() => {
       rerender(<HarnessInner messages={messages3} itemCount={1} scrollerRef={scrollerRef} />);
+      vi.advanceTimersToNextFrame();
     });
 
     // Should scroll to new bottom: 1500 - 400 = 1100
     expect(scrollerDiv.scrollTop).toBe(1100);
+  });
+
+  it('getStreamingSignature is stable for identical content and changes when text is appended', () => {
+    const messages1 = [makeTextMessage('m1', 'Hello')];
+    const messages1Same = [makeTextMessage('m1', 'Hello')];
+    const messages1Grown = [makeTextMessage('m1', 'Hello world')];
+
+    expect(getStreamingSignature(messages1)).toBe(getStreamingSignature(messages1Same));
+    expect(getStreamingSignature(messages1)).not.toBe(getStreamingSignature(messages1Grown));
+  });
+
+  it('does not re-run the streaming-scroll effect when a new array has identical content', () => {
+    const msg1 = makeTextMessage('m1', 'Hello');
+    const messages1 = [msg1];
+
+    const { rerender } = render(<HarnessInner messages={messages1} itemCount={1} scrollerRef={scrollerRef} />);
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+
+    // Introduce a gap that only the effect's scroll write would close.
+    Object.defineProperty(scrollerDiv, 'scrollTop', { value: 200, configurable: true });
+
+    // New array reference, but same id/length/content -> identical streaming signature.
+    const messages1Identical = [makeTextMessage('m1', 'Hello')];
+    act(() => {
+      rerender(<HarnessInner messages={messages1Identical} itemCount={1} scrollerRef={scrollerRef} />);
+      vi.advanceTimersToNextFrame();
+    });
+
+    // The effect must not have re-run (same signature), so the gap is untouched.
+    expect(scrollerDiv.scrollTop).toBe(200);
   });
 });

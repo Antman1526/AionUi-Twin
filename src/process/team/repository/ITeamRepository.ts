@@ -20,6 +20,13 @@ export interface IMailboxRepository {
   readUnreadAndMark(teamId: string, toAgentId: string): Promise<MailboxMessage[]>;
   markRead(messageId: string): Promise<void>;
   getMailboxHistory(teamId: string, toAgentId: string, limit?: number): Promise<MailboxMessage[]>;
+  /**
+   * Delete read mailbox messages created before `cutoffMs`, scoped to `teamId`
+   * when provided (all teams otherwise). Optional so existing test doubles that
+   * implement this interface without the method keep compiling; the real
+   * SqliteTeamRepository always provides it.
+   */
+  deleteReadMessagesOlderThan?(teamId: string | undefined, cutoffMs: number): Promise<void>;
 }
 
 /** Task board persistence */

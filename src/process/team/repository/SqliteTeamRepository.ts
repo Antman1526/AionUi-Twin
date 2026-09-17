@@ -261,6 +261,15 @@ export class SqliteTeamRepository implements ITeamRepository {
     return rows.map(rowToMailbox);
   }
 
+  async deleteReadMessagesOlderThan(teamId: string | undefined, cutoffMs: number): Promise<void> {
+    const db = await this.getDb();
+    if (teamId) {
+      db.prepare('DELETE FROM mailbox WHERE team_id = ? AND read = 1 AND created_at < ?').run(teamId, cutoffMs);
+    } else {
+      db.prepare('DELETE FROM mailbox WHERE read = 1 AND created_at < ?').run(cutoffMs);
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Task operations
   // -------------------------------------------------------------------------
