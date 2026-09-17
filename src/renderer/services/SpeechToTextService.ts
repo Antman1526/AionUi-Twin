@@ -6,7 +6,9 @@
 
 import { ipcBridge } from '@/common';
 import type { SpeechToTextResult } from '@/common/types/speech';
+import { ConfigStorage } from '@/common/config/storage';
 import { isElectronDesktop } from '@/renderer/utils/platform';
+import { convertBlobToWav } from '@/renderer/services/audio/wavEncoder';
 
 const MAX_AUDIO_FILE_SIZE_MB = 30;
 const MAX_AUDIO_FILE_SIZE_BYTES = MAX_AUDIO_FILE_SIZE_MB * 1024 * 1024;
@@ -53,8 +55,26 @@ const parseWebResponse = async (response: XMLHttpRequest): Promise<SpeechToTextR
   return payload.data;
 };
 
-export async function transcribeAudioBlob(blob: Blob, languageHint?: string): Promise<SpeechToTextResult> {
-  ensureAudioSize(blob);
+/**
+ * Convert the recorded blob to 16kHz mono WAV when the active provider is the
+ * offline `whisper-local` runtime; cloud providers (openai/deepgram) keep
+ * receiving the original recorded format unchanged.
+ */
+const prepareAudioForProvider = async (blob: Blob): Promise<Blob> => {
+  try {
+    const config = await ConfigStorage.get('tools.speechToText');
+    if (config?.provider === 'whisper-local') {
+      return convertBlobToWav(blob);
+    }
+  } catch {
+    // Fall through and send the original blob if the config can't be read.
+  }
+  return blob;
+};
+
+export async function transcribeAudioBlob(rawBlob: Blob, languageHint?: string): Promise<SpeechToTextResult> {
+  ensureAudioSize(rawBlob);
+  const blob = await prepareAudioForProvider(rawBlob);
 
   const mimeType = blob.type || 'audio/webm';
   const fileName = createAudioFileName(mimeType);

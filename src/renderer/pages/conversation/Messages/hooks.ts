@@ -7,7 +7,10 @@
 import { ipcBridge } from '@/common';
 import type { TMessage } from '@/common/chat/chatLib';
 import { composeMessage } from '@/common/chat/chatLib';
+import { ConfigStorage } from '@/common/config/storage';
+import TextToSpeechService from '@/renderer/services/TextToSpeechService';
 import { useCallback, useEffect, useRef } from 'react';
+import { useLatestRef } from '@/renderer/hooks/ui/useLatestRef';
 import { createContext } from '@renderer/utils/ui/createContext';
 
 const [useMessageList, MessageListProvider, useUpdateMessageList] = createContext([] as TMessage[]);
@@ -429,6 +432,61 @@ export const useMessageLstCache = (key: string) => {
         console.error('[useMessageLstCache] Failed to load messages from database:', error);
       });
   }, [key]);
+};
+
+// Backend channels an assistant reply streams over. Every backend emits a
+// `{ type: 'finish', msg_id }` event on the same msg_id used for its text
+// chunks once a turn's response is fully streamed — this is also what
+// `PetEventBridge` (main process) keys off of for its own "done" animation.
+// There is no per-message "done" status on `text` messages themselves (only
+// `thinking` messages carry one), so this is the cleanest completion signal
+// available for triggering auto-read.
+// Resolved lazily so partial `ipcBridge` mocks (and standalone builds without the
+// OpenClaw namespace) do not throw at module load.
+const getResponseStreamChannels = () =>
+  [ipcBridge.conversation?.responseStream, ipcBridge.openclawConversation?.responseStream].filter(
+    (channel): channel is NonNullable<typeof channel> => Boolean(channel)
+  );
+
+const getMessageSpeechText = (message: TMessage): string | undefined => {
+  if (message.type !== 'text' || message.position !== 'left') return undefined;
+  if ((message.content as { teammateMessage?: boolean })?.teammateMessage) return undefined;
+  const content = message.content.content;
+  return typeof content === 'string' ? content : undefined;
+};
+
+/**
+ * When `tools.textToSpeech.autoReadReplies` is enabled, speak an assistant
+ * reply once when its streaming completes (the `finish` event for its
+ * `msg_id`). Each `msg_id` is only ever read once per mount.
+ */
+export const useAutoReadAssistantReplies = (list: TMessage[]) => {
+  const listRef = useLatestRef(list);
+  const readMsgIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const handleFinish = (message: { type?: string; msg_id?: string }) => {
+      if (message.type !== 'finish' || !message.msg_id) return;
+      if (readMsgIdsRef.current.has(message.msg_id)) return;
+
+      const target = listRef.current.find((item) => item.msg_id === message.msg_id);
+      const speechText = target ? getMessageSpeechText(target) : undefined;
+      if (!speechText?.trim()) return;
+
+      readMsgIdsRef.current.add(message.msg_id);
+      void ConfigStorage.get('tools.textToSpeech').then((config) => {
+        if (!config?.enabled || !config.autoReadReplies) return;
+        void TextToSpeechService.speak(speechText, { voiceURI: config.voiceURI, rate: config.rate }).catch(() => {
+          // Best-effort: auto-read failures should not surface as errors.
+        });
+      });
+    };
+
+    const unsubscribers = getResponseStreamChannels().map((channel) => channel.on(handleFinish));
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe?.());
+    };
+  }, [listRef]);
 };
 
 export const beforeUpdateMessageList = (fn: (list: TMessage[]) => TMessage[]) => {
