@@ -29,6 +29,17 @@ import { extensionEventBus } from '../lifecycle/ExtensionEventBus';
  * ```
  */
 
+/**
+ * V8 heap limits applied to every sandbox worker thread.
+ *
+ * Exported so tests (and future tuning) reference one definition rather than
+ * repeating the numbers.
+ */
+export const SANDBOX_RESOURCE_LIMITS = {
+  maxOldGenerationSizeMb: 512,
+  maxYoungGenerationSizeMb: 64,
+} as const;
+
 // ============ Message Protocol ============
 
 export type SandboxMessage =
@@ -133,6 +144,10 @@ export class SandboxHost {
           },
           // Restrict worker capabilities
           execArgv: [],
+          // Cap the worker's heap so a runaway extension cannot exhaust the
+          // machine's memory: V8 kills the thread instead, which surfaces as a
+          // normal worker 'error'/'exit' and stops the extension, not the app.
+          resourceLimits: SANDBOX_RESOURCE_LIMITS,
         });
 
         this.worker.on('message', (msg: SandboxMessage) => {

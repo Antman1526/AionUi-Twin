@@ -1,5 +1,12 @@
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+/**
+ * Bytes every mocked archive read yields. Fixtures below advertise the matching
+ * SRI so the (now enforced) install-time integrity check passes.
+ */
+const archiveBytes = vi.hoisted(() => Buffer.from('mock hub archive bytes'));
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -17,6 +24,7 @@ vi.mock('@/common/platform', () => ({
 
 vi.mock('fs', async () => {
   const actual = await vi.importActual<typeof import('fs')>('fs');
+  const { Readable } = await vi.importActual<typeof import('stream')>('stream');
   return {
     ...actual,
     existsSync: vi.fn(() => false),
@@ -25,6 +33,7 @@ vi.mock('fs', async () => {
     renameSync: vi.fn(),
     writeFileSync: vi.fn(),
     readFileSync: vi.fn(() => '{}'),
+    createReadStream: vi.fn(() => Readable.from([archiveBytes])),
   };
 });
 
@@ -54,6 +63,7 @@ const mocks = vi.hoisted(() => ({
     isExtension?: boolean;
     customAgentId?: string;
   }>,
+  installRecords: [] as unknown[],
 }));
 
 vi.mock('../../src/process/extensions/hub/HubIndexManager', () => ({
@@ -70,6 +80,9 @@ vi.mock('../../src/process/extensions/hub/HubStateManager', () => ({
     setTransientState: (...args: unknown[]) => {
       mocks.setTransientCalls.push(args);
     },
+    recordInstall: (...args: unknown[]) => {
+      mocks.installRecords.push(args[0]);
+    },
   },
 }));
 
@@ -81,18 +94,25 @@ vi.mock('@process/agent/AgentRegistry', () => ({
   },
 }));
 
+const mockGetPrivateModeEnabled = vi.fn(() => false);
+vi.mock('@process/services/privacy/privacyState', () => ({
+  getPrivateModeEnabled: () => mockGetPrivateModeEnabled(),
+}));
+
 import * as fs from 'fs';
 import { hubInstaller } from '../../src/process/extensions/hub/HubInstaller';
 
 const mockedExistsSync = vi.mocked(fs.existsSync);
 
-function makeExtInfo(name: string, bundled = false) {
+const ARCHIVE_SRI = `sha512-${crypto.createHash('sha512').update(archiveBytes).digest('base64')}`;
+
+function makeExtInfo(name: string, bundled = false, integrity: string = ARCHIVE_SRI) {
   return {
     name,
     displayName: name,
     description: 'test',
     author: 'test',
-    dist: { tarball: `extensions/${name}.zip`, integrity: 'sha512-abc', unpackedSize: 100 },
+    dist: { tarball: `extensions/${name}.zip`, integrity, unpackedSize: 100 },
     engines: { aionui: '>=1.0.0' },
     hubs: ['acpAdapters'],
     bundled,
@@ -107,6 +127,8 @@ describe('HubInstaller', () => {
     mocks.getExtensionResult = undefined;
     mocks.setTransientCalls = [];
     mocks.detectedAgents = [];
+    mocks.installRecords = [];
+    mockGetPrivateModeEnabled.mockReturnValue(false);
   });
 
   describe('install', () => {
@@ -168,6 +190,78 @@ describe('HubInstaller', () => {
 
       await expect(hubInstaller.install('fail-ext')).rejects.toThrow('Failed to download');
       expect(mocks.setTransientCalls.at(-1)?.[1]).toBe('install_failed');
+    });
+
+    it('should refuse remote download in Private Mode without touching the network', async () => {
+      mockGetPrivateModeEnabled.mockReturnValue(true);
+      mocks.getExtensionResult = makeExtInfo('remote-only-ext', false);
+
+      await expect(hubInstaller.install('remote-only-ext')).rejects.toThrow('Private Mode');
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mocks.setTransientCalls.at(-1)?.[1]).toBe('install_failed');
+    });
+
+    it('should fail and delete the cached archive when the integrity check fails', async () => {
+      mocks.getExtensionResult = makeExtInfo('tampered-ext', false, 'sha512-YWJj');
+      mockedExistsSync.mockImplementation((p) => String(p).includes('aion-extension.json'));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: async () => new ArrayBuffer(10),
+      });
+
+      await expect(hubInstaller.install('tampered-ext')).rejects.toThrow('Integrity verification failed');
+      expect(mocks.setTransientCalls.at(-1)?.[1]).toBe('install_failed');
+      expect(mocks.installRecords).toHaveLength(0);
+      expect(vi.mocked(fs.rmSync)).toHaveBeenCalledWith(path.join('/data', 'cache', 'hub', 'tampered-ext.zip'), {
+        force: true,
+      });
+    });
+
+    it('should refuse a non-bundled extension whose index entry has no integrity value', async () => {
+      mocks.getExtensionResult = makeExtInfo('unverifiable-ext', false, '');
+      mockedExistsSync.mockImplementation((p) => String(p).includes('aion-extension.json'));
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: async () => new ArrayBuffer(10),
+      });
+
+      await expect(hubInstaller.install('unverifiable-ext')).rejects.toThrow('no dist.integrity value');
+      expect(mocks.installRecords).toHaveLength(0);
+    });
+
+    it('should record what was verified after a successful install', async () => {
+      mocks.getExtensionResult = { ...makeExtInfo('recorded-ext', true), version: '1.2.3' };
+      mockedExistsSync.mockImplementation((p) => {
+        const s = String(p);
+        if (s.includes('recorded-ext.zip') && s.includes('resources')) return true;
+        if (s.includes('aion-extension.json')) return true;
+        return false;
+      });
+
+      await hubInstaller.install('recorded-ext');
+
+      expect(mocks.installRecords).toHaveLength(1);
+      expect(mocks.installRecords[0]).toMatchObject({
+        name: 'recorded-ext',
+        version: '1.2.3',
+        integrity: ARCHIVE_SRI,
+        verified: 'integrity',
+      });
+    });
+
+    it('should allow a bundled extension with no integrity value and record it as bundled', async () => {
+      mocks.getExtensionResult = makeExtInfo('bundled-no-sri', true, '');
+      mockedExistsSync.mockImplementation((p) => {
+        const s = String(p);
+        if (s.includes('bundled-no-sri.zip') && s.includes('resources')) return true;
+        if (s.includes('aion-extension.json')) return true;
+        return false;
+      });
+
+      await hubInstaller.install('bundled-no-sri');
+
+      expect(mocks.setTransientCalls.at(-1)).toEqual(['bundled-no-sri', 'installed']);
+      expect(mocks.installRecords[0]).toMatchObject({ verified: 'bundled' });
     });
 
     it('should fail when manifest is missing after extraction', async () => {
