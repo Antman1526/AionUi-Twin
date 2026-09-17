@@ -14,11 +14,13 @@
 
 import { ipcBridge } from '@/common';
 import { getPlatformServices } from '@/common/platform';
-import { spawn, exec, execSync, type ChildProcess } from 'node:child_process';
+import { spawn, exec, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { getEnhancedEnv } from '@process/utils/shellEnv';
+import { installOfficeCli } from '@process/services/officecli/officeCliInstaller';
+import { getPrivateModeEnabled } from '@process/services/privacy/privacyState';
 
 interface WatchSession {
   process: ChildProcess;
@@ -96,6 +98,10 @@ function killSession(filePath: string): void {
  * Background update check — runs at most once per day, fully async to avoid blocking main process.
  */
 function checkForUpdate(): void {
+  // Private Mode forbids network egress — skip the check (and the marker write) entirely so it
+  // runs on the next actual attempt after the user turns Private Mode back off.
+  if (getPrivateModeEnabled()) return;
+
   const markerPath = path.join(getPlatformServices().paths.getDataDir(), '.officecli-update-check');
   try {
     const stat = fs.statSync(markerPath);
@@ -117,7 +123,7 @@ function checkForUpdate(): void {
         if (err2) return;
         const remoteVersion = stdout2.trim().split('/').pop()?.replace(/^v/, '') ?? '';
         if (remoteVersion && remoteVersion !== localVersion) {
-          installOfficecli();
+          void installOfficecliOnce();
         }
       }
     );
@@ -125,29 +131,26 @@ function checkForUpdate(): void {
 }
 
 /**
- * Auto-install officecli if not found.
+ * Auto-install officecli if not found, gated behind user consent via
+ * `installOfficeCli`. Skips further attempts for the rest of this process
+ * lifetime once the user declines or installation fails.
  */
-function installOfficecli(): boolean {
+async function installOfficecliOnce(): Promise<boolean> {
   if (installFailed) return false;
   try {
-    ipcBridge.pptPreview.status.emit({ state: 'installing' });
-    if (process.platform === 'win32') {
-      execSync(
-        'powershell -Command "irm https://raw.githubusercontent.com/iOfficeAI/OfficeCli/main/install.ps1 | iex"',
-        { stdio: 'inherit' }
-      );
-    } else {
-      execSync('curl -fsSL https://raw.githubusercontent.com/iOfficeAI/OfficeCli/main/install.sh | bash', {
-        stdio: 'inherit',
-      });
-      try {
-        execSync('xattr -cr ~/.local/bin/officecli && codesign -s - --force ~/.local/bin/officecli', { stdio: 'pipe' });
-      } catch {}
+    const result = await installOfficeCli({
+      onInstalling: () => ipcBridge.pptPreview.status.emit({ state: 'installing' }),
+    });
+    if (!result.installed) {
+      installFailed = true;
+      ipcBridge.pptPreview.status.emit({ state: 'error', message: 'OfficeCli installation was declined' });
+      return false;
     }
     return true;
   } catch (e) {
     installFailed = true;
     console.error('[pptPreview] Failed to install officecli:', e);
+    ipcBridge.pptPreview.status.emit({ state: 'error', message: e instanceof Error ? e.message : String(e) });
     return false;
   }
 }
@@ -254,15 +257,17 @@ async function startWatch(filePath: string, retry = false): Promise<string> {
       console.error('[pptPreview] spawn error:', err.message);
       sessions.delete(filePath);
       if ((err as NodeJS.ErrnoException).code === 'ENOENT' && !retry) {
-        // officecli not found — try auto-install then retry once.
-        // Clear timeout before potentially long sync install.
+        // officecli not found — ask for consent, then install and retry once.
+        // Clear timeout before the potentially long consent dialog + install.
         clearTimeout(timeout);
-        if (installOfficecli()) {
-          settled = true;
-          startWatch(filePath, true).then(resolve, reject);
-        } else {
-          settle(new Error('officecli is not installed and auto-install failed'));
-        }
+        settled = true;
+        installOfficecliOnce().then((ok) => {
+          if (ok) {
+            startWatch(filePath, true).then(resolve, reject);
+          } else {
+            reject(new Error('officecli is not installed and auto-install failed'));
+          }
+        });
       } else {
         settle(new Error(`Failed to start officecli: ${err.message}`));
       }

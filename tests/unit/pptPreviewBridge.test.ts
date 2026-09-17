@@ -19,6 +19,8 @@ const {
   realpathSyncMock,
   statSyncMock,
   writeFileSyncMock,
+  installOfficeCliMock,
+  getPrivateModeEnabledMock,
   fakePort,
 } = vi.hoisted(() => ({
   startHandler: { fn: undefined as ((...args: any[]) => any) | undefined },
@@ -30,11 +32,21 @@ const {
   realpathSyncMock: vi.fn((p: string) => p),
   statSyncMock: vi.fn(),
   writeFileSyncMock: vi.fn(),
+  installOfficeCliMock: vi.fn(),
+  getPrivateModeEnabledMock: vi.fn(() => false),
   fakePort: { value: 55555 },
 }));
 
 vi.mock('electron', () => ({
   app: { isPackaged: false, getPath: vi.fn(() => '/tmp') },
+}));
+
+vi.mock('@process/services/officecli/officeCliInstaller', () => ({
+  installOfficeCli: (...args: any[]) => installOfficeCliMock(...args),
+}));
+
+vi.mock('@process/services/privacy/privacyState', () => ({
+  getPrivateModeEnabled: () => getPrivateModeEnabledMock(),
 }));
 
 vi.mock('../../src/common', () => ({
@@ -144,6 +156,7 @@ beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
   realpathSyncMock.mockImplementation((p: string) => p);
+  getPrivateModeEnabledMock.mockReturnValue(false);
   fakePort.value = 55555;
 
   const mod = await import('../../src/process/bridge/pptPreviewBridge');
@@ -240,11 +253,14 @@ describe('pptPreviewBridge', () => {
     });
 
     it('attempts auto-install on ENOENT and emits installing status', async () => {
+      installOfficeCliMock.mockImplementation(async ({ onInstalling }: { onInstalling?: () => void }) => {
+        onInstalling?.();
+        return { installed: true };
+      });
       initPptPreviewBridge();
 
       const child1 = createMockChildProcess();
       spawnMock.mockReturnValueOnce(child1);
-      execSyncMock.mockReturnValue('');
 
       const child2 = createMockChildProcess();
       spawnMock.mockReturnValueOnce(child2);
@@ -255,12 +271,30 @@ describe('pptPreviewBridge', () => {
       const enoentErr = Object.assign(new Error('spawn officecli ENOENT'), { code: 'ENOENT' });
       child1.emit('error', enoentErr);
 
-      // installOfficecli runs synchronously, then retry calls startWatch again
+      // installOfficeCli resolves asynchronously, then retry calls startWatch again
       await flush(); // for retry's findFreePort
       expect(statusEmitMock).toHaveBeenCalledWith({ state: 'installing' });
+      expect(installOfficeCliMock).toHaveBeenCalledTimes(1);
 
       await emitWatchReady(child2);
       await promise;
+    });
+
+    it('emits error status and rejects when the user declines the install prompt', async () => {
+      installOfficeCliMock.mockResolvedValue({ installed: false, reason: 'declined' });
+      initPptPreviewBridge();
+      const child = createMockChildProcess();
+      spawnMock.mockReturnValue(child);
+
+      const promise = startHandler.fn!({ filePath: '/test/file.pptx' });
+      await flush();
+
+      const enoentErr = Object.assign(new Error('spawn officecli ENOENT'), { code: 'ENOENT' });
+      child.emit('error', enoentErr);
+
+      const result = await promise;
+      expect(result).toEqual({ url: '', error: 'officecli is not installed and auto-install failed' });
+      expect(statusEmitMock).toHaveBeenCalledWith({ state: 'error', message: 'OfficeCli installation was declined' });
     });
 
     it('rejects if auto-install fails', async () => {
@@ -268,9 +302,7 @@ describe('pptPreviewBridge', () => {
       const child = createMockChildProcess();
       spawnMock.mockReturnValue(child);
 
-      execSyncMock.mockImplementation(() => {
-        throw new Error('install failed');
-      });
+      installOfficeCliMock.mockRejectedValue(new Error('install failed'));
 
       const promise = startHandler.fn!({ filePath: '/test/file.pptx' });
       await flush();
@@ -290,9 +322,7 @@ describe('pptPreviewBridge', () => {
       const child = createMockChildProcess();
       spawnMock.mockReturnValue(child);
 
-      execSyncMock.mockImplementation(() => {
-        throw new Error('install failed');
-      });
+      installOfficeCliMock.mockRejectedValue(new Error('install failed'));
 
       const promise = startHandler.fn!({ filePath: '/test/file.pptx' });
       await flush();
@@ -404,7 +434,10 @@ describe('pptPreviewBridge', () => {
           cb(null, 'https://github.com/iOfficeAI/OfficeCli/releases/tag/v1.0.18');
         }
       });
-      execSyncMock.mockReturnValue('');
+      installOfficeCliMock.mockImplementation(async ({ onInstalling }: { onInstalling?: () => void }) => {
+        onInstalling?.();
+        return { installed: true };
+      });
 
       initPptPreviewBridge();
 
@@ -438,6 +471,21 @@ describe('pptPreviewBridge', () => {
       await promise;
 
       expect(statusEmitMock).not.toHaveBeenCalledWith({ state: 'installing' });
+    });
+
+    it('skips the check entirely when Private Mode is enabled (no exec/curl egress)', async () => {
+      getPrivateModeEnabledMock.mockReturnValue(true);
+      statSyncMock.mockReturnValue({ mtimeMs: Date.now() - 25 * 60 * 60 * 1000 });
+      initPptPreviewBridge();
+
+      const child = createMockChildProcess();
+      spawnMock.mockReturnValue(child);
+      const promise = startHandler.fn!({ filePath: '/test/file.pptx' });
+      await emitWatchReady(child);
+      await promise;
+
+      expect(execMock).not.toHaveBeenCalled();
+      expect(writeFileSyncMock).not.toHaveBeenCalled();
     });
 
     it('only checks once per session across multiple startWatch calls', async () => {
