@@ -8,6 +8,7 @@ import { ipcBridge } from '@/common';
 import type { IProvider, TProviderWithModel } from '@/common/config/storage';
 import { ConfigStorage } from '@/common/config/storage';
 import { uuid } from '@/common/utils';
+import { isLocalProvider } from '@/common/utils/privacy';
 import { useGeminiGoogleAuthModels } from '@/renderer/hooks/agent/useGeminiGoogleAuthModels';
 import { hasAvailableModels } from '../utils/modelUtils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -64,6 +65,7 @@ export const useGuidModelSelection = (agentKey: ProviderAgentKey = 'gemini'): Gu
       return (data || []).filter((platform) => !!platform.model.length);
     });
   });
+  const { data: privateMode } = useSWR('privacy.privateMode', () => ipcBridge.privacy.getPrivateMode.invoke());
 
   const geminiModelValues = useMemo(() => geminiModeOptions.map((option) => option.value), [geminiModeOptions]);
 
@@ -89,8 +91,9 @@ export const useGuidModelSelection = (agentKey: ProviderAgentKey = 'gemini'): Gu
       allProviders = modelConfig || [];
     }
 
-    return allProviders.filter(hasAvailableModels);
-  }, [agentKey, geminiModelValues, isGoogleAuth, modelConfig]);
+    // Private Mode: restrict the selectable list to local providers only.
+    return allProviders.filter((p) => hasAvailableModels(p) && (!privateMode || isLocalProvider(p)));
+  }, [agentKey, geminiModelValues, isGoogleAuth, modelConfig, privateMode]);
 
   const geminiModeLookup = useMemo(() => {
     const lookup = new Map<string, (typeof geminiModeOptions)[number]>();

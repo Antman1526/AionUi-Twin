@@ -7,9 +7,26 @@
 // Sentry must be initialized first
 // Use electron-specific renderer package only inside Electron; fall back to the
 // browser SDK when running as a standalone web server (no window.electronAPI).
+import { ConfigStorage } from '@/common/config/storage';
+import { isTelemetryAllowed } from '@/common/utils/privacy';
+
 if ((window as { electronAPI?: unknown }).electronAPI) {
-  // Dynamic import avoids bundling sentry-ipc:// protocol code into the web build
-  import('@sentry/electron/renderer').then((Sentry) => Sentry.init()).catch(() => {});
+  void (async () => {
+    try {
+      const [telemetryEnabled, privateMode] = await Promise.all([
+        ConfigStorage.get('telemetry.enabled'),
+        ConfigStorage.get('privacy.privateMode'),
+      ]);
+      if (!isTelemetryAllowed({ 'telemetry.enabled': telemetryEnabled, 'privacy.privateMode': privateMode })) {
+        return;
+      }
+      // Dynamic import avoids bundling sentry-ipc:// protocol code into the web build
+      const Sentry = await import('@sentry/electron/renderer');
+      Sentry.init();
+    } catch {
+      // Telemetry consent could not be read — stay opted out.
+    }
+  })();
 }
 
 // Runtime patches must be imported early

@@ -9,9 +9,12 @@ import {
   MenuFold,
   MenuUnfold,
   Plus,
+  Shield,
 } from '@icon-park/react';
+import { Tag, Tooltip } from '@arco-design/web-react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 
 import { ipcBridge } from '@/common';
 import { TEAM_MODE_ENABLED } from '@/common/config/constants';
@@ -81,6 +84,7 @@ const Titlebar: React.FC<TitlebarProps> = ({ workspaceAvailable }) => {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const lastNonSettingsPathRef = useRef('/guid');
+  const { data: isPrivateMode } = useSWR('privacy.privateMode', () => ipcBridge.privacy.getPrivateMode.invoke());
 
   // 监听工作空间折叠状态，保持按钮图标一致 / Sync workspace collapsed state for toggle button
   useEffect(() => {
@@ -351,6 +355,17 @@ const Titlebar: React.FC<TitlebarProps> = ({ workspaceAvailable }) => {
         )}
       </div>
       <div ref={toolbarRef} className='app-titlebar__toolbar'>
+        {isPrivateMode && (
+          <Tooltip content={t('common.privateModeTooltip')} position='bottom'>
+            <Tag
+              className='app-titlebar__private-mode-tag'
+              icon={<Shield theme='outline' size={12} />}
+              color='arcoblue'
+            >
+              {t('common.privateModeLabel')}
+            </Tag>
+          </Tooltip>
+        )}
         {showNewConversationButton && (
           <button
             type='button'

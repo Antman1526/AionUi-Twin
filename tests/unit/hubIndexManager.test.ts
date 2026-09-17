@@ -21,6 +21,11 @@ vi.mock('fs', () => ({
   readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
 }));
 
+const mockGetPrivateModeEnabled = vi.fn(() => false);
+vi.mock('@process/services/privacy/privacyState', () => ({
+  getPrivateModeEnabled: () => mockGetPrivateModeEnabled(),
+}));
+
 vi.mock('../../src/process/extensions/constants', () => ({
   EXTENSION_MANIFEST_FILE: 'aion-extension.json',
   HUB_REMOTE_URLS: ['https://example.com/hub/'],
@@ -49,6 +54,7 @@ describe('HubIndexManager', () => {
     vi.clearAllMocks();
     mockExistsSync.mockReturnValue(false);
     mockFetch.mockRejectedValue(new Error('no network'));
+    mockGetPrivateModeEnabled.mockReturnValue(false);
     // Reset singleton state so each test starts fresh
     (hubIndexManager as any)['mergedIndex'] = {};
     (hubIndexManager as any)['localLoaded'] = false;
@@ -131,6 +137,23 @@ describe('HubIndexManager', () => {
 
       await hubIndexManager.loadIndexes();
       expect(hubIndexManager.getExtension('bundled-ext')?.bundled).toBe(true);
+    });
+
+    it('should skip the remote index fetch entirely in Private Mode', async () => {
+      mockGetPrivateModeEnabled.mockReturnValue(true);
+      const localIndex = {
+        schemaVersion: 1,
+        generatedAt: '',
+        extensions: { 'local-ext': makeExt({ name: 'local-ext' }) },
+      };
+
+      mockExistsSync.mockImplementation((p: string) => p.includes('index.json'));
+      mockReadFileSync.mockReturnValue(JSON.stringify(localIndex));
+
+      await hubIndexManager.loadIndexes();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(hubIndexManager.getExtension('local-ext')).toBeDefined();
     });
   });
 });

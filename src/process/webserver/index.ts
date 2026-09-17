@@ -19,6 +19,8 @@ import { registerAuthRoutes } from './routes/authRoutes';
 import { registerApiRoutes } from './routes/apiRoutes';
 import { registerStaticRoutes, resolveRendererPath, VITE_DEV_PORT } from './routes/staticRoutes';
 import { generateQRLoginUrlDirect } from '@process/bridge/webuiQR';
+import { shouldLookupPublicIp } from '@/common/utils/privacy';
+import { getPrivateModeEnabled } from '@process/services/privacy/privacyState';
 
 // Express Request 类型扩展定义在 src/webserver/types/express.d.ts
 // Express Request type extension is defined in src/webserver/types/express.d.ts
@@ -116,13 +118,19 @@ function getPublicIP(): string | null {
 /**
  * 获取服务器 IP 地址（优先公网 IP，其次局域网 IP）
  * Get server IP address (prefer public IP, fallback to LAN IP)
+ *
+ * Skips the public-IP lookup entirely (no network egress) in Private Mode, and
+ * whenever remote access isn't enabled — there's no point resolving a public
+ * IP nobody can reach.
  */
-function getServerIP(): string | null {
-  // 1. Linux 无桌面环境：尝试获取公网 IP
-  // Linux headless: try to get public IP
-  const publicIP = getPublicIP();
-  if (publicIP) {
-    return publicIP;
+function getServerIP(options: { privateMode?: boolean; remoteAccessEnabled?: boolean } = {}): string | null {
+  // 1. Linux 无桌面环境：尝试获取公网 IP（Private Mode 或未开启远程访问时跳过）
+  // Linux headless: try to get public IP (skipped in Private Mode or when remote access is off)
+  if (shouldLookupPublicIp(options)) {
+    const publicIP = getPublicIP();
+    if (publicIP) {
+      return publicIP;
+    }
   }
 
   // 2. 所有平台：获取局域网 IP（包括 Windows/Mac/Linux）
@@ -322,7 +330,7 @@ export async function startWebServerWithInstance(port: number, allowRemote = fal
   return new Promise((resolve, reject) => {
     server.listen(port, host, () => {
       const localUrl = `http://localhost:${port}`;
-      const serverIP = getServerIP();
+      const serverIP = getServerIP({ privateMode: getPrivateModeEnabled(), remoteAccessEnabled: allowRemote });
       const displayUrl = serverIP ? `http://${serverIP}:${port}` : localUrl;
 
       // 显示初始凭证（如果是首次启动）/ Display initial credentials (if first startup)
