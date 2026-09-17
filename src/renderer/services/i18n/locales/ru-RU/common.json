@@ -83,5 +83,12 @@
   "optional": "(необязательно)",
   "clear": "Очистить",
   "historyBack": "Назад",
-  "agentMode": "Режим агента"
+  "agentMode": "Режим агента",
+  "privateModeLabel": "Приватный режим",
+  "privateModeTooltip": "Приватный режим включён: телеметрия отключена, доступны только локальные модели, а удалённая загрузка расширений заблокирована.",
+  "officeCliInstall.title": "Установить OfficeCli",
+  "officeCliInstall.message": "Установить OfficeCli для предпросмотра этого документа?",
+  "officeCliInstall.detail": "AionUi использует OfficeCli — вспомогательное средство для офисных документов — для отображения живого предпросмотра файлов Word, Excel и PowerPoint. Он будет загружен с GitHub (iOfficeAI/OfficeCli) и установлен в {{installDir}}.",
+  "officeCliInstall.install": "Установить",
+  "officeCliInstall.cancel": "Отмена"
 }

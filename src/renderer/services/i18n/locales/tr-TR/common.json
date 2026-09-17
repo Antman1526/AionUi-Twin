@@ -83,5 +83,12 @@
   "import": "İçe Aktar",
   "processing": "İşleniyor...",
   "optional": "(isteğe bağlı)",
-  "clear": "Temizle"
+  "clear": "Temizle",
+  "privateModeLabel": "Gizli Mod",
+  "privateModeTooltip": "Gizli Mod açık: Telemetri devre dışı, yalnızca yerel modeller seçilebilir ve uzantıların uzaktan indirilmesi engellenir.",
+  "officeCliInstall.title": "OfficeCli'yi Yükle",
+  "officeCliInstall.message": "Bu belgeyi önizlemek için OfficeCli yüklensin mi?",
+  "officeCliInstall.detail": "AionUi, Word, Excel ve PowerPoint dosyalarının canlı önizlemesini oluşturmak için bir ofis belgesi yardımcısı olan OfficeCli'yi kullanır. GitHub'dan (iOfficeAI/OfficeCli) indirilip {{installDir}} konumuna yüklenecektir.",
+  "officeCliInstall.install": "Yükle",
+  "officeCliInstall.cancel": "İptal"
 }

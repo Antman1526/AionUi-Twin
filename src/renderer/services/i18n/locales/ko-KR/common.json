@@ -83,5 +83,12 @@
   "import": "가져오기",
   "processing": "처리 중...",
   "optional": "(선택 사항)",
-  "clear": "지우기"
+  "clear": "지우기",
+  "privateModeLabel": "프라이빗 모드",
+  "privateModeTooltip": "프라이빗 모드가 켜져 있습니다. 원격 분석이 비활성화되고, 로컬 모델만 선택할 수 있으며, 확장 프로그램의 원격 다운로드가 차단됩니다.",
+  "officeCliInstall.title": "OfficeCli 설치",
+  "officeCliInstall.message": "이 문서를 미리 보려면 OfficeCli를 설치하시겠습니까?",
+  "officeCliInstall.detail": "AionUi는 Word, Excel, PowerPoint 파일의 실시간 미리보기를 위해 OfficeCli(오피스 문서 도우미)를 사용합니다. GitHub(iOfficeAI/OfficeCli)에서 다운로드되어 {{installDir}}에 설치됩니다.",
+  "officeCliInstall.install": "설치",
+  "officeCliInstall.cancel": "취소"
 }

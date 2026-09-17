@@ -1,0 +1,27 @@
+{
+  "title": "Model Arena",
+  "subtitle": "Run one prompt against two models side by side.",
+  "leftModel": "Model A",
+  "rightModel": "Model B",
+  "modelPlaceholder": "Select a provider and model",
+  "prompt": "Prompt",
+  "promptPlaceholder": "What should both models answer?",
+  "systemPrompt": "System prompt (optional)",
+  "systemPromptPlaceholder": "Instructions applied to both models",
+  "run": "Run",
+  "cancel": "Cancel",
+  "copyComparison": "Copy comparison",
+  "copied": "Comparison copied",
+  "selectModels": "Select a model on both sides.",
+  "enterPrompt": "Enter a prompt.",
+  "empty": "No answer yet.",
+  "running": "Running…",
+  "cancelled": "Cancelled",
+  "error": "Failed: {{message}}",
+  "stats": {
+    "latency": "Latency",
+    "tokens": "Output tokens",
+    "speed": "Speed",
+    "estimated": "Token counts estimated from text length."
+  }
+}

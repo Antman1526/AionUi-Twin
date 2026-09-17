@@ -84,8 +84,15 @@
   "processing": "Processing...",
   "optional": "(optional)",
   "clear": "Clear",
+  "privateModeLabel": "Private",
+  "privateModeTooltip": "Private Mode is on. Telemetry is disabled, only local models can be selected, and remote extension downloads are blocked.",
   "unit": {
     "minute_short": "m",
     "second_short": "s"
-  }
+  },
+  "officeCliInstall.title": "Install OfficeCli",
+  "officeCliInstall.message": "Install OfficeCli to preview this document?",
+  "officeCliInstall.detail": "AionUi uses OfficeCli, an office document helper, to render live previews of Word, Excel, and PowerPoint files. It will be downloaded from GitHub (iOfficeAI/OfficeCli) and installed into {{installDir}}.",
+  "officeCliInstall.install": "Install",
+  "officeCliInstall.cancel": "Cancel"
 }

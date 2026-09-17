@@ -17,5 +17,14 @@
     "statusTesting": "正在测试延迟...",
     "statusUnreachable": "不可达",
     "statusAvailable": "可用"
+  },
+  "localModels": {
+    "title": "本地模型",
+    "inUse": "使用中",
+    "useInChat": "在对话中使用",
+    "found": "发现 {{count}} 个本地模型",
+    "load": "加载…",
+    "installTitle": "尚未安装 llama.cpp",
+    "install": "安装 llama.cpp"
   }
 }

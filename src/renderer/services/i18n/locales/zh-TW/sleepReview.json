@@ -1,0 +1,68 @@
+{
+  "title": "睡眠複盤",
+  "subtitle": "為技能與專案記憶暫存可驗證、可回滾的修改。",
+  "tabs": {
+    "review": "複盤",
+    "proposals": "提案",
+    "heldOut": "留出提示詞"
+  },
+  "review": {
+    "conversations": "對話",
+    "conversationsPlaceholder": "選擇要擷取的對話",
+    "preview": "預覽去識別化紀錄",
+    "previewTitle": "去識別化的對話紀錄",
+    "redactionCount": "已去識別化 {{count}} 處",
+    "target": "目標檔案",
+    "targetPlaceholder": "選擇技能或記憶檔案",
+    "provider": "服務商",
+    "providerPlaceholder": "選擇服務商",
+    "model": "模型",
+    "modelPlaceholder": "選擇模型",
+    "localOnly": "僅本機",
+    "run": "開始複盤",
+    "runSuccess": "提案已暫存",
+    "selectConversation": "請至少選擇一個對話。",
+    "selectTarget": "請選擇目標檔案。",
+    "selectModel": "請選擇服務商與模型。"
+  },
+  "proposals": {
+    "empty": "尚無提案，執行一次複盤即可產生。",
+    "target": "目標",
+    "status": "狀態",
+    "created": "建立時間",
+    "actions": "操作",
+    "detail": "提案詳情",
+    "rationale": "理由",
+    "risk": "殘留風險",
+    "rollbackPlan": "回滾方案",
+    "heldOutChecks": "留出驗證",
+    "diff": "差異",
+    "accept": "接受",
+    "reject": "拒絕",
+    "rollback": "回滾",
+    "runChecks": "執行驗證",
+    "before": "修改前",
+    "after": "修改後",
+    "accepted": "提案已套用",
+    "rejected": "提案已拒絕",
+    "rolledBack": "提案已回滾"
+  },
+  "status": {
+    "staged": "已暫存",
+    "accepted": "已套用",
+    "rejected": "已拒絕",
+    "rolledBack": "已回滾",
+    "failed": "失敗"
+  },
+  "heldOut": {
+    "empty": "尚無留出提示詞。",
+    "prompt": "提示詞",
+    "expected": "預期",
+    "actions": "操作",
+    "modalTitle": "留出提示詞",
+    "promptPlaceholder": "未用於撰寫該修改的提示詞",
+    "expectedPlaceholder": "選填的預期行為",
+    "saved": "留出提示詞已儲存"
+  },
+  "loadFailed": "睡眠複盤請求失敗"
+}

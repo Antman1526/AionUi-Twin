@@ -17,5 +17,14 @@
     "statusTesting": "Testing latency...",
     "statusUnreachable": "Unreachable",
     "statusAvailable": "Available"
+  },
+  "localModels": {
+    "title": "ローカルモデル",
+    "inUse": "使用中",
+    "useInChat": "チャットで使う",
+    "found": "ローカルモデルが {{count}} 個見つかりました",
+    "load": "読み込む…",
+    "installTitle": "llama.cpp がインストールされていません",
+    "install": "llama.cpp をインストール"
   }
 }

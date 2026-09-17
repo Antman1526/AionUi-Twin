@@ -1,4 +1,14 @@
 {
+  "hud": {
+    "tokensPerSecond": "{{value}} tok/s",
+    "tokensPerSecondApprox": "≈{{value}} tok/s",
+    "tokensPerSecondTooltip": "현재 또는 직전 응답의 생성 속도이며 서버의 디코딩된 토큰 수에서 계산합니다.",
+    "tokensPerSecondApproxTooltip": "추정 생성 속도입니다. 서버가 토큰 수를 제공하지 않아 응답 텍스트 길이로 계산했습니다.",
+    "context": "컨텍스트",
+    "contextTooltip": "활성 슬롯이 디코딩한 토큰과 컨텍스트 창의 비율: {{used}} / {{total}}. llama-server는 프롬프트 토큰 수를 제공하지 않으므로 프롬프트는 포함되지 않습니다.",
+    "memory": "메모리",
+    "memoryTooltip": "llama-server 프로세스가 사용 중인 상주 메모리입니다."
+  },
   "welcome": {
     "title": "안녕하세요, 오늘의 계획은 무엇인가요?",
     "placeholder": "메시지 전송, 파일 업로드, 폴더 열기 또는 예약 작업 만들기...",
@@ -305,5 +315,21 @@
   },
   "skills": {
     "loaded": "로드된 스킬"
+  },
+  "voice": {
+    "speak": "소리내어 읽기",
+    "stop": "읽기 중지",
+    "speakFailed": "이 메시지를 읽을 수 없습니다"
+  },
+  "semanticSearch": {
+    "modeLabel": "검색 모드",
+    "modeKeyword": "키워드",
+    "modeSemantic": "의미 기반",
+    "placeholder": "찾으려는 내용을 설명하세요...",
+    "idle": "찾으려는 내용을 자신의 말로 설명하세요",
+    "empty": "유사한 메시지를 찾지 못했습니다",
+    "disabledHint": "의미 기반 검색이 꺼져 있습니다. 설정 › 모델에서 켜세요.",
+    "failed": "의미 기반 검색에 실패했습니다",
+    "score": "일치도 {{score}}%"
   }
 }

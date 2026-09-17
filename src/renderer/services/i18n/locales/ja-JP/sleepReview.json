@@ -1,0 +1,68 @@
+{
+  "title": "スリープレビュー",
+  "subtitle": "スキルとプロジェクトメモリへの検証済みで取り消し可能な変更をステージします。",
+  "tabs": {
+    "review": "レビュー",
+    "proposals": "提案",
+    "heldOut": "ホールドアウトプロンプト"
+  },
+  "review": {
+    "conversations": "会話",
+    "conversationsPlaceholder": "収集する会話を選択",
+    "preview": "マスキング済みログをプレビュー",
+    "previewTitle": "マスキング済みの会話ログ",
+    "redactionCount": "{{count}} 件をマスキングしました",
+    "target": "対象ファイル",
+    "targetPlaceholder": "スキルまたはメモリファイルを選択",
+    "provider": "プロバイダー",
+    "providerPlaceholder": "プロバイダーを選択",
+    "model": "モデル",
+    "modelPlaceholder": "モデルを選択",
+    "localOnly": "ローカルのみ",
+    "run": "レビューを実行",
+    "runSuccess": "提案をステージしました",
+    "selectConversation": "会話を 1 つ以上選択してください。",
+    "selectTarget": "対象ファイルを選択してください。",
+    "selectModel": "プロバイダーとモデルを選択してください。"
+  },
+  "proposals": {
+    "empty": "提案はまだありません。レビューを実行してください。",
+    "target": "対象",
+    "status": "ステータス",
+    "created": "作成日時",
+    "actions": "操作",
+    "detail": "提案の詳細",
+    "rationale": "根拠",
+    "risk": "残存リスク",
+    "rollbackPlan": "ロールバック手順",
+    "heldOutChecks": "ホールドアウト検証",
+    "diff": "差分",
+    "accept": "承認",
+    "reject": "却下",
+    "rollback": "ロールバック",
+    "runChecks": "検証を実行",
+    "before": "変更前",
+    "after": "変更後",
+    "accepted": "提案を適用しました",
+    "rejected": "提案を却下しました",
+    "rolledBack": "提案をロールバックしました"
+  },
+  "status": {
+    "staged": "ステージ済み",
+    "accepted": "適用済み",
+    "rejected": "却下済み",
+    "rolledBack": "ロールバック済み",
+    "failed": "失敗"
+  },
+  "heldOut": {
+    "empty": "ホールドアウトプロンプトはまだありません。",
+    "prompt": "プロンプト",
+    "expected": "期待値",
+    "actions": "操作",
+    "modalTitle": "ホールドアウトプロンプト",
+    "promptPlaceholder": "変更の作成に使用していないプロンプト",
+    "expectedPlaceholder": "期待される動作（任意）",
+    "saved": "ホールドアウトプロンプトを保存しました"
+  },
+  "loadFailed": "スリープレビューのリクエストに失敗しました"
+}

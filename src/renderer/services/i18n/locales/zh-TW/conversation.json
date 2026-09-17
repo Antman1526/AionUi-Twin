@@ -1,4 +1,14 @@
 {
+  "hud": {
+    "tokensPerSecond": "{{value}} tok/s",
+    "tokensPerSecondApprox": "≈{{value}} tok/s",
+    "tokensPerSecondTooltip": "目前或最近一次回覆的生成速度，來自伺服器已解碼 token 計數。",
+    "tokensPerSecondApproxTooltip": "估算的生成速度——伺服器未回傳 token 計數，因此依回覆文字長度推算。",
+    "context": "上下文",
+    "contextTooltip": "目前插槽已解碼 token 佔上下文視窗的比例：{{used}} / {{total}}。llama-server 不提供提示詞 token 計數，因此不含提示詞部分。",
+    "memory": "記憶體",
+    "memoryTooltip": "llama-server 程序佔用的常駐記憶體。"
+  },
   "welcome": {
     "title": "Hi，今天有什麼安排？",
     "placeholder": "發送訊息、上傳檔案、開啟資料夾或建立定時任務...",
@@ -305,5 +315,21 @@
   },
   "skills": {
     "loaded": "已載入技能"
+  },
+  "voice": {
+    "speak": "朗讀",
+    "stop": "停止朗讀",
+    "speakFailed": "無法朗讀此訊息"
+  },
+  "semanticSearch": {
+    "modeLabel": "搜尋模式",
+    "modeKeyword": "關鍵字",
+    "modeSemantic": "語意",
+    "placeholder": "描述你想找的內容……",
+    "idle": "用你自己的話描述想要尋找的內容",
+    "empty": "找不到相似的訊息",
+    "disabledHint": "語意搜尋未啟用。請在「設定 › 模型」中開啟。",
+    "failed": "語意搜尋失敗",
+    "score": "相符度 {{score}}%"
   }
 }

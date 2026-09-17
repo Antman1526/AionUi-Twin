@@ -1,0 +1,68 @@
+{
+  "title": "Sleep Review",
+  "subtitle": "Stage validated, reversible edits to skills and project memory.",
+  "tabs": {
+    "review": "Review",
+    "proposals": "Proposals",
+    "heldOut": "Held-out prompts"
+  },
+  "review": {
+    "conversations": "Conversations",
+    "conversationsPlaceholder": "Select conversations to harvest",
+    "preview": "Preview redacted transcript",
+    "previewTitle": "Redacted transcript",
+    "redactionCount": "{{count}} value(s) redacted",
+    "target": "Target file",
+    "targetPlaceholder": "Select a skill or memory file",
+    "provider": "Provider",
+    "providerPlaceholder": "Select a provider",
+    "model": "Model",
+    "modelPlaceholder": "Select a model",
+    "localOnly": "Local only",
+    "run": "Run review",
+    "runSuccess": "Proposal staged",
+    "selectConversation": "Select at least one conversation.",
+    "selectTarget": "Select a target file.",
+    "selectModel": "Select a provider and model."
+  },
+  "proposals": {
+    "empty": "No proposals yet. Run a review to stage one.",
+    "target": "Target",
+    "status": "Status",
+    "created": "Created",
+    "actions": "Actions",
+    "detail": "Proposal detail",
+    "rationale": "Rationale",
+    "risk": "Residual risk",
+    "rollbackPlan": "Rollback plan",
+    "heldOutChecks": "Held-out checks",
+    "diff": "Diff",
+    "accept": "Accept",
+    "reject": "Reject",
+    "rollback": "Roll back",
+    "runChecks": "Run checks",
+    "before": "Before edit",
+    "after": "After edit",
+    "accepted": "Proposal applied",
+    "rejected": "Proposal rejected",
+    "rolledBack": "Proposal rolled back"
+  },
+  "status": {
+    "staged": "Staged",
+    "accepted": "Applied",
+    "rejected": "Rejected",
+    "rolledBack": "Rolled back",
+    "failed": "Failed"
+  },
+  "heldOut": {
+    "empty": "No held-out prompts yet.",
+    "prompt": "Prompt",
+    "expected": "Expected",
+    "actions": "Actions",
+    "modalTitle": "Held-out prompt",
+    "promptPlaceholder": "A prompt that was not used to draft the edit",
+    "expectedPlaceholder": "Optional expected behavior",
+    "saved": "Held-out prompts saved"
+  },
+  "loadFailed": "Sleep review request failed"
+}

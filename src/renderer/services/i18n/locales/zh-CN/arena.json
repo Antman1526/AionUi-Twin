@@ -1,0 +1,27 @@
+{
+  "title": "模型竞技场",
+  "subtitle": "用同一个提示词并排运行两个模型。",
+  "leftModel": "模型 A",
+  "rightModel": "模型 B",
+  "modelPlaceholder": "选择服务商和模型",
+  "prompt": "提示词",
+  "promptPlaceholder": "两个模型需要回答什么？",
+  "systemPrompt": "系统提示词（可选）",
+  "systemPromptPlaceholder": "同时应用于两个模型的指令",
+  "run": "运行",
+  "cancel": "取消",
+  "copyComparison": "复制对比",
+  "copied": "对比结果已复制",
+  "selectModels": "请在左右两侧都选择模型。",
+  "enterPrompt": "请输入提示词。",
+  "empty": "暂无回答。",
+  "running": "运行中…",
+  "cancelled": "已取消",
+  "error": "失败：{{message}}",
+  "stats": {
+    "latency": "延迟",
+    "tokens": "输出 token",
+    "speed": "速度",
+    "estimated": "token 数量根据文本长度估算。"
+  }
+}

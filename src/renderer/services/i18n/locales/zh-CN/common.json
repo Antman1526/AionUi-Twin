@@ -83,5 +83,12 @@
   "import": "导入",
   "processing": "处理中...",
   "optional": "（可选）",
-  "clear": "清除"
+  "clear": "清除",
+  "privateModeLabel": "隐私模式",
+  "privateModeTooltip": "隐私模式已开启：已禁用遥测数据上报，仅可选择本地模型，且已阻止扩展的远程下载。",
+  "officeCliInstall.title": "安装 OfficeCli",
+  "officeCliInstall.message": "是否安装 OfficeCli 以预览此文档？",
+  "officeCliInstall.detail": "AionUi 使用 OfficeCli（一个 Office 文档处理工具）来实时预览 Word、Excel 和 PowerPoint 文件。它将从 GitHub（iOfficeAI/OfficeCli）下载并安装到 {{installDir}}。",
+  "officeCliInstall.install": "安装",
+  "officeCliInstall.cancel": "取消"
 }

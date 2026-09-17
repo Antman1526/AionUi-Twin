@@ -83,5 +83,12 @@
   "import": "インポート",
   "processing": "処理中...",
   "optional": "（任意）",
-  "clear": "クリア"
+  "clear": "クリア",
+  "privateModeLabel": "プライベートモード",
+  "privateModeTooltip": "プライベートモードが有効です。テレメトリは無効化され、ローカルモデルのみ選択可能で、拡張機能のリモートダウンロードはブロックされます。",
+  "officeCliInstall.title": "OfficeCli をインストール",
+  "officeCliInstall.message": "このドキュメントをプレビューするために OfficeCli をインストールしますか?",
+  "officeCliInstall.detail": "AionUi は Word、Excel、PowerPoint ファイルのライブプレビューに OfficeCli（オフィス文書ヘルパー）を使用します。GitHub（iOfficeAI/OfficeCli）からダウンロードされ、{{installDir}} にインストールされます。",
+  "officeCliInstall.install": "インストール",
+  "officeCliInstall.cancel": "キャンセル"
 }
