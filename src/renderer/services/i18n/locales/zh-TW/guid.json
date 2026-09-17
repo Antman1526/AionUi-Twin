@@ -17,5 +17,14 @@
     "statusTesting": "Testing latency...",
     "statusUnreachable": "Unreachable",
     "statusAvailable": "Available"
+  },
+  "localModels": {
+    "title": "本機模型",
+    "inUse": "使用中",
+    "useInChat": "在對話中使用",
+    "found": "發現 {{count}} 個本機模型",
+    "load": "載入…",
+    "installTitle": "尚未安裝 llama.cpp",
+    "install": "安裝 llama.cpp"
   }
 }

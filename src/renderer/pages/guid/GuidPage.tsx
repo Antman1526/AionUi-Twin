@@ -17,9 +17,10 @@ import { AgentPillBarSkeleton } from './components/GuidSkeleton';
 import GuidActionRow from './components/GuidActionRow';
 import GuidInputCard from './components/GuidInputCard';
 import GuidModelSelector from './components/GuidModelSelector';
+import LocalModelCard from './components/cards/LocalModelCard';
 import MentionDropdown, { MentionSelectorBadge } from './components/MentionDropdown';
 import QuickActionButtons from './components/QuickActionButtons';
-import SkillsMarketBanner from './components/SkillsMarketBanner';
+import SkillsMarketBanner from './components/cards/SkillsMarketBanner';
 import FeedbackReportModal from '@/renderer/components/settings/SettingsModal/contents/FeedbackReportModal';
 import { useGuidAgentSelection } from './hooks/useGuidAgentSelection';
 import { useGuidInput } from './hooks/useGuidInput';
@@ -734,6 +735,8 @@ const GuidPage: React.FC = () => {
             onClearDir={() => guidInput.setDir('')}
             actionRow={actionRowNode}
           />
+
+          <LocalModelCard />
 
           <AssistantSelectionArea
             isPresetAgent={agentSelection.isPresetAgent}

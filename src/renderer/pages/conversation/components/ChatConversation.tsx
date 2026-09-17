@@ -34,6 +34,7 @@ import { useAionrsModelSelection } from '../platforms/aionrs/useAionrsModelSelec
 import { usePreviewContext } from '../Preview';
 import StarOfficeMonitorCard from '../platforms/openclaw/StarOfficeMonitorCard.tsx';
 import ConversationSkillsIndicator from './ConversationSkillsIndicator';
+import InferenceHud from './InferenceHud';
 // import SkillRuleGenerator from './components/SkillRuleGenerator'; // Temporarily hidden
 
 /** Check whether a specific skill is loaded for the conversation */
@@ -41,6 +42,10 @@ const hasLoadedSkill = (conversation: TChatConversation | undefined, skillName: 
   const loadedSkills = (conversation?.extra as { loadedSkills?: Array<{ name: string }> })?.loadedSkills;
   return loadedSkills?.some((s) => s.name === skillName) ?? false;
 };
+
+/** Provider id of the conversation's model — absent on conversation types that carry none (e.g. acp). */
+const conversationProviderId = (conversation: TChatConversation | undefined): string | undefined =>
+  (conversation as { model?: { id?: string } } | undefined)?.model?.id;
 
 const _AssociatedConversation: React.FC<{ conversation_id: string }> = ({ conversation_id }) => {
   const { data } = useSWR(['getAssociateConversation', conversation_id], () =>
@@ -168,6 +173,7 @@ const GeminiConversationPanel: React.FC<{
     headerLeft: <GeminiModelSelector selection={modelSelection} />,
     headerExtra: (
       <div className='flex items-center gap-8px'>
+        <InferenceHud providerId={conversation.model?.id} conversationId={conversation.id} />
         <ConversationSkillsIndicator conversation={conversation} />
         <CronJobManager
           conversationId={conversation.id}
@@ -423,6 +429,7 @@ const ChatConversation: React.FC<{
           />
         </div>
       )}
+      <InferenceHud providerId={conversationProviderId(conversation)} conversationId={conversation?.id} />
       <ConversationSkillsIndicator conversation={conversation} />
       {conversation && (
         <div className='shrink-0'>

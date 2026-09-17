@@ -1,0 +1,27 @@
+{
+  "title": "模型競技場",
+  "subtitle": "用同一個提示詞並排執行兩個模型。",
+  "leftModel": "模型 A",
+  "rightModel": "模型 B",
+  "modelPlaceholder": "選擇服務商與模型",
+  "prompt": "提示詞",
+  "promptPlaceholder": "兩個模型需要回答什麼？",
+  "systemPrompt": "系統提示詞（選填）",
+  "systemPromptPlaceholder": "同時套用於兩個模型的指令",
+  "run": "執行",
+  "cancel": "取消",
+  "copyComparison": "複製比較",
+  "copied": "已複製比較結果",
+  "selectModels": "請在左右兩側都選擇模型。",
+  "enterPrompt": "請輸入提示詞。",
+  "empty": "尚無回答。",
+  "running": "執行中…",
+  "cancelled": "已取消",
+  "error": "失敗：{{message}}",
+  "stats": {
+    "latency": "延遲",
+    "tokens": "輸出 token",
+    "speed": "速度",
+    "estimated": "token 數量依文字長度估算。"
+  }
+}

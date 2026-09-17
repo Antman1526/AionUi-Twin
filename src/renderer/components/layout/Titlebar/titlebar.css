@@ -122,6 +122,13 @@
   min-height: var(--titlebar-height);
 }
 
+.app-titlebar__private-mode-tag {
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .app-titlebar__button {
   -webkit-app-region: no-drag;
   width: var(--titlebar-height);

@@ -19,6 +19,7 @@ import type { TChatConversation, TProviderWithModel } from '@/common/config/stor
 import { ProcessConfig } from '@process/utils/initStorage';
 import { getAssistantsDir } from '@process/utils/initStorage';
 import { TeamSession } from './TeamSession';
+import { MAILBOX_READ_MESSAGE_TTL_MS } from './Mailbox';
 import type { TTeam, TeamAgent } from './types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -29,6 +30,12 @@ export class TeamSessionService {
   private readonly sessions: Map<string, TeamSession> = new Map();
   /** Per-team mutex to serialize addAgent calls, preventing read-modify-write race conditions */
   private readonly addAgentLocks: Map<string, Promise<unknown>> = new Map();
+  /**
+   * In-flight session starts, keyed by team id. Prevents concurrent
+   * getOrStartSession calls for the same team from each creating their own
+   * TeamSession + MCP server — later callers await the same start instead.
+   */
+  private readonly startingSessions: Map<string, Promise<TeamSession>> = new Map();
 
   constructor(
     private readonly repo: ITeamRepository,
@@ -757,6 +764,21 @@ export class TeamSessionService {
   async getOrStartSession(teamId: string): Promise<TeamSession> {
     const existing = this.sessions.get(teamId);
     if (existing) return existing;
+
+    const inFlight = this.startingSessions.get(teamId);
+    if (inFlight) return inFlight;
+
+    const startPromise = this.startSession(teamId).finally(() => {
+      if (this.startingSessions.get(teamId) === startPromise) {
+        this.startingSessions.delete(teamId);
+      }
+    });
+    this.startingSessions.set(teamId, startPromise);
+    return startPromise;
+  }
+
+  /** Actual session-start logic, serialized per team by getOrStartSession's in-flight lock. */
+  private async startSession(teamId: string): Promise<TeamSession> {
     const team = await this.getTeam(teamId);
     if (!team) throw new Error(`Team "${teamId}" not found`);
     let session!: TeamSession;
@@ -835,6 +857,13 @@ export class TeamSessionService {
   async stopSession(teamId: string): Promise<void> {
     await this.sessions.get(teamId)?.dispose();
     this.sessions.delete(teamId);
+    // Best-effort cleanup of old read mailbox messages for this team now that its
+    // session has stopped (see docs/architecture/team-mode-performance.md #6).
+    try {
+      await this.repo.deleteReadMessagesOlderThan?.(teamId, Date.now() - MAILBOX_READ_MESSAGE_TTL_MS);
+    } catch (error) {
+      console.warn(`[TeamSessionService] Failed to clean up mailbox for team ${teamId}:`, error);
+    }
   }
 
   async stopAllSessions(): Promise<void> {

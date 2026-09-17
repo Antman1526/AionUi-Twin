@@ -8,10 +8,19 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
+import os from 'node:os';
 import path from 'node:path';
 import type { IProvider } from '@/common/config/storage';
 import { uuid } from '@/common/utils';
 import { getEnhancedEnv } from '@process/utils/shellEnv';
+import {
+  assertAllowedExecutableName,
+  isValidExecutablePath,
+  LLAMA_SERVER_BASENAMES,
+  validateExecutablePath,
+} from '@process/services/security/executableValidation';
+import { GGUF_MODEL_EXTENSIONS, validateModelFile } from '@process/services/security/modelPathValidation';
+import { resolveLlamaServerExecutable } from './executableResolution';
 import type { LocalModelRuntime } from './LocalModelDiscoveryService';
 
 /**
@@ -74,11 +83,29 @@ export type ManagedServerHandle = {
   modelPath: string;
 };
 
-type ManagedSession = ManagedServerHandle & { process: ChildProcess };
+/**
+ * Reported when a managed llama-server process exits after it had become healthy.
+ * `expected: false` means the process died on its own — the caller must drop the
+ * managed provider and surface the failure.
+ */
+export type ManagedServerExit = {
+  expected: boolean;
+  modelPath: string;
+  exitCode: number | null;
+  signal: NodeJS.Signals | null;
+  stderrTail: string;
+};
+
+type ManagedSession = ManagedServerHandle & {
+  process: ChildProcess;
+  /** Set by {@link stopManagedLlamaServer} so its exit is not reported as a crash. */
+  expectedStop: boolean;
+  /** Only exits after a successful health check are reported; startup failures reject the start promise. */
+  ready: boolean;
+};
 
 let currentSession: ManagedSession | null = null;
 
-const DEFAULT_EXECUTABLE_CANDIDATES = ['llama-server', '/opt/homebrew/bin/llama-server', '/usr/local/bin/llama-server'];
 const MAX_CAPTURED_STDERR = 12_000;
 
 export function buildLlamaServerArgs({
@@ -88,6 +115,7 @@ export function buildLlamaServerArgs({
   contextSize,
   gpuLayers,
   reasoning,
+  embedding,
 }: {
   modelPath: string;
   port: number;
@@ -95,6 +123,7 @@ export function buildLlamaServerArgs({
   contextSize: number;
   gpuLayers: number;
   reasoning?: 'off' | 'on';
+  embedding?: boolean;
 }): string[] {
   const args = [
     '-m',
@@ -112,6 +141,9 @@ export function buildLlamaServerArgs({
   ];
   if (reasoning) {
     args.push('--reasoning', reasoning);
+  }
+  if (embedding) {
+    args.push('--embedding');
   }
   return args;
 }
@@ -166,15 +198,6 @@ function waitForHealthy(port: number, timeoutMs: number): Promise<void> {
   });
 }
 
-function isPathInsideRoots(modelPath: string, allowedRoots: readonly string[]): boolean {
-  const resolved = path.resolve(modelPath);
-  return allowedRoots.some((root) => {
-    const resolvedRoot = path.resolve(root);
-    const relative = path.relative(resolvedRoot, resolved);
-    return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
-  });
-}
-
 function resolveExecutable(candidates: readonly string[]): string | null {
   for (const candidate of candidates) {
     // Absolute/relative paths must exist on disk; bare command names are left for
@@ -188,6 +211,40 @@ function resolveExecutable(candidates: readonly string[]): string | null {
   return null;
 }
 
+/**
+ * Locate `llama-server` on this machine: the user-configured path first, then
+ * PATH, then the platform's well-known install directories.
+ */
+export function findLlamaServerExecutable(configuredPath?: string): string | null {
+  return resolveLlamaServerExecutable({
+    platform: process.platform,
+    env: getEnhancedEnv(),
+    homeDir: os.homedir(),
+    configuredPath,
+    exists: existsSync,
+    isValidExecutable: (candidate) => isValidExecutablePath(candidate, { allowedBasenames: LLAMA_SERVER_BASENAMES }),
+  });
+}
+
+/**
+ * Last line of defence before `spawn`: the resolved command must name the
+ * llama-server binary, and — when it is a path rather than a bare command left
+ * to PATH resolution — be an existing executable regular file.
+ */
+function assertLaunchableLlamaServer(executable: string): void {
+  try {
+    if (executable.includes(path.sep)) {
+      validateExecutablePath(executable, { allowedBasenames: LLAMA_SERVER_BASENAMES });
+    } else {
+      assertAllowedExecutableName(executable, LLAMA_SERVER_BASENAMES);
+    }
+  } catch (error) {
+    throw new Error(`Failed to launch llama-server: ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
+  }
+}
+
 function withCapturedStderr(message: string, stderrTail: string, cause?: Error): Error {
   const stderr = stderrTail.trim();
   const fullMessage = stderr ? `${message}\nllama-server stderr:\n${stderr}` : message;
@@ -199,6 +256,7 @@ function withCapturedStderr(message: string, stderrTail: string, cause?: Error):
  */
 export function stopManagedLlamaServer(): void {
   if (currentSession) {
+    currentSession.expectedStop = true;
     try {
       currentSession.process.kill();
     } catch {
@@ -213,53 +271,68 @@ export function stopManagedLlamaServer(): void {
  */
 export function getManagedServerStatus(): ManagedServerHandle | null {
   if (!currentSession) return null;
-  const { process: _process, ...handle } = currentSession;
+  const { process: _process, expectedStop: _expectedStop, ready: _ready, ...handle } = currentSession;
   return handle;
 }
 
 /**
  * Spawn a managed llama-server for the given GGUF model and wait until healthy.
  *
- * Enforces that `modelPath` lives inside one of `allowedRoots` before doing any
- * work, so a crafted IPC payload cannot launch an arbitrary file. Swaps out any
- * previously running managed server (one model at a time).
+ * Enforces that `modelPath` is an existing `.gguf` file inside one of
+ * `allowedRoots`, and that the resolved executable really is `llama-server`, so
+ * a crafted IPC payload cannot launch an arbitrary command or file. Swaps out
+ * any previously running managed server (one model at a time).
  */
 export async function startManagedLlamaServer({
   modelPath,
   allowedRoots,
-  executableCandidates = DEFAULT_EXECUTABLE_CANDIDATES,
+  executableCandidates,
+  executablePath,
   contextSize = 16_384,
   gpuLayers = 99,
   readinessTimeoutMs = 180_000,
   reasoning,
+  embedding,
+  onExit,
+  spawnFn = spawn,
 }: {
   modelPath: string;
   allowedRoots: readonly string[];
+  /** Explicit candidate list; when omitted the platform resolver is used. */
   executableCandidates?: readonly string[];
+  /** User-configured `llama-server` path, tried before PATH and the platform defaults. */
+  executablePath?: string;
   contextSize?: number;
   gpuLayers?: number;
   readinessTimeoutMs?: number;
   reasoning?: 'off' | 'on';
+  /** Pass `--embedding` so the server also exposes /v1/embeddings. */
+  embedding?: boolean;
+  /** Called when a server that had become healthy exits, expectedly or not. */
+  onExit?: (exit: ManagedServerExit) => void;
+  /** Injected for tests; defaults to `child_process.spawn`. */
+  spawnFn?: typeof spawn;
 }): Promise<ManagedServerHandle> {
-  if (!isPathInsideRoots(modelPath, allowedRoots)) {
-    throw new Error(`Refusing to load "${modelPath}": it is outside the configured local model directories`);
-  }
+  validateModelFile(modelPath, { allowedRoots, allowedExtensions: GGUF_MODEL_EXTENSIONS });
 
-  const executable = resolveExecutable(executableCandidates);
+  const executable = executableCandidates
+    ? resolveExecutable(executableCandidates)
+    : findLlamaServerExecutable(executablePath);
   if (!executable) {
     throw new Error(
       'llama-server executable not found. Install llama.cpp (e.g. `brew install llama.cpp`) and try again.'
     );
   }
+  assertLaunchableLlamaServer(executable);
 
   // One model at a time: stop any previous managed server before starting a new one.
   stopManagedLlamaServer();
 
   const alias = path.basename(modelPath, path.extname(modelPath));
   const port = await findFreePort();
-  const args = buildLlamaServerArgs({ modelPath, port, alias, contextSize, gpuLayers, reasoning });
+  const args = buildLlamaServerArgs({ modelPath, port, alias, contextSize, gpuLayers, reasoning, embedding });
 
-  const child = spawn(executable, args, {
+  const child = spawnFn(executable, args, {
     stdio: ['ignore', 'ignore', 'pipe'],
     env: getEnhancedEnv(),
   });
@@ -276,11 +349,24 @@ export async function startManagedLlamaServer({
     pid: child.pid ?? -1,
     alias,
     modelPath,
+    expectedStop: false,
+    ready: false,
   };
   currentSession = session;
 
-  child.on('exit', () => {
+  child.on('exit', (code, signal) => {
     if (currentSession === session) currentSession = null;
+    // Startup failures are surfaced by rejecting this call; only report exits of a
+    // server the caller was already told about.
+    if (!session.ready) return;
+    session.ready = false;
+    onExit?.({
+      expected: session.expectedStop,
+      modelPath: session.modelPath,
+      exitCode: code,
+      signal,
+      stderrTail: stderrTail.trim(),
+    });
   });
 
   let rejectStartup: (error: Error) => void = () => {};
@@ -310,6 +396,7 @@ export async function startManagedLlamaServer({
     throw withCapturedStderr(String(err), stderrTail);
   }
 
-  const { process: _process, ...handle } = session;
+  session.ready = true;
+  const { process: _process, expectedStop: _expectedStop, ready: _ready, ...handle } = session;
   return handle;
 }

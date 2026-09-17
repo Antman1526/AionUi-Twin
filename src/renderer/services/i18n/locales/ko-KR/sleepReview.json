@@ -1,0 +1,68 @@
+{
+  "title": "슬립 리뷰",
+  "subtitle": "스킬과 프로젝트 메모리에 검증되고 되돌릴 수 있는 수정을 준비합니다.",
+  "tabs": {
+    "review": "리뷰",
+    "proposals": "제안",
+    "heldOut": "홀드아웃 프롬프트"
+  },
+  "review": {
+    "conversations": "대화",
+    "conversationsPlaceholder": "수집할 대화를 선택하세요",
+    "preview": "비식별화된 기록 미리보기",
+    "previewTitle": "비식별화된 대화 기록",
+    "redactionCount": "{{count}}건이 비식별화되었습니다",
+    "target": "대상 파일",
+    "targetPlaceholder": "스킬 또는 메모리 파일을 선택하세요",
+    "provider": "제공자",
+    "providerPlaceholder": "제공자를 선택하세요",
+    "model": "모델",
+    "modelPlaceholder": "모델을 선택하세요",
+    "localOnly": "로컬 전용",
+    "run": "리뷰 실행",
+    "runSuccess": "제안이 준비되었습니다",
+    "selectConversation": "대화를 하나 이상 선택하세요.",
+    "selectTarget": "대상 파일을 선택하세요.",
+    "selectModel": "제공자와 모델을 선택하세요."
+  },
+  "proposals": {
+    "empty": "아직 제안이 없습니다. 리뷰를 실행해 보세요.",
+    "target": "대상",
+    "status": "상태",
+    "created": "생성 시각",
+    "actions": "작업",
+    "detail": "제안 상세",
+    "rationale": "근거",
+    "risk": "잔여 위험",
+    "rollbackPlan": "롤백 방법",
+    "heldOutChecks": "홀드아웃 검증",
+    "diff": "차이",
+    "accept": "수락",
+    "reject": "거부",
+    "rollback": "롤백",
+    "runChecks": "검증 실행",
+    "before": "수정 전",
+    "after": "수정 후",
+    "accepted": "제안이 적용되었습니다",
+    "rejected": "제안이 거부되었습니다",
+    "rolledBack": "제안이 롤백되었습니다"
+  },
+  "status": {
+    "staged": "준비됨",
+    "accepted": "적용됨",
+    "rejected": "거부됨",
+    "rolledBack": "롤백됨",
+    "failed": "실패"
+  },
+  "heldOut": {
+    "empty": "홀드아웃 프롬프트가 없습니다.",
+    "prompt": "프롬프트",
+    "expected": "기대값",
+    "actions": "작업",
+    "modalTitle": "홀드아웃 프롬프트",
+    "promptPlaceholder": "수정 작성에 사용하지 않은 프롬프트",
+    "expectedPlaceholder": "선택 사항인 기대 동작",
+    "saved": "홀드아웃 프롬프트를 저장했습니다"
+  },
+  "loadFailed": "슬립 리뷰 요청에 실패했습니다"
+}

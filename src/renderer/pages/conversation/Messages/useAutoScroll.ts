@@ -29,6 +29,38 @@ interface UseAutoScrollOptions {
   itemCount: number;
 }
 
+/**
+ * Derives the content length of a message's streamed text. Text/thinking/tips
+ * messages stream into `content.content` as a growing string; for any other
+ * message shape, falls back to the serialized size as a cheap proxy so the
+ * signature still changes when the message's payload changes.
+ */
+function getMessageContentLength(message: TMessage): number {
+  const content = message.content as { content?: unknown } | undefined;
+  if (content && typeof content.content === 'string') {
+    return content.content.length;
+  }
+  try {
+    return JSON.stringify(content ?? '').length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * A cheap signature that changes exactly when the visually-relevant part of
+ * the message list changes: item count, last message identity, and how much
+ * streamed text the last message currently holds. Using this string (instead
+ * of the raw `messages` array reference) as an effect dependency avoids
+ * forcing a DOM layout read+write on every streaming chunk when nothing
+ * visible actually changed.
+ */
+export function getStreamingSignature(messages: TMessage[]): string {
+  const last = messages[messages.length - 1];
+  if (!last) return `${messages.length}:none:0`;
+  return `${messages.length}:${last.id}:${getMessageContentLength(last)}`;
+}
+
 interface UseAutoScrollReturn {
   /** Ref to attach to Virtuoso component */
   virtuosoRef: React.RefObject<VirtuosoHandle | null>;
@@ -256,17 +288,29 @@ export function useAutoScroll({ messages, itemCount }: UseAutoScrollOptions): Us
   // but during ACP/Gemini streaming the existing text message grows in-place
   // without changing the item count. This effect detects those content updates
   // and scrolls to bottom when the user hasn't scrolled away.
+  //
+  // Depends on a cheap string signature rather than the `messages` array
+  // reference, so a re-render that produces a new array with identical content
+  // doesn't force a layout read+write. The scroll write itself is scheduled via
+  // requestAnimationFrame and cancelled/rescheduled on every signature change,
+  // so multiple streaming chunks arriving within the same frame coalesce into
+  // a single read+write instead of one per chunk.
+  const streamingSignature = getStreamingSignature(messages);
   useEffect(() => {
     if (userScrolledRef.current) return;
-    const el = scrollerElRef.current;
-    if (!el) return;
+    const frameId = requestAnimationFrame(() => {
+      if (userScrolledRef.current) return;
+      const el = scrollerElRef.current;
+      if (!el) return;
 
-    const gap = el.scrollHeight - el.clientHeight - el.scrollTop;
-    if (gap > 2) {
-      lastProgrammaticScrollTimeRef.current = Date.now();
-      el.scrollTop = el.scrollHeight - el.clientHeight;
-    }
-  }, [messages]);
+      const gap = el.scrollHeight - el.clientHeight - el.scrollTop;
+      if (gap > 2) {
+        lastProgrammaticScrollTimeRef.current = Date.now();
+        el.scrollTop = el.scrollHeight - el.clientHeight;
+      }
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [streamingSignature]);
 
   // Hide scroll button handler
   const hideScrollButton = useCallback(() => {

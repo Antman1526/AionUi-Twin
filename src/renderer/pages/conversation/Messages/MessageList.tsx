@@ -23,7 +23,7 @@ import HOC from '@renderer/utils/ui/HOC';
 import MessageCodexToolCall from './codex/MessageCodexToolCall';
 import type { FileChangeInfo } from './codex/MessageFileChanges';
 import MessageFileChanges, { parseDiff } from './codex/MessageFileChanges';
-import { useMessageList } from './hooks';
+import { useAutoReadAssistantReplies, useMessageList } from './hooks';
 import MessageAgentStatus from './components/MessageAgentStatus';
 import MessagePlan from './components/MessagePlan';
 import MessageTips from './components/MessageTips';
@@ -160,6 +160,7 @@ const MessageList: React.FC<{ className?: string; emptySlot?: React.ReactNode }>
   const list = useMessageList();
   const conversationContext = useConversationContextSafe();
   useAutoPreviewOfficeFiles(conversationContext);
+  useAutoReadAssistantReplies(list);
   const { t } = useTranslation();
   const location = useLocation();
   const locationState = (location.state || {}) as ConversationLocationState;

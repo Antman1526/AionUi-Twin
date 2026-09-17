@@ -8,9 +8,19 @@
 // ANY module that calls app.getPath('userData'), because Electron caches the path on first call.
 import './process/utils/configureChromium';
 import * as Sentry from '@sentry/electron/main';
+import { createTelemetryGate, isTelemetryAllowed, resolveSentryInitOptions } from './common/utils/privacy';
 
+// Telemetry defaults to disabled until config loads (see the Sentry.setUser call below),
+// so no event escapes before the user's opt-in / Private Mode setting is known.
+let telemetryEnabled = false;
+
+// resolveSentryInitOptions() sets `enabled: false` and drops the MainProcessSession integration
+// so Sentry.init() cannot emit an event or session envelope before the gate below is known. The
+// beforeSend/beforeSendTransaction hooks are kept as an additional, belt-and-braces filter.
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
+  ...resolveSentryInitOptions({ dsn: process.env.SENTRY_DSN }),
+  beforeSend: createTelemetryGate(() => telemetryEnabled),
+  beforeSendTransaction: createTelemetryGate(() => telemetryEnabled),
 });
 
 import './process/utils/configureConsoleLog';
@@ -447,7 +457,20 @@ const handleAppReady = async (): Promise<void> => {
     }
   }
 
-  Sentry.setUser({ id: getOrCreateAnalyticsId() });
+  telemetryEnabled = isTelemetryAllowed({
+    'telemetry.enabled': await ProcessConfig.get('telemetry.enabled'),
+    'privacy.privateMode': await ProcessConfig.get('privacy.privateMode'),
+  });
+  if (telemetryEnabled) {
+    // The client was initialized with `enabled: false` (see resolveSentryInitOptions) — flip it
+    // on now that the telemetry gate has actually resolved to allowed.
+    const client = Sentry.getClient();
+    if (client) {
+      client.getOptions().enabled = true;
+    }
+    Sentry.setUser({ id: getOrCreateAnalyticsId() });
+    Sentry.startSession();
+  }
 
   try {
     await initializeProcess();

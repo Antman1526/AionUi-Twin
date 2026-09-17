@@ -101,7 +101,7 @@ export class AcpSession {
     this.callbacks = wrapCallbacks(callbacks);
 
     this.configTracker = new ConfigTracker(options?.initialDesired);
-    this.messageTranslator = new MessageTranslator(agentConfig.agentId);
+    this.messageTranslator = new MessageTranslator(agentConfig.conversationId);
     this.inputPreprocessor = new InputPreprocessor((path) => fs.readFileSync(path, 'utf-8'));
     this.permissionResolver = new PermissionResolver({
       autoApproveAll: agentConfig.yoloMode ?? false,

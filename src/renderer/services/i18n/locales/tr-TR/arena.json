@@ -1,0 +1,27 @@
+{
+  "title": "Model Arenası",
+  "subtitle": "Tek bir istemi iki modelde yan yana çalıştırın.",
+  "leftModel": "Model A",
+  "rightModel": "Model B",
+  "modelPlaceholder": "Sağlayıcı ve model seçin",
+  "prompt": "İstem",
+  "promptPlaceholder": "İki model neyi yanıtlasın?",
+  "systemPrompt": "Sistem istemi (isteğe bağlı)",
+  "systemPromptPlaceholder": "Her iki modele de uygulanan yönergeler",
+  "run": "Çalıştır",
+  "cancel": "İptal",
+  "copyComparison": "Karşılaştırmayı kopyala",
+  "copied": "Karşılaştırma kopyalandı",
+  "selectModels": "Her iki tarafta da bir model seçin.",
+  "enterPrompt": "Bir istem girin.",
+  "empty": "Henüz yanıt yok.",
+  "running": "Çalışıyor…",
+  "cancelled": "İptal edildi",
+  "error": "Başarısız: {{message}}",
+  "stats": {
+    "latency": "Gecikme",
+    "tokens": "Çıktı token'ı",
+    "speed": "Hız",
+    "estimated": "Token sayıları metin uzunluğundan tahmin edildi."
+  }
+}

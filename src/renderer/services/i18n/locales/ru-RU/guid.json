@@ -17,5 +17,14 @@
     "statusTesting": "Тестирование задержки...",
     "statusUnreachable": "Недоступен",
     "statusAvailable": "Доступен"
+  },
+  "localModels": {
+    "title": "Локальная модель",
+    "inUse": "Используется",
+    "useInChat": "Использовать в чате",
+    "found": "Найдено локальных моделей: {{count}}",
+    "load": "Загрузить…",
+    "installTitle": "llama.cpp не установлен",
+    "install": "Установить llama.cpp"
   }
 }

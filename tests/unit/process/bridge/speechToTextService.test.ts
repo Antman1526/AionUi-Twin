@@ -12,9 +12,14 @@ vi.mock('@process/utils/mainLogger', () => ({
   mainWarn: vi.fn(),
 }));
 
+vi.mock('@process/services/whisper/WhisperRuntimeService', () => ({
+  getManagedWhisperServerStatus: vi.fn(),
+}));
+
 import { ProcessConfig } from '@process/utils/initStorage';
 import { SpeechToTextService } from '@process/bridge/services/SpeechToTextService';
 import { mainError, mainLog, mainWarn } from '@process/utils/mainLogger';
+import { getManagedWhisperServerStatus } from '@process/services/whisper/WhisperRuntimeService';
 
 describe('SpeechToTextService', () => {
   beforeEach(() => {
@@ -193,5 +198,83 @@ describe('SpeechToTextService', () => {
         provider: 'deepgram',
       })
     );
+  });
+
+  describe('whisper-local provider', () => {
+    it('posts multipart form data to the managed whisper-server /inference endpoint', async () => {
+      vi.mocked(ProcessConfig.get).mockResolvedValue({
+        enabled: true,
+        provider: 'whisper-local',
+        whisperLocal: { language: 'en' },
+      });
+      vi.mocked(getManagedWhisperServerStatus).mockReturnValue({
+        port: 8123,
+        baseUrl: 'http://127.0.0.1:8123',
+        pid: 1234,
+        modelPath: '/whisper-models/ggml-base-q5_1.bin',
+      });
+
+      const fetchMock = vi.fn(async () => new Response(JSON.stringify({ text: ' hello offline ' })));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const result = await SpeechToTextService.transcribe({
+        audioBuffer: new Uint8Array([1, 2, 3]),
+        fileName: 'speech-input.wav',
+        mimeType: 'audio/wav',
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://127.0.0.1:8123/inference',
+        expect.objectContaining({ method: 'POST' })
+      );
+
+      const [, request] = fetchMock.mock.calls[0] as [string, { body: FormData }];
+      expect(request.body).toBeInstanceOf(FormData);
+      expect(request.body.get('file')).toBeInstanceOf(Blob);
+      expect(request.body.get('response_format')).toBe('json');
+      expect(request.body.get('language')).toBe('en');
+
+      expect(result).toEqual({
+        language: 'en',
+        model: 'ggml-base-q5_1.bin',
+        provider: 'whisper-local',
+        text: 'hello offline',
+      });
+    });
+
+    it('normalizes a BCP 47 language hint to ISO 639-1', async () => {
+      vi.mocked(ProcessConfig.get).mockResolvedValue({ enabled: true, provider: 'whisper-local' });
+      vi.mocked(getManagedWhisperServerStatus).mockReturnValue({
+        port: 8123,
+        baseUrl: 'http://127.0.0.1:8123',
+        pid: 1234,
+        modelPath: '/whisper-models/ggml-base-q5_1.bin',
+      });
+      const fetchMock = vi.fn(async () => new Response(JSON.stringify({ text: 'ok' })));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await SpeechToTextService.transcribe({
+        audioBuffer: new Uint8Array([1]),
+        fileName: 'speech-input.wav',
+        languageHint: 'en-US',
+        mimeType: 'audio/wav',
+      });
+
+      const [, request] = fetchMock.mock.calls[0] as [string, { body: FormData }];
+      expect(request.body.get('language')).toBe('en');
+    });
+
+    it('throws STT_WHISPER_LOCAL_NOT_RUNNING when no server is managed', async () => {
+      vi.mocked(ProcessConfig.get).mockResolvedValue({ enabled: true, provider: 'whisper-local' });
+      vi.mocked(getManagedWhisperServerStatus).mockReturnValue(null);
+
+      await expect(
+        SpeechToTextService.transcribe({
+          audioBuffer: new Uint8Array([1]),
+          fileName: 'speech-input.wav',
+          mimeType: 'audio/wav',
+        })
+      ).rejects.toThrow('STT_WHISPER_LOCAL_NOT_RUNNING');
+    });
   });
 });

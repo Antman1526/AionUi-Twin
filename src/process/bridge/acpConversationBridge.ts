@@ -113,6 +113,7 @@ export function initAcpConversationBridge(workerTaskManager: IWorkerTaskManager)
         agentBackend: backend,
         agentSource: 'builtin',
         agentId: `health-check-${backend}`,
+        conversationId: `health-check-${backend}`,
         cwd: tempDir,
         command: cliPath,
         args: acpArgs,

@@ -17,5 +17,14 @@
     "statusTesting": "Testing latency...",
     "statusUnreachable": "Unreachable",
     "statusAvailable": "Available"
+  },
+  "localModels": {
+    "title": "Local model",
+    "inUse": "In use",
+    "useInChat": "Use in chat",
+    "found": "{{count}} local models found",
+    "load": "Load…",
+    "installTitle": "llama.cpp is not installed",
+    "install": "Install llama.cpp"
   }
 }

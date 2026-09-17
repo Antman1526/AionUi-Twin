@@ -105,20 +105,54 @@ your configured folders and lets you **Load** any of them with a single click:
 
 **Unload** stops the server. Loading a different model swaps the running one
 (one model at a time, to keep memory in check). The managed provider is written
-idempotently and never overwrites the providers you configured by hand.
+idempotently and never overwrites the providers you configured by hand. If the
+server dies on its own, the managed provider is removed again and the settings
+panel shows a persistent error with the tail of the `llama-server` stderr, which
+you can copy in one click. Any managed provider left behind by a previous run is
+purged at startup, so the model picker never lists a dead loopback port.
 
-> Requires `llama-server` on your `PATH` — install with `brew install llama.cpp`.
-> It is resolved at runtime, **not bundled** in the installer, so the app stays
-> small and you stay in control of your runtime.
+Each model row reads the GGUF header (quantisation, parameter label, trained
+context) and shows a **Fits / Tight / Won't fit** badge estimated from the
+weights, the f16 KV cache at the chosen context, and this machine's memory. When
+you have not saved custom runtime options for a model, those recommended values
+are what it launches with.
+
+#### Finding `llama-server`
+
+`llama-server` is resolved at runtime, **not bundled** in the installer. The
+search order is: the path you picked in settings, then every entry of `PATH`,
+then the platform's usual install locations (`/opt/homebrew/bin` and
+`/usr/local/bin` on macOS; `/usr/local/bin`, `/usr/bin`, `~/.local/bin` and
+`/snap/bin` on Linux; the WinGet Links, Scoop shims, `%LOCALAPPDATA%\llama.cpp`
+and `C:\Program Files\llama.cpp` on Windows). When it is not found, the panel
+shows the install command for your platform — `brew install llama.cpp` on macOS,
+`winget install llama.cpp` on Windows, your distribution's package or a
+[release build](https://github.com/ggml-org/llama.cpp/releases) on Linux — plus a
+**Choose executable…** picker and a **Re-check** button. Nothing is ever
+downloaded automatically.
+
+#### Model catalog
+
+The **Download a model** section lists a small curated set of GGUF chat models
+plus one embedding model. Each entry is pinned to an exact size and SHA-256; the
+download streams to a `.part` file, is hashed as it arrives, and is only renamed
+into place when both match — so a truncated transfer or a tampered mirror can
+never be loaded. Downloads land in the first configured model directory that
+exists, or in a `models` folder created under the app's user-data directory and
+added to the scanned list.
 
 Runtime options are stored per model path in `localModel.runtimeOptions`:
 
-| Option               | Default  | Range / values            | Purpose                                           |
-| -------------------- | -------- | ------------------------- | ------------------------------------------------- |
-| `contextSize`        | `16384`  | `512` to `262144`         | llama.cpp context window passed as `-c`.          |
-| `gpuLayers`          | `99`     | `0` to `999`              | GPU offload passed as `-ngl`.                     |
-| `readinessTimeoutMs` | `180000` | `30000` to `900000`       | Max wait for `/health` to return HTTP 200.        |
-| `reasoning`          | unset    | `off`, `on`, or automatic | Optional `--reasoning` flag for thinking models. |
+| Option               | Default     | Range / values            | Purpose                                           |
+| -------------------- | ----------- | ------------------------- | ------------------------------------------------- |
+| `contextSize`        | recommended | `512` to `262144`         | llama.cpp context window passed as `-c`.          |
+| `gpuLayers`          | recommended | `0` to `999`              | GPU offload passed as `-ngl`.                     |
+| `readinessTimeoutMs` | `180000`    | `30000` to `900000`       | Max wait for `/health` to return HTTP 200.        |
+| `reasoning`          | unset       | `off`, `on`, or automatic | Optional `--reasoning` flag for thinking models.  |
+| `embedding`          | off         | `true` / unset            | Adds `--embedding` so `/v1/embeddings` is served. |
+
+The user-picked `llama-server` path is stored separately in
+`localModel.executablePath`.
 
 For the local test machine, the confirmed GGUF folder is:
 
@@ -251,8 +285,11 @@ AionUi Twin is an Electron app with three strictly separated process types
 - `src/process/services/localModels/` — directory discovery + `llama-server`
   lifecycle and provider creation
 - `src/process/bridge/localModelBridge.ts` — IPC handlers + provider registration
-- `src/renderer/components/settings/SettingsModal/contents/LocalGgufModels.tsx`
-  — the Local GGUF Models settings panel
+- `src/renderer/components/settings/SettingsModal/contents/LocalGgufModels/`
+  — the Local GGUF Models settings panel (model rows, runtime options, executable
+  status, catalog, crash alert)
+- `src/renderer/pages/guid/components/LocalModelCard.tsx` — the local-model status
+  card on the launcher page
 
 Storage is SQLite (`better-sqlite3` or Bun's SQLite); the WebUI runs on Express +
 `ws`. See `docs/` for the full reconstruction manual and PRDs.

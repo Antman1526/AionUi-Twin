@@ -8,6 +8,7 @@ import {
   HUB_SUPPORTED_SCHEMA_VERSION,
   getHubResourcesDir,
 } from '@process/extensions/constants';
+import { getPrivateModeEnabled } from '@process/services/privacy/privacyState';
 
 /**
  * HubIndexManager
@@ -43,8 +44,9 @@ class HubIndexManagerImpl {
       this.localLoaded = true;
     }
 
-    // Step 2: Remote index — retry until success
-    if (!this.remoteLoaded) {
+    // Step 2: Remote index — retry until success. Skipped entirely in Private
+    // Mode: only the local bundled index is served (no network egress).
+    if (!this.remoteLoaded && !getPrivateModeEnabled()) {
       const remoteIndex = await this.fetchRemoteIndex();
 
       if (Object.keys(remoteIndex).length > 0) {

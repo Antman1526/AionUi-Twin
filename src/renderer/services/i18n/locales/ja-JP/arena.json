@@ -1,0 +1,27 @@
+{
+  "title": "モデルアリーナ",
+  "subtitle": "同じプロンプトを 2 つのモデルで並べて実行します。",
+  "leftModel": "モデル A",
+  "rightModel": "モデル B",
+  "modelPlaceholder": "プロバイダーとモデルを選択",
+  "prompt": "プロンプト",
+  "promptPlaceholder": "2 つのモデルに何を答えさせますか？",
+  "systemPrompt": "システムプロンプト（任意）",
+  "systemPromptPlaceholder": "両方のモデルに適用される指示",
+  "run": "実行",
+  "cancel": "キャンセル",
+  "copyComparison": "比較をコピー",
+  "copied": "比較をコピーしました",
+  "selectModels": "左右どちらにもモデルを選択してください。",
+  "enterPrompt": "プロンプトを入力してください。",
+  "empty": "まだ回答はありません。",
+  "running": "実行中…",
+  "cancelled": "キャンセルしました",
+  "error": "失敗しました: {{message}}",
+  "stats": {
+    "latency": "レイテンシ",
+    "tokens": "出力トークン",
+    "speed": "速度",
+    "estimated": "トークン数はテキスト長からの推定値です。"
+  }
+}

@@ -1,4 +1,14 @@
 {
+  "hud": {
+    "tokensPerSecond": "{{value}} tok/s",
+    "tokensPerSecondApprox": "≈{{value}} tok/s",
+    "tokensPerSecondTooltip": "Geçerli veya son yanıtın üretim hızı; sunucunun çözülmüş token sayacından hesaplanır.",
+    "tokensPerSecondApproxTooltip": "Tahmini üretim hızı — sunucu token sayısı bildirmediği için yanıtın metin uzunluğundan hesaplandı.",
+    "context": "Bağlam",
+    "contextTooltip": "Etkin yuvanın çözdüğü token sayısının bağlam penceresine oranı: {{used}} / {{total}}. llama-server istem token sayısını yayımlamadığı için istem token'ları dahil değildir.",
+    "memory": "Bellek",
+    "memoryTooltip": "llama-server sürecinin kullandığı yerleşik bellek."
+  },
   "welcome": {
     "title": "Merhaba, bugünkü planın nedir?",
     "placeholder": "Mesaj gönder, dosya yükle veya klasör aç...",
@@ -307,5 +317,21 @@
   },
   "skills": {
     "loaded": "Yüklenen Beceriler"
+  },
+  "voice": {
+    "speak": "Sesli oku",
+    "stop": "Okumayı durdur",
+    "speakFailed": "Bu mesaj sesli okunamadı"
+  },
+  "semanticSearch": {
+    "modeLabel": "Arama modu",
+    "modeKeyword": "Anahtar kelime",
+    "modeSemantic": "Anlamsal",
+    "placeholder": "Aradığınız şeyi anlatın...",
+    "idle": "Aradığınız şeyi kendi cümlelerinizle anlatın",
+    "empty": "Benzer mesaj bulunamadı",
+    "disabledHint": "Anlamsal arama kapalı. Ayarlar › Model bölümünden açın.",
+    "failed": "Anlamsal arama başarısız oldu",
+    "score": "%{{score}} eşleşme"
   }
 }

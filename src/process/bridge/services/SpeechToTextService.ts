@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import path from 'node:path';
 import type {
   SpeechToTextAudioBuffer,
   SpeechToTextConfig,
@@ -13,6 +14,7 @@ import type {
 } from '@/common/types/speech';
 import { mainError, mainLog, mainWarn } from '@process/utils/mainLogger';
 import { ProcessConfig } from '@process/utils/initStorage';
+import { getManagedWhisperServerStatus } from '@process/services/whisper/WhisperRuntimeService';
 
 type OpenAITranscriptionResponse = {
   language?: string;
@@ -154,13 +156,20 @@ export class SpeechToTextService {
       mainLog(STT_LOG_TAG, 'Resolved speech-to-text provider', {
         requestId,
         provider: config.provider,
-        model: config.provider === 'openai' ? config.openai?.model || DEFAULT_OPENAI_MODEL : config.deepgram?.model,
+        model:
+          config.provider === 'openai'
+            ? config.openai?.model || DEFAULT_OPENAI_MODEL
+            : config.provider === 'whisper-local'
+              ? config.whisperLocal?.modelPath
+              : config.deepgram?.model,
       });
 
       const result =
         config.provider === 'openai'
           ? await this.transcribeWithOpenAI(config, request)
-          : await this.transcribeWithDeepgram(config, request);
+          : config.provider === 'whisper-local'
+            ? await this.transcribeWithWhisperLocal(config, request)
+            : await this.transcribeWithDeepgram(config, request);
 
       mainLog(STT_LOG_TAG, 'Transcription completed', {
         requestId,
@@ -255,6 +264,52 @@ export class SpeechToTextService {
       model: config.deepgram?.model || DEFAULT_DEEPGRAM_MODEL,
       provider: 'deepgram',
       text: transcript,
+    };
+  }
+
+  /**
+   * Transcribe via a locally managed whisper.cpp `whisper-server` process
+   * (started separately through `speechToText.local.start`). The renderer
+   * always sends 16kHz mono 16-bit PCM WAV audio for this provider.
+   */
+  private static async transcribeWithWhisperLocal(
+    config: SpeechToTextConfig,
+    request: SpeechToTextRequest
+  ): Promise<SpeechToTextResult> {
+    const status = getManagedWhisperServerStatus();
+    if (!status) {
+      throw new Error('STT_WHISPER_LOCAL_NOT_RUNNING');
+    }
+
+    const audioBuffer = Buffer.from(normalizeAudioBuffer(request.audioBuffer));
+    const blob = new Blob([audioBuffer], { type: request.mimeType || 'audio/wav' });
+    const formData = new FormData();
+    formData.append('file', blob, request.fileName);
+    formData.append('response_format', 'json');
+
+    const language = request.languageHint || config.whisperLocal?.language;
+    if (language && language !== 'auto') {
+      // whisper.cpp expects ISO 639-1 codes (e.g. "en"), not BCP 47 (e.g. "en-us")
+      formData.append('language', language.split('-')[0].toLowerCase());
+    } else if (language === 'auto') {
+      formData.append('language', 'auto');
+    }
+
+    const response = await fetch(`${status.baseUrl}/inference`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`STT_REQUEST_FAILED:${await toErrorMessage(response)}`);
+    }
+
+    const payload = (await response.json()) as OpenAITranscriptionResponse;
+    return {
+      language: payload.language || (language && language !== 'auto' ? language : undefined),
+      model: path.basename(status.modelPath),
+      provider: 'whisper-local',
+      text: payload.text?.trim() || '',
     };
   }
 }

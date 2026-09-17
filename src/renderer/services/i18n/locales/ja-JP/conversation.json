@@ -1,4 +1,14 @@
 {
+  "hud": {
+    "tokensPerSecond": "{{value}} tok/s",
+    "tokensPerSecondApprox": "≈{{value}} tok/s",
+    "tokensPerSecondTooltip": "現在または直前の応答の生成速度です。サーバーのデコード済みトークン数から算出しています。",
+    "tokensPerSecondApproxTooltip": "生成速度の推定値です。サーバーがトークン数を返さなかったため、応答の文字数から算出しています。",
+    "context": "コンテキスト",
+    "contextTooltip": "稼働中のスロットがデコードしたトークン数とコンテキスト長の比率: {{used}} / {{total}}。llama-server はプロンプトのトークン数を公開しないため、プロンプト分は含まれません。",
+    "memory": "メモリ",
+    "memoryTooltip": "llama-server プロセスが使用している常駐メモリです。"
+  },
   "welcome": {
     "title": "Hi、今日の予定は何ですか？",
     "placeholder": "メッセージの送信、ファイルの追加、フォルダーの追加、またはスケジュールタスクの作成...",
@@ -305,5 +315,21 @@
   },
   "skills": {
     "loaded": "ロード済みスキル"
+  },
+  "voice": {
+    "speak": "読み上げ",
+    "stop": "読み上げを停止",
+    "speakFailed": "このメッセージを読み上げできませんでした"
+  },
+  "semanticSearch": {
+    "modeLabel": "検索モード",
+    "modeKeyword": "キーワード",
+    "modeSemantic": "セマンティック",
+    "placeholder": "探している内容を入力してください…",
+    "idle": "探している内容を自分の言葉で説明してください",
+    "empty": "類似するメッセージは見つかりませんでした",
+    "disabledHint": "セマンティック検索は無効です。「設定 › モデル」で有効にしてください。",
+    "failed": "セマンティック検索に失敗しました",
+    "score": "一致度 {{score}}%"
   }
 }

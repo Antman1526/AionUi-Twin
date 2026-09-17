@@ -17,5 +17,14 @@
     "statusTesting": "Testing latency...",
     "statusUnreachable": "Unreachable",
     "statusAvailable": "Available"
+  },
+  "localModels": {
+    "title": "로컬 모델",
+    "inUse": "사용 중",
+    "useInChat": "채팅에서 사용",
+    "found": "로컬 모델 {{count}}개를 찾았습니다",
+    "load": "불러오기…",
+    "installTitle": "llama.cpp가 설치되어 있지 않습니다",
+    "install": "llama.cpp 설치"
   }
 }

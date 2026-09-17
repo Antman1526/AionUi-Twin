@@ -6,12 +6,13 @@
 
 import { ipcBridge } from '@/common';
 import type { IMessageSearchItem } from '@/common/types/database';
+import type { SemanticSearchHit } from '@process/services/semanticSearch/types';
 import AionModal from '@/renderer/components/base/AionModal';
 import { usePresetAssistantInfo } from '@/renderer/hooks/agent/usePresetAssistantInfo';
 import { useOptionalConversationTabs } from '@/renderer/pages/conversation/hooks/ConversationTabsContext';
 import { getAgentLogo } from '@/renderer/utils/model/agentLogo';
 import { blockMobileInputFocus, blurActiveElement } from '@/renderer/utils/ui/focus';
-import { Empty, Spin, Typography } from '@arco-design/web-react';
+import { Button, Empty, Radio, Spin, Typography } from '@arco-design/web-react';
 import { Close, CloseSmall, MessageOne, Search } from '@icon-park/react';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -158,6 +159,10 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
+  const [mode, setMode] = useState<'keyword' | 'semantic'>('keyword');
+  const [semanticItems, setSemanticItems] = useState<SemanticSearchHit[]>([]);
+  const [semanticEnabled, setSemanticEnabled] = useState<boolean | null>(null);
+  const [semanticError, setSemanticError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -222,8 +227,48 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
   );
 
   useEffect(() => {
+    if (mode !== 'keyword') return;
     void runSearch(0, false);
-  }, [runSearch]);
+  }, [mode, runSearch]);
+
+  useEffect(() => {
+    if (!visible || mode !== 'semantic' || semanticEnabled !== null) return;
+    void ipcBridge.semanticSearch.getSettings.invoke().then((res) => {
+      setSemanticEnabled(res.success ? (res.data?.enabled ?? false) : false);
+    });
+  }, [mode, semanticEnabled, visible]);
+
+  const runSemanticSearch = useCallback(async () => {
+    if (!debouncedKeyword) {
+      setSemanticItems([]);
+      return;
+    }
+    setLoading(true);
+    setSemanticError(null);
+    try {
+      const res = await ipcBridge.semanticSearch.query.invoke({
+        text: debouncedKeyword,
+        limit: PAGE_SIZE,
+        scope: 'history',
+      });
+      if (!res.success) {
+        setSemanticItems([]);
+        setSemanticError(res.msg || t('conversation.semanticSearch.failed'));
+        return;
+      }
+      setSemanticItems(res.data ?? []);
+    } catch (error) {
+      setSemanticItems([]);
+      setSemanticError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedKeyword, t]);
+
+  useEffect(() => {
+    if (mode !== 'semantic' || semanticEnabled !== true) return;
+    void runSemanticSearch();
+  }, [mode, runSemanticSearch, semanticEnabled]);
 
   useEffect(() => {
     if (!debouncedKeyword) return;
@@ -253,6 +298,8 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     setKeyword('');
     setDebouncedKeyword('');
     setItems([]);
+    setSemanticItems([]);
+    setSemanticError(null);
     setPage(0);
     setHasMore(false);
     setLoading(false);
@@ -307,6 +354,30 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     [conversationTabs, navigate, onConversationSelect, onSessionClick, resetSearchState]
   );
 
+  const handleSemanticResultClick = useCallback(
+    async (hit: SemanticSearchHit) => {
+      blockMobileInputFocus();
+      blurActiveElement();
+
+      flushSync(() => {
+        resetSearchState();
+      });
+
+      onConversationSelect?.();
+
+      const separator = hit.messageId.lastIndexOf('#');
+      const messageId = separator === -1 ? hit.messageId : hit.messageId.slice(0, separator);
+
+      await Promise.resolve(
+        navigate(`/conversation/${hit.conversationId}`, {
+          state: { targetMessageId: messageId, fromConversationSearch: true },
+        })
+      );
+      onSessionClick?.();
+    },
+    [navigate, onConversationSelect, onSessionClick, resetSearchState]
+  );
+
   const handleClose = useCallback(() => {
     resetSearchState();
   }, [resetSearchState]);
@@ -315,6 +386,8 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     setKeyword('');
     setDebouncedKeyword('');
     setItems([]);
+    setSemanticItems([]);
+    setSemanticError(null);
     setPage(0);
     setHasMore(false);
     setLoading(false);
@@ -443,7 +516,94 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     );
   }, [debouncedKeyword, handleLoadMore, handleResultClick, items, loading, loadingMore, recentKeywords, t]);
 
-  const hasSearchResults = items.length > 0;
+  const semanticContent = useMemo(() => {
+    if (semanticEnabled === false) {
+      return (
+        <div className='conversation-search-modal__state'>
+          <div className='conversation-search-modal__state-content'>
+            <span className='text-13px'>{t('conversation.semanticSearch.disabledHint')}</span>
+            <Button
+              size='mini'
+              type='text'
+              onClick={() => {
+                handleClose();
+                void navigate('/settings/model');
+              }}
+            >
+              {t('settings.semanticSearch.title')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (!debouncedKeyword) {
+      return (
+        <div className='conversation-search-modal__state'>
+          <div className='conversation-search-modal__state-content'>
+            <span className='text-13px'>{t('conversation.semanticSearch.idle')}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (loading && semanticItems.length === 0) {
+      return (
+        <div className='h-120px flex items-center justify-center'>
+          <Spin size={20} />
+        </div>
+      );
+    }
+
+    if (semanticItems.length === 0) {
+      return (
+        <div className='conversation-search-modal__state'>
+          <Empty className='py-2px' description={semanticError ?? t('conversation.semanticSearch.empty')} />
+        </div>
+      );
+    }
+
+    return (
+      <div className='h-full min-h-0 overflow-y-auto overflow-x-hidden pr-4px'>
+        <div className='conversation-search-modal__results flex flex-col'>
+          {semanticItems.map((hit) => (
+            <button
+              key={hit.messageId}
+              type='button'
+              className='conversation-search-modal__result w-full text-left cursor-pointer transition-all duration-150 focus:outline-none'
+              onClick={() => {
+                void handleSemanticResultClick(hit);
+              }}
+            >
+              <div className='flex items-start justify-between gap-8px mb-6px'>
+                <div className='conversation-search-modal__result-title text-15px font-600 text-t-primary truncate'>
+                  {hit.conversationTitle || t('conversation.historySearch.untitled')}
+                </div>
+                <span className='shrink-0 text-11px text-t-secondary'>
+                  {t('conversation.semanticSearch.score', { score: Math.round(hit.score * 100) })}
+                </span>
+              </div>
+              <div className='conversation-search-modal__snippet text-13px leading-22px text-t-primary/92 break-words'>
+                {hit.snippet}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }, [
+    debouncedKeyword,
+    handleClose,
+    handleSemanticResultClick,
+    loading,
+    navigate,
+    semanticEnabled,
+    semanticError,
+    semanticItems,
+    t,
+  ]);
+
+  const hasSearchResults = (mode === 'semantic' ? semanticItems.length : items.length) > 0;
   const useCompactHeight = !debouncedKeyword || (!loading && !hasSearchResults);
   const triggerClassName = fullWidth
     ? 'conversation-search-trigger-full h-40px w-full p-0 bg-transparent border-none outline-none flex items-center justify-start gap-8px px-10px rd-0.5rem cursor-pointer shrink-0 transition-all group text-t-primary focus:outline-none focus-visible:outline-none'
@@ -545,13 +705,31 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
             </button>
           </div>
 
+          <div className='mb-10px flex items-center justify-center'>
+            <Radio.Group
+              type='button'
+              size='small'
+              name='conversation-search-mode'
+              aria-label={t('conversation.semanticSearch.modeLabel')}
+              value={mode}
+              onChange={(value: string) => setMode(value === 'semantic' ? 'semantic' : 'keyword')}
+            >
+              <Radio value='keyword'>{t('conversation.semanticSearch.modeKeyword')}</Radio>
+              <Radio value='semantic'>{t('conversation.semanticSearch.modeSemantic')}</Radio>
+            </Radio.Group>
+          </div>
+
           <div className='mb-14px conversation-search-modal__input-wrap'>
             <div className='conversation-search-modal__searchbar'>
               <Search theme='outline' size='16' className='conversation-search-modal__search-icon' />
               <input
                 autoFocus={visible}
                 value={keyword}
-                placeholder={t('conversation.historySearch.placeholder')}
+                placeholder={
+                  mode === 'semantic'
+                    ? t('conversation.semanticSearch.placeholder')
+                    : t('conversation.historySearch.placeholder')
+                }
                 onChange={(event) => setKeyword(event.target.value)}
                 className='conversation-search-modal__search-input'
               />
@@ -568,7 +746,7 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
             </div>
           </div>
 
-          <div className='flex-1 min-h-0'>{resultContent}</div>
+          <div className='flex-1 min-h-0'>{mode === 'semantic' ? semanticContent : resultContent}</div>
         </div>
       </AionModal>
     </>

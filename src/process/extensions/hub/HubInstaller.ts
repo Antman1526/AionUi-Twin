@@ -17,6 +17,9 @@ import { ExtensionRegistry } from '@process/extensions/ExtensionRegistry';
 import { markExtensionForReinstall } from '@process/extensions/lifecycle/statePersistence';
 import { hubIndexManager } from '@process/extensions/hub/HubIndexManager';
 import { hubStateManager } from '@process/extensions/hub/HubStateManager';
+import { tryComputeDirectoryDigest } from '@process/extensions/hub/directoryDigest';
+import { isPathWithinDirectory } from '@process/extensions/sandbox/pathSafety';
+import { getPrivateModeEnabled } from '@process/services/privacy/privacyState';
 import type { IHubExtension, HubContributes } from '@/common/types/hub';
 
 const execAsync = promisify(exec);
@@ -118,9 +121,8 @@ export class HubInstallerImpl {
       // Step 1: Resolve zip path — try bundled resources first, fallback to remote download
       const zipPath = await this.resolveZipPath(name, extInfo.dist.tarball, extInfo.bundled);
 
-      // Step 2: Verify Integrity (SHA-512 SRI)
-      // TODO: 各平台校验有差异，先放在一边，后续完善
-      // await this.verifyIntegrity(zipPath, extInfo.dist.integrity);
+      // Step 2: Verify integrity of the archive exactly as fetched, before extraction
+      const trust = await this.enforceIntegrity(name, zipPath, extInfo);
 
       // Step 3: Extract (.zip)
       fs.mkdirSync(tempDir, { recursive: true });
@@ -174,6 +176,22 @@ export class HubInstallerImpl {
       if (!verification.ok) {
         throw new Error(verification.reason);
       }
+
+      // Step 7: Record what was verified — drives update detection and the
+      // channel-plugin trust gate.
+      //
+      // The directory digest is taken here, after the lifecycle ran, so it
+      // describes the bytes every later load will see. It binds the record to
+      // this directory: without it, any sideloaded directory reusing
+      // `manifest.name` would inherit this extension's verified status.
+      hubStateManager.recordInstall({
+        name,
+        version: extInfo.version,
+        integrity: extInfo.dist.integrity?.trim() || undefined,
+        verified: trust,
+        directoryDigest: tryComputeDirectoryDigest(targetDir) ?? undefined,
+        installedAt: new Date().toISOString(),
+      });
 
       hubStateManager.setTransientState(name, 'installed');
     } catch (error) {
@@ -239,6 +257,12 @@ export class HubInstallerImpl {
       console.warn(`[HubInstaller] Bundled zip not found at ${localPath}, falling back to remote download`);
     }
 
+    // Private Mode: refuse remote downloads entirely (no network egress).
+    // Bundled extensions with a local zip already returned above.
+    if (getPrivateModeEnabled()) {
+      throw new Error(`Cannot download ${name}: remote downloads are disabled in Private Mode`);
+    }
+
     // Reject absolute URLs to prevent bypassing trusted base URLs
     if (/^https?:\/\//i.test(distTarball)) {
       throw new Error(`Untrusted absolute tarball URL in hub index: ${distTarball}`);
@@ -270,22 +294,105 @@ export class HubInstallerImpl {
     fs.writeFileSync(dest, Buffer.from(arrayBuffer));
   }
 
-  private async verifyIntegrity(filePath: string, expectedSri: string): Promise<void> {
-    if (!expectedSri.startsWith('sha512-')) {
-      console.warn(`[HubInstaller] Unsupported integrity algorithm in ${expectedSri}, skipping check.`);
-      return;
+  /**
+   * Apply the install-time integrity policy to a resolved archive.
+   *
+   * - `dist.integrity` present → must match, otherwise the install fails and the
+   *   downloaded archive is discarded.
+   * - absent + not bundled → refuse; an unverifiable remote archive is never installed.
+   * - absent + bundled → allowed (the archive ships inside the signed app bundle).
+   *
+   * Returns how the archive earned trust, for the install record.
+   */
+  private async enforceIntegrity(
+    name: string,
+    zipPath: string,
+    extInfo: Pick<IHubExtension, 'dist' | 'bundled'>
+  ): Promise<'integrity' | 'bundled'> {
+    const expectedSri = extInfo.dist.integrity?.trim();
+
+    if (!expectedSri) {
+      if (!extInfo.bundled) {
+        throw new Error(
+          `Refusing to install "${name}": the hub index entry has no dist.integrity value, ` +
+            `so the downloaded archive cannot be verified.`
+        );
+      }
+      console.warn(`[HubInstaller] Bundled extension "${name}" has no dist.integrity value; installing unverified.`);
+      return 'bundled';
     }
 
-    const expectedHashBase64 = expectedSri.substring('sha512-'.length);
-    const expectedHashHex = Buffer.from(expectedHashBase64, 'base64').toString('hex');
+    try {
+      await this.verifyIntegrity(zipPath, expectedSri);
+    } catch (error) {
+      this.discardUnverifiedArchive(zipPath);
+      throw error;
+    }
 
-    const fileBuffer = fs.readFileSync(filePath);
-    const actualHashHex = crypto.createHash('sha512').update(fileBuffer).digest('hex');
+    return 'integrity';
+  }
 
-    if (actualHashHex !== expectedHashHex) {
-      throw new Error('Integrity verification failed! The file may be corrupted.');
+  /**
+   * Delete an archive that failed verification.
+   *
+   * Only temp/cache copies are removed — a bundled archive inside the app's
+   * Resources directory is left alone (it is not ours to delete, and removing
+   * it would break the next launch).
+   */
+  private discardUnverifiedArchive(zipPath: string): void {
+    const resolved = path.resolve(zipPath);
+    try {
+      const isDisposable =
+        isPathWithinDirectory(resolved, this.getCacheDir()) || isPathWithinDirectory(resolved, this.getTempDir());
+      if (!isDisposable) return;
+
+      fs.rmSync(resolved, { force: true });
+    } catch (error) {
+      // Never let cleanup mask the integrity failure that triggered it.
+      console.warn(`[HubInstaller] Failed to delete unverified archive ${resolved}:`, error);
     }
   }
+
+  /**
+   * Verify a file against a Subresource Integrity string.
+   *
+   * Supports `sha512-<base64>` and `sha256-<base64>`. The hash is computed with
+   * node crypto over the file bytes exactly as fetched, which is identical on
+   * every platform — archives are only ever compared byte-for-byte, never
+   * re-packed locally.
+   */
+  public async verifyIntegrity(filePath: string, expectedSri: string): Promise<void> {
+    const match = /^(sha512|sha256)-([A-Za-z0-9+/]+={0,2})$/.exec(expectedSri.trim());
+    if (!match) {
+      throw new Error(
+        `Integrity verification failed: unsupported or malformed integrity value "${expectedSri}". ` +
+          `Expected "sha512-<base64>" or "sha256-<base64>".`
+      );
+    }
+
+    const [, algorithm, expectedBase64] = match;
+    const expectedDigest = Buffer.from(expectedBase64, 'base64');
+    const actualDigest = await hashFile(filePath, algorithm);
+
+    if (expectedDigest.length !== actualDigest.length || !crypto.timingSafeEqual(expectedDigest, actualDigest)) {
+      throw new Error(
+        `Integrity verification failed for ${path.basename(filePath)}: ` +
+          `expected ${algorithm}-${expectedDigest.toString('base64')}, ` +
+          `got ${algorithm}-${actualDigest.toString('base64')}.`
+      );
+    }
+  }
+}
+
+/** Stream a file through a hash so large archives are not buffered in memory. */
+function hashFile(filePath: string, algorithm: string): Promise<Buffer> {
+  return new Promise<Buffer>((resolve, reject) => {
+    const hash = crypto.createHash(algorithm);
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', reject);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest()));
+  });
 }
 
 export const hubInstaller = new HubInstallerImpl();

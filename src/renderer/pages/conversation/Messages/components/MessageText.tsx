@@ -6,14 +6,19 @@
 
 import type { IMessageText } from '@/common/chat/chatLib';
 import { AIONUI_FILES_MARKER } from '@/common/config/constants';
+import { ConfigStorage } from '@/common/config/storage';
 import { useConversationContextSafe } from '@/renderer/hooks/context/ConversationContext';
 import { iconColors } from '@/renderer/styles/colors';
 import { Alert, Message, Tooltip } from '@arco-design/web-react';
-import { Copy } from '@icon-park/react';
+import { Copy, VolumeNotice, VolumeMute } from '@icon-park/react';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { copyText } from '@/renderer/utils/ui/clipboard';
+import TextToSpeechService, {
+  isTextToSpeechSupported,
+  TEXT_TO_SPEECH_CONFIG_CHANGED_EVENT,
+} from '@/renderer/services/TextToSpeechService';
 import CollapsibleContent from '@renderer/components/chat/CollapsibleContent';
 import FilePreview from '@renderer/components/media/FilePreview';
 import HorizontalFileList from '@renderer/components/media/HorizontalFileList';
@@ -115,6 +120,9 @@ const MessageText: React.FC<{ message: IMessageText }> = ({ message }) => {
   const { data, json } = useFormatContent(text);
   const { t } = useTranslation();
   const [showCopyAlert, setShowCopyAlert] = useState(false);
+  const [isTtsEnabled, setIsTtsEnabled] = useState(false);
+  const [isSpeakingThis, setIsSpeakingThis] = useState(false);
+  const isSpeakingRef = useRef(false);
   const isUserMessage = message.position === 'right';
   const isTeammateMessage = message.position === 'left' && message.content.teammateMessage === true;
   const shouldRenderPlainText = isUserMessage;
@@ -123,6 +131,33 @@ const MessageText: React.FC<{ message: IMessageText }> = ({ message }) => {
     () => files.map((filePath) => resolveMessageFilePath(filePath, conversationContext?.workspace)),
     [conversationContext?.workspace, files]
   );
+
+  useEffect(() => {
+    if (!isTextToSpeechSupported()) return;
+    let cancelled = false;
+    const syncTtsEnabled = async () => {
+      try {
+        const config = await ConfigStorage.get('tools.textToSpeech');
+        if (!cancelled) setIsTtsEnabled(Boolean(config?.enabled));
+      } catch {
+        if (!cancelled) setIsTtsEnabled(false);
+      }
+    };
+    void syncTtsEnabled();
+    window.addEventListener(TEXT_TO_SPEECH_CONFIG_CHANGED_EVENT, syncTtsEnabled);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(TEXT_TO_SPEECH_CONFIG_CHANGED_EVENT, syncTtsEnabled);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (isSpeakingRef.current) {
+        TextToSpeechService.cancel();
+      }
+    };
+  }, []);
 
   // 过滤空内容，避免渲染空DOM
   if (!message.content.content || (typeof message.content.content === 'string' && !message.content.content.trim())) {
@@ -151,6 +186,46 @@ const MessageText: React.FC<{ message: IMessageText }> = ({ message }) => {
         style={{ lineHeight: 0 }}
       >
         <Copy theme='outline' size='16' fill={iconColors.secondary} />
+      </div>
+    </Tooltip>
+  );
+
+  const handleSpeak = () => {
+    if (isSpeakingThis) {
+      TextToSpeechService.cancel();
+      isSpeakingRef.current = false;
+      setIsSpeakingThis(false);
+      return;
+    }
+
+    const speechText = shouldRenderPlainText ? text : json ? JSON.stringify(data, null, 2) : text;
+    void ConfigStorage.get('tools.textToSpeech')
+      .then((config) => {
+        isSpeakingRef.current = true;
+        setIsSpeakingThis(true);
+        return TextToSpeechService.speak(speechText, { voiceURI: config?.voiceURI, rate: config?.rate });
+      })
+      .catch(() => {
+        Message.error(t('conversation.voice.speakFailed'));
+      })
+      .finally(() => {
+        isSpeakingRef.current = false;
+        setIsSpeakingThis(false);
+      });
+  };
+
+  const speakerButton = isTtsEnabled && !isUserMessage && (
+    <Tooltip content={t(isSpeakingThis ? 'conversation.voice.stop' : 'conversation.voice.speak')}>
+      <div
+        className='p-4px rd-4px cursor-pointer hover:bg-3 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto'
+        onClick={handleSpeak}
+        style={{ lineHeight: 0 }}
+      >
+        {isSpeakingThis ? (
+          <VolumeMute theme='outline' size='16' fill={iconColors.secondary} />
+        ) : (
+          <VolumeNotice theme='outline' size='16' fill={iconColors.secondary} />
+        )}
       </div>
     </Tooltip>
   );
@@ -229,6 +304,7 @@ const MessageText: React.FC<{ message: IMessageText }> = ({ message }) => {
           })}
         >
           {copyButton}
+          {speakerButton}
           {message.createdAt && (
             <span className='text-12px text-t-secondary opacity-0 group-hover:opacity-100 transition-opacity select-none'>
               {formatMessageTime(message.createdAt)}

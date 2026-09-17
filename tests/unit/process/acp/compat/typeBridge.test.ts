@@ -28,9 +28,42 @@ describe('typeBridge', () => {
       expect(result).toMatchObject({
         agentBackend: 'claude',
         agentSource: 'extension',
-        agentId: 'test-agent-1',
+        // agentId identifies the agent implementation, not the conversation.
+        agentId: 'claude',
         cwd: '/workspace/test',
       });
+    });
+
+    it('should map agentId to the backend name for a built-in backend', () => {
+      const oldConfig: OldAcpAgentConfig = {
+        id: 'conv-abc-123',
+        backend: 'claude',
+        workingDir: '/workspace',
+        onStreamEvent: () => {},
+        extra: { backend: 'claude' },
+      };
+
+      const result = toAgentConfig(oldConfig);
+
+      expect(result.agentId).toBe('claude');
+      expect(result.agentId).not.toBe(oldConfig.id);
+    });
+
+    it('should map agentId to customAgentId for a custom agent', () => {
+      const oldConfig: OldAcpAgentConfig = {
+        id: 'conv-abc-123',
+        backend: 'custom',
+        workingDir: '/workspace',
+        onStreamEvent: () => {},
+        extra: {
+          backend: 'custom',
+          customAgentId: 'ext:my-extension:adapter-1',
+        },
+      };
+
+      const result = toAgentConfig(oldConfig);
+
+      expect(result.agentId).toBe('ext:my-extension:adapter-1');
     });
 
     it('should convert config with custom CLI path', () => {

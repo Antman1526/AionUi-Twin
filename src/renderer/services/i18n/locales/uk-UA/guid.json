@@ -17,5 +17,14 @@
     "statusTesting": "Тестування затримки...",
     "statusUnreachable": "Недосяжний",
     "statusAvailable": "Доступний"
+  },
+  "localModels": {
+    "title": "Локальна модель",
+    "inUse": "Використовується",
+    "useInChat": "Використати в чаті",
+    "found": "Знайдено локальних моделей: {{count}}",
+    "load": "Завантажити…",
+    "installTitle": "llama.cpp не встановлено",
+    "install": "Встановити llama.cpp"
   }
 }

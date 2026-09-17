@@ -1,0 +1,27 @@
+{
+  "title": "모델 아레나",
+  "subtitle": "하나의 프롬프트를 두 모델에서 나란히 실행합니다.",
+  "leftModel": "모델 A",
+  "rightModel": "모델 B",
+  "modelPlaceholder": "공급자와 모델 선택",
+  "prompt": "프롬프트",
+  "promptPlaceholder": "두 모델이 무엇에 답해야 하나요?",
+  "systemPrompt": "시스템 프롬프트(선택)",
+  "systemPromptPlaceholder": "두 모델에 모두 적용되는 지시문",
+  "run": "실행",
+  "cancel": "취소",
+  "copyComparison": "비교 복사",
+  "copied": "비교를 복사했습니다",
+  "selectModels": "양쪽 모두 모델을 선택하세요.",
+  "enterPrompt": "프롬프트를 입력하세요.",
+  "empty": "아직 답변이 없습니다.",
+  "running": "실행 중…",
+  "cancelled": "취소됨",
+  "error": "실패: {{message}}",
+  "stats": {
+    "latency": "지연 시간",
+    "tokens": "출력 토큰",
+    "speed": "속도",
+    "estimated": "토큰 수는 텍스트 길이로 추정한 값입니다."
+  }
+}

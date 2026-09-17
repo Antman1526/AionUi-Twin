@@ -85,8 +85,15 @@
   "processing": "Обробка...",
   "optional": "(необов'язково)",
   "clear": "Очистити",
+  "privateModeLabel": "Приватний режим",
+  "privateModeTooltip": "Приватний режим увімкнено: телеметрію вимкнено, доступні лише локальні моделі, а віддалене завантаження розширень заблоковано.",
   "unit": {
     "minute_short": "хв",
     "second_short": "с"
-  }
+  },
+  "officeCliInstall.title": "Встановити OfficeCli",
+  "officeCliInstall.message": "Встановити OfficeCli для попереднього перегляду цього документа?",
+  "officeCliInstall.detail": "AionUi використовує OfficeCli — помічник для офісних документів — для відображення живого попереднього перегляду файлів Word, Excel і PowerPoint. Його буде завантажено з GitHub (iOfficeAI/OfficeCli) та встановлено в {{installDir}}.",
+  "officeCliInstall.install": "Встановити",
+  "officeCliInstall.cancel": "Скасувати"
 }

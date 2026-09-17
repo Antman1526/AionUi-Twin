@@ -9,6 +9,10 @@ import { bridge } from '@office-ai/platform';
 import type { OpenDialogOptions } from 'electron';
 import type { McpSource } from '../../process/services/mcpServices/McpProtocol';
 import type { LocalModelScanResult } from '../../process/services/localModels/LocalModelDiscoveryService';
+import type { LocalModelRuntimeMetrics } from '../../process/services/localModels/runtimeMetrics';
+import type { GgufMetadata } from '../../process/services/localModels/ggufMetadata';
+import type { CatalogModel } from '../../process/services/localModels/modelCatalog';
+import type { ModelFitEstimate } from '../../process/services/localModels/modelFit';
 import type { AgentBackend, AcpModelInfo } from '../types/acpTypes';
 import type { SlashCommandItem } from '../chat/slash/types';
 import type {
@@ -29,7 +33,14 @@ import type {
   AutoUpdateStatus,
 } from '../update/updateTypes';
 import type { ProtocolDetectionRequest, ProtocolDetectionResponse } from '../utils/protocolDetector';
-import type { SpeechToTextRequest, SpeechToTextResult } from '../types/speech';
+import type {
+  SpeechToTextRequest,
+  SpeechToTextResult,
+  WhisperDownloadProgress,
+  WhisperExecutableStatus,
+  WhisperModelInfo,
+  WhisperRuntimeStatus,
+} from '../types/speech';
 
 export const shell = {
   openFile: bridge.buildProvider<void, string>('open-file'), // 使用系统默认程序打开文件
@@ -345,6 +356,29 @@ export const fs = {
 
 export const speechToText = {
   transcribe: bridge.buildProvider<SpeechToTextResult, SpeechToTextRequest>('speech-to-text.transcribe'),
+  // Local, offline speech-to-text — a managed whisper.cpp `whisper-server` process.
+  local: {
+    /** Current managed whisper-server status. */
+    status: bridge.buildProvider<IBridgeResponse<WhisperRuntimeStatus>, void>('speech-to-text.local.status'),
+    /** Launch (or swap to) a managed whisper-server for the given ggml model path. */
+    start: bridge.buildProvider<IBridgeResponse<WhisperRuntimeStatus>, { modelPath: string }>(
+      'speech-to-text.local.start'
+    ),
+    /** Stop the managed whisper-server. */
+    stop: bridge.buildProvider<IBridgeResponse<WhisperRuntimeStatus>, void>('speech-to-text.local.stop'),
+    /** List the curated model catalog with each entry's on-disk download status. */
+    listModels: bridge.buildProvider<IBridgeResponse<WhisperModelInfo[]>, void>('speech-to-text.local.list-models'),
+    /** Download one catalog model by id into `<userData>/whisper-models` (hash-verified). */
+    downloadModel: bridge.buildProvider<IBridgeResponse<WhisperModelInfo>, { id: string }>(
+      'speech-to-text.local.download-model'
+    ),
+    /** Whether the `whisper-server` executable could be located on this machine. */
+    getExecutableStatus: bridge.buildProvider<IBridgeResponse<WhisperExecutableStatus>, void>(
+      'speech-to-text.local.executable-status'
+    ),
+    /** Progress events for an in-flight `downloadModel` call. */
+    downloadProgress: bridge.buildEmitter<WhisperDownloadProgress>('speech-to-text.local.download-progress'),
+  },
 };
 
 export const fileWatch = {
@@ -472,6 +506,48 @@ export type LocalModelStartRequest = {
   options?: LocalModelRuntimeOptions;
 };
 
+/** Lifecycle transition of the managed llama-server, pushed to the renderer. */
+export type LocalModelRuntimeChangedEvent = {
+  status: 'running' | 'stopped' | 'crashed';
+  modelPath?: string;
+  exitCode?: number | null;
+  signal?: string | null;
+  /** Tail of the server's stderr — the only clue for an out-of-memory or bad-GGUF crash. */
+  stderrTail?: string;
+};
+
+/** Whether the `llama-server` binary could be located on this machine. */
+export type LocalModelExecutableStatus = {
+  found: boolean;
+  path?: string;
+  platform: string;
+  /** True when {@link LocalModelExecutableStatus.path} came from the user's saved setting. */
+  configured?: boolean;
+};
+
+/** GGUF header facts plus the memory-fit estimate for one on-disk model. */
+export type LocalModelInfo = {
+  modelPath: string;
+  metadata: GgufMetadata;
+  fit?: ModelFitEstimate;
+};
+
+/** Progress of a catalog download, pushed to the renderer. */
+export type LocalModelDownloadProgressEvent = {
+  id: string;
+  receivedBytes: number;
+  totalBytes?: number;
+  state: 'downloading' | 'done' | 'error' | 'cancelled';
+  error?: string;
+};
+
+/** A catalog entry plus its resolved on-disk state. */
+export type LocalModelCatalogEntry = CatalogModel & {
+  url: string;
+  /** Absolute path when a file with this name already exists in a configured directory. */
+  installedPath?: string;
+};
+
 /**
  * Local GGUF model management — discover on-disk models and launch/stop a
  * managed llama-server that is auto-registered as an OpenAI-compatible provider.
@@ -488,7 +564,9 @@ export const localModel = {
   /** Effective list of scanned model directories (configured, or built-in defaults). */
   getDirectories: bridge.buildProvider<IBridgeResponse<string[]>, void>('local-model.get-directories'),
   /** Persist the scanned model directories; returns the resolved effective list. */
-  setDirectories: bridge.buildProvider<IBridgeResponse<string[]>, { directories: string[] }>('local-model.set-directories'),
+  setDirectories: bridge.buildProvider<IBridgeResponse<string[]>, { directories: string[] }>(
+    'local-model.set-directories'
+  ),
   /** Read all per-model runtime overrides, keyed by absolute model path. */
   getRuntimeOptions: bridge.buildProvider<IBridgeResponse<Record<string, LocalModelRuntimeOptions>>, void>(
     'local-model.get-runtime-options'
@@ -498,6 +576,30 @@ export const localModel = {
     IBridgeResponse<LocalModelRuntimeOptions>,
     { modelPath: string; options: LocalModelRuntimeOptions }
   >('local-model.set-runtime-options'),
+  /** Whether `llama-server` was found, and where. */
+  getExecutableStatus: bridge.buildProvider<IBridgeResponse<LocalModelExecutableStatus>, void>(
+    'local-model.executable-status'
+  ),
+  /** Persist a user-picked `llama-server` path (empty string clears it) and re-check. */
+  setExecutablePath: bridge.buildProvider<IBridgeResponse<LocalModelExecutableStatus>, { path: string }>(
+    'local-model.set-executable-path'
+  ),
+  /** Read the GGUF header and memory-fit estimate for one model (parsed lazily, then cached). */
+  getModelInfo: bridge.buildProvider<IBridgeResponse<LocalModelInfo>, { modelPath: string }>('local-model.model-info'),
+  /** Curated downloadable models, annotated with their on-disk state. */
+  getCatalog: bridge.buildProvider<IBridgeResponse<LocalModelCatalogEntry[]>, void>('local-model.catalog'),
+  /** Download one catalog model into a configured directory, verifying its SHA-256. */
+  downloadCatalogModel: bridge.buildProvider<IBridgeResponse<{ path: string }>, { id: string }>(
+    'local-model.download-catalog-model'
+  ),
+  /** Abort the in-flight catalog download. */
+  cancelDownload: bridge.buildProvider<IBridgeResponse<void>, { id: string }>('local-model.cancel-download'),
+  /** Managed-server lifecycle transitions (load succeeded, stopped, crashed). */
+  runtimeChanged: bridge.buildEmitter<LocalModelRuntimeChangedEvent>('local-model.runtime-changed'),
+  /** Catalog download progress. */
+  downloadProgress: bridge.buildEmitter<LocalModelDownloadProgressEvent>('local-model.download-progress'),
+  /** One sample of slot state and process memory for the managed llama-server. */
+  getRuntimeMetrics: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeMetrics>, void>('local-model.metrics'),
 };
 
 // ACP对话相关接口 - 复用统一的conversation接口
@@ -791,6 +893,12 @@ export const systemSettings = {
   setPetDnd: bridge.buildProvider<void, { dnd: boolean }>('system-settings:set-pet-dnd'),
   getPetConfirmEnabled: bridge.buildProvider<boolean, void>('system-settings:get-pet-confirm-enabled'),
   setPetConfirmEnabled: bridge.buildProvider<void, { enabled: boolean }>('system-settings:set-pet-confirm-enabled'),
+};
+
+// 隐私设置接口 / Privacy settings API
+export const privacy = {
+  getPrivateMode: bridge.buildProvider<boolean, void>('privacy:get-private-mode'),
+  setPrivateMode: bridge.buildProvider<void, { enabled: boolean }>('privacy:set-private-mode'),
 };
 
 // 系统通知接口 / System notification API
@@ -1365,4 +1473,185 @@ export const team = {
   agentRenamed: bridge.buildEmitter<import('@/common/types/teamTypes').ITeamAgentRenamedEvent>('team.agent.renamed'),
   listChanged: bridge.buildEmitter<import('@/common/types/teamTypes').ITeamListChangedEvent>('team.list-changed'),
   mcpStatus: bridge.buildEmitter<import('@/common/types/teamTypes').ITeamMcpStatusEvent>('team.mcp.status'),
+};
+
+// ==================== SkillOpt Sleep Review API ====================
+
+/**
+ * Native "Sleep Review" workflow: harvest redacted transcripts, stage one bounded
+ * edit to a skill or memory file, then accept / reject / roll it back.
+ */
+export const sleepReview = {
+  /** Conversations available as review input. */
+  listConversations: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').SleepReviewConversation[]>,
+    void
+  >('sleep-review.list-conversations'),
+  /** Redacted transcript preview for one conversation. Raw text never leaves the main process. */
+  previewTranscript: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').SleepReviewTranscriptPreview>,
+    { conversationId: string }
+  >('sleep-review.preview-transcript'),
+  /** Skill files plus, when a workspace is given, its memory files. */
+  listTargets: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').SleepReviewTarget[]>,
+    { workspace?: string }
+  >('sleep-review.list-targets'),
+  /** Configured providers, optionally narrowed to local-only ones. */
+  listProviders: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').SleepReviewProvider[]>,
+    { localOnly?: boolean }
+  >('sleep-review.list-providers'),
+  /** Run one review cycle and stage the resulting proposal. */
+  run: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').SleepReviewProposal>,
+    import('../types/sleepReview').SleepReviewRunRequest
+  >('sleep-review.run'),
+  /** All stored proposals, newest first. */
+  listProposals: bridge.buildProvider<IBridgeResponse<import('../types/sleepReview').SleepReviewProposal[]>, void>(
+    'sleep-review.list-proposals'
+  ),
+  /** Current target content and the content with the edit applied, for diffing. */
+  previewProposal: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').SleepReviewProposalPreview>,
+    { id: string }
+  >('sleep-review.preview-proposal'),
+  /** Apply a staged proposal behind its baseline-hash guard. */
+  accept: bridge.buildProvider<IBridgeResponse<import('../types/sleepReview').SleepReviewProposal>, { id: string }>(
+    'sleep-review.accept'
+  ),
+  /** Mark a proposal rejected without touching the target file. */
+  reject: bridge.buildProvider<IBridgeResponse<import('../types/sleepReview').SleepReviewProposal>, { id: string }>(
+    'sleep-review.reject'
+  ),
+  /** Restore the pre-apply backup of an accepted proposal. */
+  rollback: bridge.buildProvider<IBridgeResponse<import('../types/sleepReview').SleepReviewProposal>, { id: string }>(
+    'sleep-review.rollback'
+  ),
+  /** Held-out prompt library for a workspace (falls back to the global list). */
+  listHeldOut: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').HeldOutPrompt[]>,
+    { workspace?: string }
+  >('sleep-review.list-held-out'),
+  /** Persist the held-out prompt library. */
+  saveHeldOut: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').HeldOutPrompt[]>,
+    { workspace?: string; prompts: import('../types/sleepReview').HeldOutPrompt[] }
+  >('sleep-review.save-held-out'),
+  /** Run a proposal's held-out checks against the pre- and post-edit target. */
+  runHeldOut: bridge.buildProvider<
+    IBridgeResponse<import('../types/sleepReview').HeldOutRunResult[]>,
+    { proposalId: string }
+  >('sleep-review.run-held-out'),
+};
+
+// ==================== Model Arena API ====================
+
+/** One sample of the managed llama-server's runtime state, re-exported for the renderer. */
+export type { LocalModelRuntimeMetrics };
+
+/** Which column of a comparison an event belongs to. */
+export type ArenaSide = 'left' | 'right';
+
+/** One configured provider plus the model to call on it. */
+export type ArenaModelRef = {
+  providerId: string;
+  model: string;
+};
+
+/** One head-to-head comparison request. */
+export type ArenaRunRequest = {
+  left: ArenaModelRef;
+  right: ArenaModelRef;
+  prompt: string;
+  systemPrompt?: string;
+};
+
+/**
+ * Timing and throughput for one side.
+ *
+ * The rotating clients have no streaming method, so the whole answer arrives at
+ * once: `ttfbMs` therefore equals `totalMs`. `estimated` marks token counts
+ * derived from answer length because the provider returned no `usage` block.
+ */
+export type ArenaSideStats = {
+  ttfbMs: number;
+  totalMs: number;
+  outputTokens: number;
+  tokensPerSecond: number;
+  estimated?: boolean;
+};
+
+/** Incremental output, or the terminal result, for one side of a comparison. */
+export type ArenaStreamEvent = {
+  runId: string;
+  side: ArenaSide;
+  delta?: string;
+  done?: boolean;
+  error?: string;
+  stats?: ArenaSideStats;
+};
+
+/**
+ * Side-by-side model comparison. `run` returns as soon as both calls are in
+ * flight; every answer and result arrives on {@link arena.stream}.
+ */
+export const arena = {
+  /** Start one comparison; resolves immediately with the id its events carry. */
+  run: bridge.buildProvider<IBridgeResponse<{ runId: string }>, ArenaRunRequest>('arena.run'),
+  /** Abort a comparison; each unfinished side reports `cancelled`. */
+  cancel: bridge.buildProvider<IBridgeResponse<void>, { runId: string }>('arena.cancel'),
+  /** Answer chunks and per-side results. */
+  stream: bridge.buildEmitter<ArenaStreamEvent>('arena.stream'),
+};
+
+/** Local semantic search over conversation history and workspace files. */
+export const semanticSearch = {
+  /** Current persisted settings plus whether an embedding source is usable. */
+  getSettings: bridge.buildProvider<IBridgeResponse<SemanticSearchSettingsView>, void>('semantic-search.get-settings'),
+  /** Persist any subset of the settings; returns the merged view. */
+  setSettings: bridge.buildProvider<IBridgeResponse<SemanticSearchSettingsView>, SemanticSearchSettingsPatch>(
+    'semantic-search.set-settings'
+  ),
+  /** Row counts and last-indexed timestamp for the stored index. */
+  getStats: bridge.buildProvider<
+    IBridgeResponse<import('../../process/services/semanticSearch/types').SemanticIndexStats>,
+    void
+  >('semantic-search.stats'),
+  /** Embed a query and return the closest chunks. */
+  query: bridge.buildProvider<
+    IBridgeResponse<import('../../process/services/semanticSearch/types').SemanticSearchHit[]>,
+    import('../../process/services/semanticSearch/types').SemanticSearchQueryRequest
+  >('semantic-search.query'),
+  /** (Re)build the conversation-history index. */
+  rebuildIndex: bridge.buildProvider<IBridgeResponse<{ indexed: number; total: number; cancelled: boolean }>, void>(
+    'semantic-search.rebuild-index'
+  ),
+  /** Index the text files of one workspace directory. */
+  indexWorkspace: bridge.buildProvider<
+    IBridgeResponse<{ indexed: number; total: number; cancelled: boolean }>,
+    { workspacePath: string }
+  >('semantic-search.index-workspace'),
+  /** Ask the running index job to stop at the next batch boundary. */
+  cancelIndex: bridge.buildProvider<IBridgeResponse<void>, void>('semantic-search.cancel-index'),
+  /** Delete every stored vector. */
+  clearIndex: bridge.buildProvider<IBridgeResponse<void>, void>('semantic-search.clear-index'),
+  /** Progress of the running index job. */
+  indexProgress: bridge.buildEmitter<import('../../process/services/semanticSearch/types').SemanticIndexProgress>(
+    'semantic-search.index-progress'
+  ),
+};
+
+/** Settings as shown in the UI, with the resolved embedding source. */
+export type SemanticSearchSettingsView =
+  import('../../process/services/semanticSearch/types').SemanticSearchSettings & {
+    /** True when an embedding model path or provider id is configured. */
+    hasEmbeddingSource: boolean;
+  };
+
+/** Partial settings update. Omitted fields keep their stored value. */
+export type SemanticSearchSettingsPatch = {
+  enabled?: boolean;
+  embeddingModelPath?: string;
+  providerId?: string;
 };

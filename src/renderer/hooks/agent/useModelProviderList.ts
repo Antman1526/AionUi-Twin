@@ -1,6 +1,7 @@
 import { ipcBridge } from '@/common';
 import { GOOGLE_AUTH_PROVIDER_ID } from '@/common/config/constants';
 import type { IProvider } from '@/common/config/storage';
+import { isLocalProvider } from '@/common/utils/privacy';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import useSWR from 'swr';
 import { useGeminiGoogleAuthModels } from './useGeminiGoogleAuthModels';
@@ -28,6 +29,7 @@ export const useModelProviderList = (): ModelProviderListResult => {
   }, [geminiModeOptions]);
 
   const { data: modelConfig } = useSWR('model.config.shared', () => ipcBridge.mode.getModelConfig.invoke());
+  const { data: privateMode } = useSWR('privacy.privateMode', () => ipcBridge.privacy.getPrivateMode.invoke());
 
   // Mutable cache for available-model filtering
   const availableModelsCacheRef = useRef(new Map<string, string[]>());
@@ -79,9 +81,9 @@ export const useModelProviderList = (): ModelProviderListResult => {
       } as unknown as IProvider;
       list = [googleProvider, ...list];
     }
-    // 过滤掉没有可用模型的 provider
-    return list.filter((p) => getAvailableModels(p).length > 0);
-  }, [geminiModeOptions, getAvailableModels, isGoogleAuth, modelConfig]);
+    // 过滤掉没有可用模型的 provider，Private Mode 下只保留本地 provider
+    return list.filter((p) => getAvailableModels(p).length > 0 && (!privateMode || isLocalProvider(p)));
+  }, [geminiModeOptions, getAvailableModels, isGoogleAuth, modelConfig, privateMode]);
 
   const formatModelLabel = useCallback(
     (provider: { platform?: string } | undefined, modelName?: string) => {

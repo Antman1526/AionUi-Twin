@@ -1,4 +1,14 @@
 {
+  "hud": {
+    "tokensPerSecond": "{{value}} tok/s",
+    "tokensPerSecondApprox": "≈{{value}} tok/s",
+    "tokensPerSecondTooltip": "Generation speed of the current or last reply, from the server's decoded-token counter.",
+    "tokensPerSecondApproxTooltip": "Estimated generation speed — the server reported no token counts, so this is derived from the reply's text length.",
+    "context": "Context",
+    "contextTooltip": "Tokens decoded by the active slot out of its context window: {{used}} / {{total}}. llama-server publishes no prompt-token count, so prompt tokens are not included.",
+    "memory": "Memory",
+    "memoryTooltip": "Resident memory used by the llama-server process."
+  },
   "welcome": {
     "title": "Hi, what's your plan for today?",
     "placeholder": "Send a message, upload files, open a folder, or create a scheduled task...",
@@ -305,5 +315,21 @@
   },
   "skills": {
     "loaded": "Loaded Skills"
+  },
+  "voice": {
+    "speak": "Read aloud",
+    "stop": "Stop reading",
+    "speakFailed": "Could not read this message aloud"
+  },
+  "semanticSearch": {
+    "modeLabel": "Search mode",
+    "modeKeyword": "Keyword",
+    "modeSemantic": "Semantic",
+    "placeholder": "Describe what you are looking for...",
+    "idle": "Describe what you are looking for, in your own words",
+    "empty": "No similar messages found",
+    "disabledHint": "Semantic search is off. Turn it on in Settings › Model.",
+    "failed": "Semantic search failed",
+    "score": "{{score}}% match"
   }
 }

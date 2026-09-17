@@ -1,0 +1,68 @@
+{
+  "title": "睡眠复盘",
+  "subtitle": "为技能与项目记忆暂存可验证、可回滚的修改。",
+  "tabs": {
+    "review": "复盘",
+    "proposals": "提案",
+    "heldOut": "留出提示词"
+  },
+  "review": {
+    "conversations": "会话",
+    "conversationsPlaceholder": "选择要采集的会话",
+    "preview": "预览脱敏记录",
+    "previewTitle": "脱敏后的会话记录",
+    "redactionCount": "已脱敏 {{count}} 处",
+    "target": "目标文件",
+    "targetPlaceholder": "选择技能或记忆文件",
+    "provider": "服务商",
+    "providerPlaceholder": "选择服务商",
+    "model": "模型",
+    "modelPlaceholder": "选择模型",
+    "localOnly": "仅本地",
+    "run": "开始复盘",
+    "runSuccess": "提案已暂存",
+    "selectConversation": "请至少选择一个会话。",
+    "selectTarget": "请选择目标文件。",
+    "selectModel": "请选择服务商与模型。"
+  },
+  "proposals": {
+    "empty": "暂无提案，运行一次复盘即可生成。",
+    "target": "目标",
+    "status": "状态",
+    "created": "创建时间",
+    "actions": "操作",
+    "detail": "提案详情",
+    "rationale": "理由",
+    "risk": "残留风险",
+    "rollbackPlan": "回滚方案",
+    "heldOutChecks": "留出校验",
+    "diff": "差异",
+    "accept": "接受",
+    "reject": "拒绝",
+    "rollback": "回滚",
+    "runChecks": "运行校验",
+    "before": "修改前",
+    "after": "修改后",
+    "accepted": "提案已应用",
+    "rejected": "提案已拒绝",
+    "rolledBack": "提案已回滚"
+  },
+  "status": {
+    "staged": "已暂存",
+    "accepted": "已应用",
+    "rejected": "已拒绝",
+    "rolledBack": "已回滚",
+    "failed": "失败"
+  },
+  "heldOut": {
+    "empty": "暂无留出提示词。",
+    "prompt": "提示词",
+    "expected": "预期",
+    "actions": "操作",
+    "modalTitle": "留出提示词",
+    "promptPlaceholder": "未用于撰写该修改的提示词",
+    "expectedPlaceholder": "可选的预期行为",
+    "saved": "留出提示词已保存"
+  },
+  "loadFailed": "睡眠复盘请求失败"
+}

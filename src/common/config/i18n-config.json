@@ -22,6 +22,8 @@
     "guid",
     "agent",
     "team",
-    "pet"
+    "pet",
+    "sleepReview",
+    "arena"
   ]
 }

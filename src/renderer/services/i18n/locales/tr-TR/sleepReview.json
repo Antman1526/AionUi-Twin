@@ -1,0 +1,68 @@
+{
+  "title": "Uyku İncelemesi",
+  "subtitle": "Beceriler ve proje belleği için doğrulanmış, geri alınabilir düzenlemeler hazırlayın.",
+  "tabs": {
+    "review": "İnceleme",
+    "proposals": "Öneriler",
+    "heldOut": "Ayrılmış istemler"
+  },
+  "review": {
+    "conversations": "Sohbetler",
+    "conversationsPlaceholder": "Toplanacak sohbetleri seçin",
+    "preview": "Maskelenmiş dökümü önizle",
+    "previewTitle": "Maskelenmiş sohbet dökümü",
+    "redactionCount": "{{count}} değer maskelendi",
+    "target": "Hedef dosya",
+    "targetPlaceholder": "Bir beceri veya bellek dosyası seçin",
+    "provider": "Sağlayıcı",
+    "providerPlaceholder": "Bir sağlayıcı seçin",
+    "model": "Model",
+    "modelPlaceholder": "Bir model seçin",
+    "localOnly": "Yalnızca yerel",
+    "run": "İncelemeyi çalıştır",
+    "runSuccess": "Öneri hazırlandı",
+    "selectConversation": "En az bir sohbet seçin.",
+    "selectTarget": "Bir hedef dosya seçin.",
+    "selectModel": "Bir sağlayıcı ve model seçin."
+  },
+  "proposals": {
+    "empty": "Henüz öneri yok. Bir inceleme çalıştırın.",
+    "target": "Hedef",
+    "status": "Durum",
+    "created": "Oluşturulma",
+    "actions": "İşlemler",
+    "detail": "Öneri ayrıntısı",
+    "rationale": "Gerekçe",
+    "risk": "Kalan risk",
+    "rollbackPlan": "Geri alma planı",
+    "heldOutChecks": "Ayrılmış kontroller",
+    "diff": "Fark",
+    "accept": "Kabul et",
+    "reject": "Reddet",
+    "rollback": "Geri al",
+    "runChecks": "Kontrolleri çalıştır",
+    "before": "Düzenleme öncesi",
+    "after": "Düzenleme sonrası",
+    "accepted": "Öneri uygulandı",
+    "rejected": "Öneri reddedildi",
+    "rolledBack": "Öneri geri alındı"
+  },
+  "status": {
+    "staged": "Hazırlandı",
+    "accepted": "Uygulandı",
+    "rejected": "Reddedildi",
+    "rolledBack": "Geri alındı",
+    "failed": "Başarısız"
+  },
+  "heldOut": {
+    "empty": "Henüz ayrılmış istem yok.",
+    "prompt": "İstem",
+    "expected": "Beklenen",
+    "actions": "İşlemler",
+    "modalTitle": "Ayrılmış istem",
+    "promptPlaceholder": "Düzenlemeyi hazırlarken kullanılmayan bir istem",
+    "expectedPlaceholder": "İsteğe bağlı beklenen davranış",
+    "saved": "Ayrılmış istemler kaydedildi"
+  },
+  "loadFailed": "Uyku incelemesi isteği başarısız oldu"
+}

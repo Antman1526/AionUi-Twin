@@ -911,6 +911,8 @@ ${collectedResponses.join('\n')}`;
           customEnv: customEnv,
           yoloMode: yoloMode,
           agentName: data.agentName,
+          // Stable agent implementation id; the acp_session table keys agent_id on this (falls back to backend)
+          customAgentId: data.customAgentId,
           acpSessionId: data.acpSessionId,
           acpSessionUpdatedAt: data.acpSessionUpdatedAt,
           currentModelId: this.persistedModelId ?? undefined,

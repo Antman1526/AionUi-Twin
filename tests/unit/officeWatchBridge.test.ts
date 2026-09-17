@@ -19,6 +19,7 @@ const {
   spawnMock,
   execSyncMock,
   realpathSyncMock,
+  installOfficeCliMock,
   fakePort,
   portConnectSucceeds,
 } = vi.hoisted(() => ({
@@ -31,6 +32,7 @@ const {
   spawnMock: vi.fn(),
   execSyncMock: vi.fn(),
   realpathSyncMock: vi.fn((p: string) => p),
+  installOfficeCliMock: vi.fn(),
   fakePort: { value: 55555 },
   // Controls whether net.connect resolves (port ready) or rejects (port not ready).
   // Set to false in tests that expect the process to fail before the port opens.
@@ -39,6 +41,10 @@ const {
 
 vi.mock('electron', () => ({
   app: { isPackaged: false, getPath: vi.fn(() => '/tmp') },
+}));
+
+vi.mock('@process/services/officecli/officeCliInstaller', () => ({
+  installOfficeCli: (...args: any[]) => installOfficeCliMock(...args),
 }));
 
 vi.mock('../../src/common', () => ({
@@ -467,11 +473,14 @@ describe('officeWatchBridge', () => {
 
   describe('auto-install on ENOENT', () => {
     it('attempts auto-install on ENOENT for word and emits installing status', async () => {
+      installOfficeCliMock.mockImplementation(async ({ onInstalling }: { onInstalling?: () => void }) => {
+        onInstalling?.();
+        return { installed: true };
+      });
       initOfficeWatchBridge();
 
       const child1 = createMockChildProcess();
       spawnMock.mockReturnValueOnce(child1);
-      execSyncMock.mockReturnValue('');
 
       const child2 = createMockChildProcess();
       spawnMock.mockReturnValueOnce(child2);
@@ -484,9 +493,31 @@ describe('officeWatchBridge', () => {
 
       await flush();
       expect(wordStatusEmitMock).toHaveBeenCalledWith({ state: 'installing' });
+      expect(installOfficeCliMock).toHaveBeenCalledTimes(1);
 
       await emitWatchReady(child2);
       await promise;
+    });
+
+    it('emits error status and rejects when the user declines the install prompt for word', async () => {
+      portConnectSucceeds.value = false; // port never opens; ENOENT error settles first
+      installOfficeCliMock.mockResolvedValue({ installed: false, reason: 'declined' });
+      initOfficeWatchBridge();
+      const child = createMockChildProcess();
+      spawnMock.mockReturnValue(child);
+
+      const promise = wordStartHandler.fn!({ filePath: '/test/file.docx' });
+      await flush();
+
+      const enoentErr = Object.assign(new Error('spawn officecli ENOENT'), { code: 'ENOENT' });
+      child.emit('error', enoentErr);
+
+      const result = await promise;
+      expect(result).toEqual({ url: '', error: 'officecli is not installed and installation was declined' });
+      expect(wordStatusEmitMock).toHaveBeenCalledWith({
+        state: 'error',
+        message: 'OfficeCli installation was declined',
+      });
     });
 
     it('rejects if auto-install fails for excel', async () => {
@@ -495,9 +526,7 @@ describe('officeWatchBridge', () => {
       const child = createMockChildProcess();
       spawnMock.mockReturnValue(child);
 
-      execSyncMock.mockImplementation(() => {
-        throw new Error('install failed');
-      });
+      installOfficeCliMock.mockRejectedValue(new Error('install failed'));
 
       const promise = excelStartHandler.fn!({ filePath: '/test/file.xlsx' });
       await flush();

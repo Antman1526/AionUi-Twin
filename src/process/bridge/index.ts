@@ -26,6 +26,8 @@ import { initGeminiConversationBridge } from './geminiConversationBridge';
 import { initMcpBridge } from './mcpBridge';
 import { initModelBridge } from './modelBridge';
 import { initLocalModelBridge } from './localModelBridge';
+import { initLocalModelMetricsBridge } from './localModelMetricsBridge';
+import { initArenaBridge } from './arenaBridge';
 import { initPreviewHistoryBridge } from './previewHistoryBridge';
 import { initShellBridge } from './shellBridge';
 import { initStarOfficeBridge } from './starOfficeBridge';
@@ -38,11 +40,14 @@ import { initWindowControlsBridge } from './windowControlsBridge';
 import { initNotificationBridge } from './notificationBridge';
 import { initPptPreviewBridge } from './pptPreviewBridge';
 import { initOfficeWatchBridge } from './officeWatchBridge';
+import { initPrivacyBridge } from './privacyBridge';
 import { initExtensionsBridge } from './extensionsBridge';
 import { initWeixinLoginBridge } from './weixinLoginBridge';
 import { initWorkspaceSnapshotBridge } from './workspaceSnapshotBridge';
 import { initRemoteAgentBridge } from './remoteAgentBridge';
 import { initHubBridge } from './hubBridge';
+import { initSleepReviewBridge } from './sleepReviewBridge';
+import { initSemanticSearchBridge } from './semanticSearchBridge';
 import { initTeamBridge } from './teamBridge';
 import type { TeamSessionService } from '@process/team/TeamSessionService';
 
@@ -72,6 +77,8 @@ export function initAllBridges(deps: BridgeDependencies): void {
   initAuthBridge();
   initModelBridge();
   initLocalModelBridge();
+  initLocalModelMetricsBridge();
+  initArenaBridge();
   initMcpBridge();
   initPreviewHistoryBridge();
   initDocumentBridge();
@@ -82,9 +89,12 @@ export function initAllBridges(deps: BridgeDependencies): void {
   initWebuiBridge();
   initChannelBridge(deps.channelRepo);
   initDatabaseBridge(deps.conversationRepo);
+  initSleepReviewBridge(deps.conversationRepo);
+  initSemanticSearchBridge(deps.conversationRepo);
   initExtensionsBridge(deps.conversationRepo, deps.workerTaskManager);
   initCronBridge();
   initSystemSettingsBridge();
+  initPrivacyBridge();
   initNotificationBridge();
   initTaskBridge(deps.workerTaskManager);
   initStarOfficeBridge();
@@ -125,12 +135,15 @@ export {
   initGeminiBridge,
   initGeminiConversationBridge,
   initLocalModelBridge,
+  initLocalModelMetricsBridge,
+  initArenaBridge,
   initMcpBridge,
   initModelBridge,
   initNotificationBridge,
   initOfficeWatchBridge,
   initPptPreviewBridge,
   initPreviewHistoryBridge,
+  initSemanticSearchBridge,
   initShellBridge,
   initSpeechToTextBridge,
   initStarOfficeBridge,

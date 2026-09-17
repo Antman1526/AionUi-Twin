@@ -17,5 +17,14 @@
     "statusTesting": "Testing latency...",
     "statusUnreachable": "Unreachable",
     "statusAvailable": "Available"
+  },
+  "localModels": {
+    "title": "Yerel model",
+    "inUse": "Kullanımda",
+    "useInChat": "Sohbette kullan",
+    "found": "{{count}} yerel model bulundu",
+    "load": "Yükle…",
+    "installTitle": "llama.cpp kurulu değil",
+    "install": "llama.cpp kur"
   }
 }

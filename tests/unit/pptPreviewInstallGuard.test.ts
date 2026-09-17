@@ -12,11 +12,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let startHandler: (args: { filePath: string }) => Promise<{ url: string; error?: string }>;
 let statusEmits: Array<{ state: string }>;
-let execSyncSpy: ReturnType<typeof vi.fn>;
+let installSpy: ReturnType<typeof vi.fn>;
 
 function setupMocks() {
   statusEmits = [];
-  execSyncSpy = vi.fn();
+  installSpy = vi.fn();
+
+  // Consent-gated installer mock — reports 'installing' via the callback, then fails
+  vi.doMock('@process/services/officecli/officeCliInstaller', () => ({
+    installOfficeCli: async (options: { onInstalling?: () => void }) => {
+      installSpy(options);
+      options.onInstalling?.();
+      throw new Error('install failed');
+    },
+  }));
 
   // ipcBridge mock — capture the provider handler so we can call it directly
   vi.doMock('@/common', () => ({
@@ -88,7 +97,7 @@ function setupMocks() {
     };
   });
 
-  // Mock child_process — spawn emits ENOENT, execSync tracks install calls
+  // Mock child_process — spawn emits ENOENT (officecli not found)
   vi.doMock('node:child_process', () => {
     const { EventEmitter } = require('node:events');
 
@@ -110,11 +119,7 @@ function setupMocks() {
         return child;
       },
       exec: vi.fn(),
-      execSync: (...args: unknown[]) => {
-        execSyncSpy(...args);
-        // Fail installation by throwing
-        throw new Error('install failed');
-      },
+      execSync: vi.fn(),
     };
   });
 }
@@ -145,8 +150,8 @@ describe('pptPreviewBridge install guard', () => {
     // Trigger a startWatch call via the captured handler
     const result = await startHandler({ filePath: '/workspace/test.pptx' });
 
-    // Install was attempted (execSync was called for the install script)
-    expect(execSyncSpy).toHaveBeenCalled();
+    // Install was attempted through the consent-gated installer (never a shell pipe)
+    expect(installSpy).toHaveBeenCalledTimes(1);
     // Should have emitted 'installing' status
     expect(statusEmits.some((e) => e.state === 'installing')).toBe(true);
     // Result should indicate failure
@@ -158,7 +163,7 @@ describe('pptPreviewBridge install guard', () => {
 
     // First call — install attempted and fails
     await startHandler({ filePath: '/workspace/file1.pptx' });
-    const firstCallCount = execSyncSpy.mock.calls.length;
+    const firstCallCount = installSpy.mock.calls.length;
     expect(firstCallCount).toBeGreaterThan(0);
 
     // Reset status tracking
@@ -167,8 +172,8 @@ describe('pptPreviewBridge install guard', () => {
     // Second call — install should be skipped
     await startHandler({ filePath: '/workspace/file2.pptx' });
 
-    // execSync call count should NOT increase (no new install attempt)
-    expect(execSyncSpy.mock.calls.length).toBe(firstCallCount);
+    // Installer call count should NOT increase (no new install attempt)
+    expect(installSpy.mock.calls.length).toBe(firstCallCount);
     // Should NOT have emitted 'installing' status on second call
     expect(statusEmits.some((e) => e.state === 'installing')).toBe(false);
   });
@@ -178,12 +183,12 @@ describe('pptPreviewBridge install guard', () => {
 
     // First call — triggers install
     await startHandler({ filePath: '/workspace/a.pptx' });
-    const callsAfterFirst = execSyncSpy.mock.calls.length;
+    const callsAfterFirst = installSpy.mock.calls.length;
 
     // Second and third calls — no new install
     await startHandler({ filePath: '/workspace/b.pptx' });
     await startHandler({ filePath: '/workspace/c.pptx' });
 
-    expect(execSyncSpy.mock.calls.length).toBe(callsAfterFirst);
+    expect(installSpy.mock.calls.length).toBe(callsAfterFirst);
   });
 });
