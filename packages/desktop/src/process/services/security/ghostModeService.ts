@@ -7,6 +7,27 @@
 import { ipcBridge } from '@/common';
 import type { GhostModeStatus } from '@/common/adapter/ipcBridge';
 
+/**
+ * Reconcile crash reporting with Ghost Mode.
+ *
+ * Imported lazily: `@/sentry` and the config store both pull in Electron at
+ * module load, which this service must not require (it is exercised headlessly).
+ * Best-effort — a failure here must never block toggling Ghost Mode itself.
+ */
+function reconcileTelemetryConsent(ghostModeEnabled: boolean): void {
+  void (async () => {
+    try {
+      const [{ setTelemetryEnabled }, { ProcessConfig }] = await Promise.all([
+        import('@/sentry'),
+        import('@process/utils/initStorage'),
+      ]);
+      setTelemetryEnabled(ghostModeEnabled ? false : ProcessConfig.getSync('telemetry.enabled') === true);
+    } catch (error) {
+      console.warn('[GhostMode] Failed to reconcile telemetry consent:', error);
+    }
+  })();
+}
+
 let isGhostModeEnabled = false;
 let blockedRequestsCount = 0;
 let isFilterInstalled = false;
@@ -98,6 +119,10 @@ export function getGhostModeStatus(): GhostModeStatus {
 export function setGhostMode(enabled: boolean): GhostModeStatus {
   ensureNetworkInterceptor();
   isGhostModeEnabled = enabled;
+
+  // Ghost Mode isolates the app, so it always wins over a telemetry opt-in.
+  // Turning it off restores whatever the user actually chose.
+  reconcileTelemetryConsent(enabled);
 
   const status: GhostModeStatus = {
     enabled: isGhostModeEnabled,

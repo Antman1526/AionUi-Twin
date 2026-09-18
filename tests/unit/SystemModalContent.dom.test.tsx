@@ -113,6 +113,8 @@ vi.mock('@/common', () => ({
       openDevTools: { invoke: (...args: any[]) => mockOpenDevTools(...args) },
       devToolsStateChanged: { on: (...args: any[]) => mockDevToolsStateChangedOn(...args) },
       updateSystemInfo: { invoke: (...args: any[]) => mockUpdateSystemInfo(...args) },
+      // Pre-existing call in SystemModalContent that this mock never covered.
+      getGpuStatus: { invoke: async () => ({ success: true, data: { disabled: false, autoDisabled: false } }) },
     },
     systemSettings: {
       getCloseToTray: { invoke: (...args: any[]) => mockGetCloseToTray(...args) },
@@ -137,6 +139,11 @@ vi.mock('@/common', () => ({
       setAutoPreviewOfficeFiles: {
         invoke: (...args: any[]) => mockSetAutoPreviewOfficeFiles(...args),
       },
+    },
+    // Crash-reporting consent row reads Ghost Mode state and subscribes to changes.
+    ghostMode: {
+      getStatus: { invoke: async () => ({ success: true, data: { enabled: false, blockedRequestsCount: 0 } }) },
+      statusChanged: { on: () => () => undefined },
     },
     dialog: {
       showOpen: { invoke: (...args: any[]) => mockShowOpen(...args) },

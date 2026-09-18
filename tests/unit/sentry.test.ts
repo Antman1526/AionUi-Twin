@@ -8,7 +8,7 @@
  * suite runs under the `node` Vitest project.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { gunzipSync } from 'node:zlib';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -20,6 +20,7 @@ vi.mock('electron', () => ({
 }));
 
 let sentryInitOptions: { beforeSend?: (event: unknown) => unknown } | undefined;
+const sentryClientOptions: { enabled?: boolean } = {};
 const scopeSetContext = vi.fn();
 const scopeSetExtra = vi.fn();
 const scopeSetTag = vi.fn();
@@ -40,6 +41,9 @@ vi.mock('@sentry/electron/main', () => ({
   captureException: vi.fn(),
   captureEvent: vi.fn(),
   flush: vi.fn(async () => true),
+  // Consent gate: `setTelemetryEnabled` flips `enabled` on the live client.
+  getClient: vi.fn(() => ({ getOptions: () => sentryClientOptions })),
+  startSession: vi.fn(),
 }));
 
 vi.mock('@/process/utils/analyticsId', () => ({
@@ -55,7 +59,14 @@ vi.mock('@/process/services/autoUpdateDiagnostics', () => ({
 }));
 
 import * as Sentry from '@sentry/electron/main';
-import { listLogFilesSync, selectRecentLogFiles, packAndCap, captureBackendStartupFailure, initSentry } from '@/sentry';
+import {
+  listLogFilesSync,
+  selectRecentLogFiles,
+  packAndCap,
+  captureBackendStartupFailure,
+  initSentry,
+  setTelemetryEnabled,
+} from '@/sentry';
 
 describe('selectRecentLogFiles', () => {
   it('returns every file from the N most recent non-empty days', () => {
@@ -302,6 +313,17 @@ describe('captureBackendStartupFailure', () => {
 });
 
 describe('initSentry beforeSend', () => {
+  // These cases exercise the crash-filtering rules, which only run once the user
+  // has consented to crash reporting. Consent itself is covered separately in
+  // tests/unit/telemetryConsent.test.ts.
+  beforeEach(() => {
+    setTelemetryEnabled(true);
+  });
+
+  afterEach(() => {
+    setTelemetryEnabled(false);
+  });
+
   it('drops native GPU unusable crashes reported only through crashpad context', () => {
     initSentry();
 

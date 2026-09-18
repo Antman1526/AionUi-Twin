@@ -76,6 +76,11 @@ vi.mock('@/common', () => ({
       getCloseToTray: { invoke: vi.fn(() => Promise.resolve(false)) },
       setCloseToTray: { invoke: vi.fn(() => Promise.resolve()) },
     },
+    // Crash-reporting consent row reads Ghost Mode state and subscribes to changes.
+    ghostMode: {
+      getStatus: { invoke: vi.fn(() => Promise.resolve({ success: true, data: { enabled: false } })) },
+      statusChanged: { on: vi.fn(() => () => undefined) },
+    },
     dialog: {
       showOpen: { invoke: showOpenMock },
     },

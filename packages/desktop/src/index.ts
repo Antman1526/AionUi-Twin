@@ -11,7 +11,15 @@ import { installGpuCrashHandler } from './process/utils/gpuRecovery';
 import { describeUncaughtError } from './process/utils/describeUncaughtError';
 import type { UncaughtErrorDiagnostics } from './process/utils/describeUncaughtError';
 import { createRendererRecoveryPolicy } from './process/utils/rendererRecovery';
-import { captureBackendStartupFailure, initSentry, scheduleStartupLogReport, setSentryDeviceId } from './sentry';
+import {
+  captureBackendStartupFailure,
+  initSentry,
+  scheduleStartupLogReport,
+  setSentryDeviceId,
+  setTelemetryEnabled,
+} from './sentry';
+import { isTelemetryAllowed } from './common/utils/telemetryConsent';
+import { getGhostModeStatus } from './process/services/security/ghostModeService';
 
 initSentry();
 
@@ -714,7 +722,24 @@ const handleAppReady = async (): Promise<void> => {
     }
   }
 
-  setSentryDeviceId();
+  // Crash reporting is opt-in. Sentry was initialised inert; only now, once the
+  // stored choice is readable, decide whether it may send anything — and only
+  // attach the persistent installation id when the user actually consented.
+  try {
+    const telemetryEnabled = await ProcessConfig.get('telemetry.enabled');
+    const allowed = isTelemetryAllowed({
+      telemetryEnabled: telemetryEnabled === true,
+      ghostMode: getGhostModeStatus().enabled,
+    });
+    setTelemetryEnabled(allowed);
+    if (allowed) {
+      setSentryDeviceId();
+    }
+  } catch (error) {
+    // Fail closed: an unreadable config must not turn telemetry on.
+    setTelemetryEnabled(false);
+    console.warn('[Telemetry] Consent unreadable, leaving crash reporting disabled:', error);
+  }
 
   // Allow the renderer's Local Font Access queries (window.queryLocalFonts),
   // used by the appearance font picker to enumerate installed fonts. Electron 37
@@ -1155,6 +1180,10 @@ installQuitCleanup({
     try {
       const { stopLocalModelServer } = await import('./process/bridge/localModelBridge');
       await stopLocalModelServer();
+    } catch {}
+    try {
+      const { stopLocalWhisperServer } = await import('./process/bridge/speechToTextBridge');
+      stopLocalWhisperServer();
     } catch {}
     await backendManager.stop();
   },
