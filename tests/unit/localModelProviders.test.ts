@@ -13,7 +13,7 @@ import {
   LOCAL_OPENAI_COMPATIBLE_API_KEY,
   normalizeModelDirectories,
   resolveModelDirectories,
-} from '../../src/common/utils/localModelProviders';
+} from '@/common/utils/localModelProviders';
 
 describe('localModelProviders', () => {
   it('detects localhost OpenAI-compatible endpoints', () => {
