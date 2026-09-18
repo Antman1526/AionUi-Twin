@@ -1,0 +1,28 @@
+{
+  "title": "模型竞技场",
+  "description": "将同一个提示词同时发送给两个模型，比较它们的回答、速度与吞吐量。",
+  "selectLeft": "选择模型 A",
+  "selectRight": "选择模型 B",
+  "promptPlaceholder": "同时发送给两个模型的提示词",
+  "systemPromptPlaceholder": "系统提示词（可选）",
+  "run": "运行",
+  "cancel": "取消",
+  "cancelled": "已取消",
+  "copyComparison": "复制对比结果",
+  "copied": "对比结果已复制到剪贴板",
+  "left": "模型 A",
+  "right": "模型 B",
+  "noModelSelected": "未选择模型",
+  "waiting": "等待响应…",
+  "empty": "暂无响应。",
+  "history": "运行记录",
+  "stats": {
+    "ttfb": "首字节耗时",
+    "total": "总耗时",
+    "tokens": "Token 数",
+    "throughput": "吞吐量",
+    "tokensPerSecondUnit": "tok/s",
+    "estimatedHint": "估算值",
+    "pending": "暂无统计数据"
+  }
+}

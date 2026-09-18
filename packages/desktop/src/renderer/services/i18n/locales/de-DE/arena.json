@@ -1,0 +1,28 @@
+{
+  "title": "Modell-Arena",
+  "description": "Denselben Prompt gleichzeitig an zwei Modelle senden und Antworten, Geschwindigkeit und Durchsatz vergleichen.",
+  "selectLeft": "Modell A wählen",
+  "selectRight": "Modell B wählen",
+  "promptPlaceholder": "Prompt, der an beide Modelle geht",
+  "systemPromptPlaceholder": "System-Prompt (optional)",
+  "run": "Ausführen",
+  "cancel": "Abbrechen",
+  "cancelled": "Abgebrochen",
+  "copyComparison": "Vergleich kopieren",
+  "copied": "Vergleich in die Zwischenablage kopiert",
+  "left": "Modell A",
+  "right": "Modell B",
+  "noModelSelected": "Kein Modell ausgewählt",
+  "waiting": "Warte auf Antwort…",
+  "empty": "Noch keine Antwort.",
+  "history": "Ausführungsverlauf",
+  "stats": {
+    "ttfb": "Erstes Byte",
+    "total": "Gesamt",
+    "tokens": "Tokens",
+    "throughput": "Durchsatz",
+    "tokensPerSecondUnit": "Tok/s",
+    "estimatedHint": "geschätzt",
+    "pending": "Noch keine Statistiken"
+  }
+}

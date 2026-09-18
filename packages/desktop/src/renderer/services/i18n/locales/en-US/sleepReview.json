@@ -1,0 +1,64 @@
+{
+  "title": "Sleep Review",
+  "description": "Review past sessions, stage one small edit to a skill or memory file, then accept it or roll it back.",
+  "tabs": {
+    "review": "Review",
+    "proposals": "Proposals",
+    "heldOut": "Held-out prompts"
+  },
+  "review": {
+    "sessions": "Sessions",
+    "sessionsHint": "Transcripts are redacted before they leave this machine.",
+    "selectSessions": "Pick the sessions to learn from",
+    "previewTranscript": "Preview redacted transcript",
+    "redacted": "{{count}} secrets removed",
+    "target": "File to improve",
+    "selectTarget": "Pick a skill or memory file",
+    "workspace": "Workspace",
+    "selectWorkspace": "Pick a workspace",
+    "noWorkspace": "No workspace",
+    "model": "Model",
+    "selectModel": "Pick a model",
+    "localOnly": "Local only",
+    "localOnlyHint": "Refuse any provider that is not running on this machine.",
+    "run": "Run review",
+    "running": "Reviewing…",
+    "staged": "Proposal staged"
+  },
+  "proposals": {
+    "empty": "No proposals yet.",
+    "created": "Created",
+    "model": "Model",
+    "target": "File",
+    "details": "Details",
+    "rationale": "Rationale",
+    "risk": "Risk",
+    "rollback": "Rollback",
+    "heldOutChecks": "Held-out checks",
+    "diff": "Diff",
+    "accept": "Accept",
+    "reject": "Reject",
+    "rollbackAction": "Roll back",
+    "replay": "Replay held-out prompts",
+    "before": "Before",
+    "after": "After",
+    "noReplay": "No held-out prompts to replay."
+  },
+  "status": {
+    "staged": "Staged",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "rolledBack": "Rolled back",
+    "failed": "Failed"
+  },
+  "heldOut": {
+    "hint": "Prompts kept out of the draft, replayed before and after an edit.",
+    "prompt": "Prompt",
+    "expected": "Expected (optional)",
+    "add": "Add prompt",
+    "remove": "Remove",
+    "save": "Save",
+    "saved": "Held-out prompts saved",
+    "empty": "No held-out prompts yet."
+  }
+}

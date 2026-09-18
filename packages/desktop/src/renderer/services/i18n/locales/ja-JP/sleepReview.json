@@ -1,0 +1,64 @@
+{
+  "title": "スリープレビュー",
+  "description": "過去のセッションを振り返り、スキルやメモリファイルへの小さな変更を1つ下書きして、採用するか元に戻します。",
+  "tabs": {
+    "review": "レビュー",
+    "proposals": "提案",
+    "heldOut": "ホールドアウトプロンプト"
+  },
+  "review": {
+    "sessions": "セッション",
+    "sessionsHint": "記録はこの端末を離れる前に秘匿化されます。",
+    "selectSessions": "学習に使うセッションを選択",
+    "previewTranscript": "秘匿化した記録をプレビュー",
+    "redacted": "{{count}} 件の秘密情報を削除しました",
+    "target": "改善するファイル",
+    "selectTarget": "スキルまたはメモリファイルを選択",
+    "workspace": "ワークスペース",
+    "selectWorkspace": "ワークスペースを選択",
+    "noWorkspace": "ワークスペースなし",
+    "model": "モデル",
+    "selectModel": "モデルを選択",
+    "localOnly": "ローカルのみ",
+    "localOnlyHint": "この端末で動いていないプロバイダーは拒否します。",
+    "run": "レビューを実行",
+    "running": "レビュー中…",
+    "staged": "提案を保留しました"
+  },
+  "proposals": {
+    "empty": "提案はまだありません。",
+    "created": "作成日時",
+    "model": "モデル",
+    "target": "ファイル",
+    "details": "詳細",
+    "rationale": "根拠",
+    "risk": "リスク",
+    "rollback": "元に戻す方法",
+    "heldOutChecks": "ホールドアウト検証",
+    "diff": "差分",
+    "accept": "採用",
+    "reject": "却下",
+    "rollbackAction": "元に戻す",
+    "replay": "ホールドアウトを再実行",
+    "before": "変更前",
+    "after": "変更後",
+    "noReplay": "再実行できるホールドアウトプロンプトがありません。"
+  },
+  "status": {
+    "staged": "保留中",
+    "accepted": "採用済み",
+    "rejected": "却下済み",
+    "rolledBack": "復元済み",
+    "failed": "失敗"
+  },
+  "heldOut": {
+    "hint": "下書きに使わないプロンプト。変更の前後で1回ずつ再実行します。",
+    "prompt": "プロンプト",
+    "expected": "期待する結果（任意）",
+    "add": "プロンプトを追加",
+    "remove": "削除",
+    "save": "保存",
+    "saved": "ホールドアウトプロンプトを保存しました",
+    "empty": "ホールドアウトプロンプトがありません。"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "title": "Model Arenası",
+  "description": "Aynı istemi iki modele birden gönderin; yanıtlarını, hızlarını ve veri hızlarını karşılaştırın.",
+  "selectLeft": "A modelini seç",
+  "selectRight": "B modelini seç",
+  "promptPlaceholder": "Her iki modele gönderilecek istem",
+  "systemPromptPlaceholder": "Sistem istemi (isteğe bağlı)",
+  "run": "Çalıştır",
+  "cancel": "İptal",
+  "cancelled": "İptal edildi",
+  "copyComparison": "Karşılaştırmayı kopyala",
+  "copied": "Karşılaştırma panoya kopyalandı",
+  "left": "Model A",
+  "right": "Model B",
+  "noModelSelected": "Model seçilmedi",
+  "waiting": "Yanıt bekleniyor…",
+  "empty": "Henüz yanıt yok.",
+  "history": "Çalıştırma geçmişi",
+  "stats": {
+    "ttfb": "İlk bayt",
+    "total": "Toplam",
+    "tokens": "Token",
+    "throughput": "Verim",
+    "tokensPerSecondUnit": "tok/sn",
+    "estimatedHint": "tahmini",
+    "pending": "Henüz istatistik yok"
+  }
+}

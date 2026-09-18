@@ -1,0 +1,28 @@
+{
+  "title": "Arena de Modelos",
+  "description": "Envie o mesmo prompt para dois modelos ao mesmo tempo e compare respostas, velocidade e throughput.",
+  "selectLeft": "Escolher modelo A",
+  "selectRight": "Escolher modelo B",
+  "promptPlaceholder": "Prompt enviado aos dois modelos",
+  "systemPromptPlaceholder": "Prompt de sistema (opcional)",
+  "run": "Executar",
+  "cancel": "Cancelar",
+  "cancelled": "Cancelado",
+  "copyComparison": "Copiar comparação",
+  "copied": "Comparação copiada para a área de transferência",
+  "left": "Modelo A",
+  "right": "Modelo B",
+  "noModelSelected": "Nenhum modelo selecionado",
+  "waiting": "Aguardando resposta…",
+  "empty": "Ainda sem resposta.",
+  "history": "Histórico de execuções",
+  "stats": {
+    "ttfb": "Primeiro byte",
+    "total": "Total",
+    "tokens": "Tokens",
+    "throughput": "Vazão",
+    "tokensPerSecondUnit": "tok/s",
+    "estimatedHint": "estimado",
+    "pending": "Sem estatísticas ainda"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "title": "میدان مدل‌ها",
+  "description": "یک درخواست را هم‌زمان به دو مدل بفرستید و پاسخ، سرعت و توان عملیاتی آن‌ها را مقایسه کنید.",
+  "selectLeft": "انتخاب مدل A",
+  "selectRight": "انتخاب مدل B",
+  "promptPlaceholder": "درخواستی که به هر دو مدل ارسال می‌شود",
+  "systemPromptPlaceholder": "درخواست سیستمی (اختیاری)",
+  "run": "اجرا",
+  "cancel": "لغو",
+  "cancelled": "لغو شد",
+  "copyComparison": "کپی مقایسه",
+  "copied": "مقایسه در بریده‌دان کپی شد",
+  "left": "مدل A",
+  "right": "مدل B",
+  "noModelSelected": "مدلی انتخاب نشده است",
+  "waiting": "در انتظار پاسخ…",
+  "empty": "هنوز پاسخی نیست.",
+  "history": "تاریخچهٔ اجراها",
+  "stats": {
+    "ttfb": "اولین بایت",
+    "total": "مجموع",
+    "tokens": "توکن‌ها",
+    "throughput": "توان عملیاتی",
+    "tokensPerSecondUnit": "توکن/ث",
+    "estimatedHint": "تخمینی",
+    "pending": "هنوز آماری نیست"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "title": "Uyku İncelemesi",
+  "description": "Geçmiş oturumları gözden geçirin, bir beceri veya bellek dosyasına küçük bir düzenleme hazırlayın, sonra kabul edin ya da geri alın.",
+  "tabs": {
+    "review": "İnceleme",
+    "proposals": "Öneriler",
+    "heldOut": "Ayrılmış istemler"
+  },
+  "review": {
+    "sessions": "Oturumlar",
+    "sessionsHint": "Dökümler bu bilgisayardan çıkmadan önce maskelenir.",
+    "selectSessions": "Öğrenilecek oturumları seçin",
+    "previewTranscript": "Maskelenmiş dökümü önizle",
+    "redacted": "{{count}} gizli bilgi kaldırıldı",
+    "target": "İyileştirilecek dosya",
+    "selectTarget": "Bir beceri veya bellek dosyası seçin",
+    "workspace": "Çalışma alanı",
+    "selectWorkspace": "Çalışma alanı seçin",
+    "noWorkspace": "Çalışma alanı yok",
+    "model": "Model",
+    "selectModel": "Model seçin",
+    "localOnly": "Yalnızca yerel",
+    "localOnlyHint": "Bu bilgisayarda çalışmayan hiçbir sağlayıcıyı kabul etme.",
+    "run": "İncelemeyi başlat",
+    "running": "İnceleniyor…",
+    "staged": "Öneri hazırlandı"
+  },
+  "proposals": {
+    "empty": "Henüz öneri yok.",
+    "created": "Oluşturuldu",
+    "model": "Model",
+    "target": "Dosya",
+    "details": "Ayrıntılar",
+    "rationale": "Gerekçe",
+    "risk": "Risk",
+    "rollback": "Geri alma",
+    "heldOutChecks": "Ayrılmış kontroller",
+    "diff": "Fark",
+    "accept": "Kabul et",
+    "reject": "Reddet",
+    "rollbackAction": "Geri al",
+    "replay": "Ayrılmış istemleri yeniden çalıştır",
+    "before": "Önce",
+    "after": "Sonra",
+    "noReplay": "Yeniden çalıştırılacak ayrılmış istem yok."
+  },
+  "status": {
+    "staged": "Hazırlandı",
+    "accepted": "Kabul edildi",
+    "rejected": "Reddedildi",
+    "rolledBack": "Geri alındı",
+    "failed": "Başarısız"
+  },
+  "heldOut": {
+    "hint": "Taslakta kullanılmayan istemler; düzenlemeden önce ve sonra yeniden çalıştırılır.",
+    "prompt": "İstem",
+    "expected": "Beklenen (isteğe bağlı)",
+    "add": "İstem ekle",
+    "remove": "Kaldır",
+    "save": "Kaydet",
+    "saved": "Ayrılmış istemler kaydedildi",
+    "empty": "Henüz ayrılmış istem yok."
+  }
+}

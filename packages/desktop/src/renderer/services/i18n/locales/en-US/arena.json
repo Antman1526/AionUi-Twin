@@ -1,0 +1,28 @@
+{
+  "title": "Model Arena",
+  "description": "Send one prompt to two models at once and compare their answers, speed and throughput.",
+  "selectLeft": "Choose model A",
+  "selectRight": "Choose model B",
+  "promptPlaceholder": "Prompt sent to both models",
+  "systemPromptPlaceholder": "System prompt (optional)",
+  "run": "Run",
+  "cancel": "Cancel",
+  "cancelled": "Cancelled",
+  "copyComparison": "Copy comparison",
+  "copied": "Comparison copied to the clipboard",
+  "left": "Model A",
+  "right": "Model B",
+  "noModelSelected": "No model selected",
+  "waiting": "Waiting for a response…",
+  "empty": "No response yet.",
+  "history": "Run history",
+  "stats": {
+    "ttfb": "TTFB",
+    "total": "Total",
+    "tokens": "Tokens",
+    "throughput": "Throughput",
+    "tokensPerSecondUnit": "tok/s",
+    "estimatedHint": "estimated",
+    "pending": "No stats yet"
+  }
+}

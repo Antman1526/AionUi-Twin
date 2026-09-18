@@ -782,5 +782,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "プランを展開",
     "collapse": "プランを折りたたむ"
+  },
+  "voice": {
+    "readAloud": "読み上げ",
+    "stopReading": "読み上げを停止"
+  },
+  "hud": {
+    "tokensPerSecond": "トークン/秒",
+    "tokensPerSecondUnit": "tok/s",
+    "contextFill": "コンテキスト",
+    "engineMemory": "エンジンメモリ",
+    "estimatedHint": "概算値 — 応答の長さから算出したもので、エンジンの実測値ではありません。",
+    "measuredHint": "エンジンのデコードカウンターによる実測値です。",
+    "awaitingSample": "計測中…"
+  },
+  "semanticSearch": {
+    "modeLabel": "検索モード",
+    "modeKeyword": "キーワード",
+    "modeSemantic": "意味検索",
+    "placeholder": "探している内容を記述してください…",
+    "idle": "覚えている内容を書くと、近いメッセージが表示されます",
+    "empty": "似たメッセージは見つかりませんでした",
+    "disabledHint": "意味検索はオフです。「設定 › ローカルモデル」で有効にしてください。",
+    "notIndexed": "まだインデックスがありません。「設定 › ローカルモデル」で作成してください。",
+    "failed": "意味検索に失敗しました",
+    "score": "一致度 {{score}}%"
   }
 }

@@ -1,0 +1,28 @@
+{
+  "title": "Arène des modèles",
+  "description": "Envoyez la même invite à deux modèles en parallèle et comparez les réponses, la vitesse et le débit.",
+  "selectLeft": "Choisir le modèle A",
+  "selectRight": "Choisir le modèle B",
+  "promptPlaceholder": "Invite envoyée aux deux modèles",
+  "systemPromptPlaceholder": "Invite système (facultatif)",
+  "run": "Lancer",
+  "cancel": "Annuler",
+  "cancelled": "Annulé",
+  "copyComparison": "Copier la comparaison",
+  "copied": "Comparaison copiée dans le presse-papiers",
+  "left": "Modèle A",
+  "right": "Modèle B",
+  "noModelSelected": "Aucun modèle sélectionné",
+  "waiting": "En attente d'une réponse…",
+  "empty": "Pas encore de réponse.",
+  "history": "Historique des exécutions",
+  "stats": {
+    "ttfb": "Premier octet",
+    "total": "Total",
+    "tokens": "Jetons",
+    "throughput": "Débit",
+    "tokensPerSecondUnit": "jet/s",
+    "estimatedHint": "estimé",
+    "pending": "Pas encore de statistiques"
+  }
+}

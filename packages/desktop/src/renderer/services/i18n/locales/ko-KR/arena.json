@@ -1,0 +1,28 @@
+{
+  "title": "모델 아레나",
+  "description": "하나의 프롬프트를 두 모델에 동시에 보내 답변, 속도, 처리량을 비교합니다.",
+  "selectLeft": "모델 A 선택",
+  "selectRight": "모델 B 선택",
+  "promptPlaceholder": "두 모델에 함께 보낼 프롬프트",
+  "systemPromptPlaceholder": "시스템 프롬프트(선택)",
+  "run": "실행",
+  "cancel": "취소",
+  "cancelled": "취소됨",
+  "copyComparison": "비교 결과 복사",
+  "copied": "비교 결과를 클립보드에 복사했습니다",
+  "left": "모델 A",
+  "right": "모델 B",
+  "noModelSelected": "선택된 모델 없음",
+  "waiting": "응답을 기다리는 중…",
+  "empty": "아직 응답이 없습니다.",
+  "history": "실행 기록",
+  "stats": {
+    "ttfb": "첫 응답",
+    "total": "총 시간",
+    "tokens": "토큰",
+    "throughput": "처리량",
+    "tokensPerSecondUnit": "tok/s",
+    "estimatedHint": "추정치",
+    "pending": "통계 없음"
+  }
+}

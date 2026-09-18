@@ -782,5 +782,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "계획 펼치기",
     "collapse": "계획 접기"
+  },
+  "voice": {
+    "readAloud": "소리 내어 읽기",
+    "stopReading": "읽기 중지"
+  },
+  "hud": {
+    "tokensPerSecond": "초당 토큰",
+    "tokensPerSecondUnit": "tok/s",
+    "contextFill": "컨텍스트",
+    "engineMemory": "엔진 메모리",
+    "estimatedHint": "근사치 — 응답 길이에서 추정한 값이며 엔진이 보고한 값이 아닙니다.",
+    "measuredHint": "엔진의 디코드 카운터에서 측정한 값입니다.",
+    "awaitingSample": "측정 중…"
+  },
+  "semanticSearch": {
+    "modeLabel": "검색 모드",
+    "modeKeyword": "키워드",
+    "modeSemantic": "의미 검색",
+    "placeholder": "찾으려는 내용을 설명하세요…",
+    "idle": "기억나는 내용을 적으면 비슷한 메시지가 나타납니다",
+    "empty": "비슷한 메시지를 찾지 못했습니다",
+    "disabledHint": "의미 검색이 꺼져 있습니다. 설정 › 로컬 모델에서 켜세요.",
+    "notIndexed": "아직 색인이 없습니다. 설정 › 로컬 모델에서 색인을 만드세요.",
+    "failed": "의미 검색에 실패했습니다",
+    "score": "일치도 {{score}}%"
   }
 }

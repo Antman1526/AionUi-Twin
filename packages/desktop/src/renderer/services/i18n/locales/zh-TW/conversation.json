@@ -782,5 +782,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "展開計劃",
     "collapse": "收合計劃"
+  },
+  "voice": {
+    "readAloud": "朗讀",
+    "stopReading": "停止朗讀"
+  },
+  "hud": {
+    "tokensPerSecond": "每秒 Token 數",
+    "tokensPerSecondUnit": "tok/s",
+    "contextFill": "上下文",
+    "engineMemory": "引擎記憶體",
+    "estimatedHint": "近似值——依回覆長度推算，並非引擎回報的數據。",
+    "measuredHint": "來自引擎解碼計數器的實測值。",
+    "awaitingSample": "測量中…"
+  },
+  "semanticSearch": {
+    "modeLabel": "搜尋模式",
+    "modeKeyword": "關鍵字",
+    "modeSemantic": "語意",
+    "placeholder": "描述你想找的內容……",
+    "idle": "描述你記得的內容，相似的訊息會自動出現",
+    "empty": "找不到相似的訊息",
+    "disabledHint": "語意搜尋已關閉。請在「設定 › 本機模型」中開啟。",
+    "notIndexed": "尚未建立索引。請在「設定 › 本機模型」中建立索引。",
+    "failed": "語意搜尋失敗",
+    "score": "相符度 {{score}}%"
   }
 }

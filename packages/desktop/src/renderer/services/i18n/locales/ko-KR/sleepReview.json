@@ -1,0 +1,64 @@
+{
+  "title": "슬립 리뷰",
+  "description": "지난 세션을 돌아보고 스킬 또는 메모리 파일에 작은 수정 하나를 준비한 뒤 적용하거나 되돌립니다.",
+  "tabs": {
+    "review": "리뷰",
+    "proposals": "제안",
+    "heldOut": "보류 프롬프트"
+  },
+  "review": {
+    "sessions": "세션",
+    "sessionsHint": "대화 기록은 이 기기를 벗어나기 전에 비식별 처리됩니다.",
+    "selectSessions": "학습에 사용할 세션 선택",
+    "previewTranscript": "비식별 처리된 기록 미리보기",
+    "redacted": "비밀 정보 {{count}}건 제거됨",
+    "target": "개선할 파일",
+    "selectTarget": "스킬 또는 메모리 파일 선택",
+    "workspace": "작업 공간",
+    "selectWorkspace": "작업 공간 선택",
+    "noWorkspace": "작업 공간 없음",
+    "model": "모델",
+    "selectModel": "모델 선택",
+    "localOnly": "로컬 전용",
+    "localOnlyHint": "이 기기에서 실행되지 않는 제공자는 거부합니다.",
+    "run": "리뷰 실행",
+    "running": "리뷰 중…",
+    "staged": "제안이 준비되었습니다"
+  },
+  "proposals": {
+    "empty": "아직 제안이 없습니다.",
+    "created": "생성",
+    "model": "모델",
+    "target": "파일",
+    "details": "세부 정보",
+    "rationale": "근거",
+    "risk": "위험",
+    "rollback": "되돌리기 방법",
+    "heldOutChecks": "보류 검증",
+    "diff": "변경 내용",
+    "accept": "적용",
+    "reject": "거부",
+    "rollbackAction": "되돌리기",
+    "replay": "보류 프롬프트 재실행",
+    "before": "이전",
+    "after": "이후",
+    "noReplay": "재실행할 보류 프롬프트가 없습니다."
+  },
+  "status": {
+    "staged": "준비됨",
+    "accepted": "적용됨",
+    "rejected": "거부됨",
+    "rolledBack": "되돌림",
+    "failed": "실패"
+  },
+  "heldOut": {
+    "hint": "초안 작성에 쓰지 않은 프롬프트로, 수정 전후에 한 번씩 재실행합니다.",
+    "prompt": "프롬프트",
+    "expected": "기대 결과(선택)",
+    "add": "프롬프트 추가",
+    "remove": "삭제",
+    "save": "저장",
+    "saved": "보류 프롬프트를 저장했습니다",
+    "empty": "보류 프롬프트가 없습니다."
+  }
+}
