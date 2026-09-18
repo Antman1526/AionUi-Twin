@@ -7,8 +7,11 @@
 import type { SpeechToTextConfig } from '@/common/types/provider/speech';
 export { DEEPGRAM_SPEECH_MODEL_PRESETS, OPENAI_SPEECH_MODEL_PRESETS } from '@renderer/services/speech/speechModels';
 
-/** UI-level service source. 'custom' is stored as provider:'openai' + non-empty base_url. */
-export type SpeechSource = 'openai' | 'deepgram' | 'custom';
+/**
+ * UI-level service source. 'custom' is stored as provider:'openai' + non-empty
+ * base_url; 'whisper-local' is its own stored provider and needs no credentials.
+ */
+export type SpeechSource = 'openai' | 'deepgram' | 'custom' | 'whisper-local';
 
 /** Language autonyms are intentionally not translated. Empty value = auto detect. */
 export const SPEECH_LANGUAGE_OPTIONS: Array<{ value: string; label?: string }> = [
@@ -75,6 +78,11 @@ export const DEFAULT_SPEECH_TO_TEXT_CONFIG: SpeechToTextConfig = {
     punctuate: true,
     smartFormat: true,
   },
+  whisperLocal: {
+    language: '',
+    modelPath: '',
+    translate: false,
+  },
 };
 
 export const normalizeSpeechToTextConfig = (config?: Partial<SpeechToTextConfig>): SpeechToTextConfig => ({
@@ -88,9 +96,16 @@ export const normalizeSpeechToTextConfig = (config?: Partial<SpeechToTextConfig>
     ...DEFAULT_SPEECH_TO_TEXT_CONFIG.deepgram,
     ...config?.deepgram,
   },
+  whisperLocal: {
+    ...DEFAULT_SPEECH_TO_TEXT_CONFIG.whisperLocal,
+    ...config?.whisperLocal,
+  },
 });
 
 export const deriveSpeechSource = (config: SpeechToTextConfig): SpeechSource => {
+  if (config.provider === 'whisper-local') {
+    return 'whisper-local';
+  }
   if (config.provider === 'deepgram') {
     return 'deepgram';
   }
@@ -109,6 +124,13 @@ export const applySpeechSource = (
 ): SpeechToTextConfig => {
   if (source === 'deepgram') {
     return { ...config, provider: 'deepgram' };
+  }
+  if (source === 'whisper-local') {
+    return {
+      ...config,
+      provider: 'whisper-local',
+      whisperLocal: { ...DEFAULT_SPEECH_TO_TEXT_CONFIG.whisperLocal, ...config.whisperLocal },
+    };
   }
   if (source === 'custom') {
     const currentBaseUrl = config.openai?.base_url?.trim() ? config.openai.base_url : rememberedCustomBaseUrl;
