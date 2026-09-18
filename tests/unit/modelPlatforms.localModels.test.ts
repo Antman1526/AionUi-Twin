@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getPlatformByValue, MODEL_PLATFORMS } from '../../src/renderer/utils/model/modelPlatforms';
+import { getPlatformByValue, MODEL_PLATFORMS } from '@renderer/utils/model/modelPlatforms';
 
 describe('local model platform presets', () => {
   it('includes Ollama and LM Studio presets with OpenAI-compatible local endpoints', () => {

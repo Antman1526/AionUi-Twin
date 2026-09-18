@@ -17,6 +17,11 @@ import { initSystemMetricsBridge } from './systemMetricsBridge';
 import { initHfHubBridge } from './hfHubBridge';
 import { initGhostModeBridge } from './ghostModeBridge';
 import { initQuickBarBridge } from './quickBarBridge';
+import { initSemanticSearchBridge } from './semanticSearchBridge';
+import { initSleepReviewBridge } from './sleepReviewBridge';
+import { initLocalModelMetricsBridge } from './localModelMetricsBridge';
+import { initArenaBridge } from './arenaBridge';
+import { initSpeechToTextBridge, stopLocalWhisperServer } from './speechToTextBridge';
 
 export type BridgeDependencies = Record<string, never>;
 
@@ -34,6 +39,11 @@ export function initAllBridges(_deps: BridgeDependencies = {}): void {
   initHfHubBridge();
   initGhostModeBridge();
   initQuickBarBridge();
+  initSpeechToTextBridge();
+  initLocalModelMetricsBridge();
+  initArenaBridge();
+  initSemanticSearchBridge();
+  initSleepReviewBridge();
 }
 
 export {
@@ -50,7 +60,13 @@ export {
   initHfHubBridge,
   initGhostModeBridge,
   initQuickBarBridge,
+  initSpeechToTextBridge,
+  initLocalModelMetricsBridge,
+  initArenaBridge,
+  initSemanticSearchBridge,
+  initSleepReviewBridge,
   stopLocalModelServer,
+  stopLocalWhisperServer,
 };
 export { registerWindowMaximizeListeners } from './windowControlsBridge';
 export const disposeAllTeamSessions = (): Promise<void> => Promise.resolve();

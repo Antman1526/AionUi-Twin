@@ -34,7 +34,16 @@ const STORAGE_KEY = 'aionui.sttStreamUnsupported';
  *   - other OPENAI preset → 'supported'
  *   - non-preset model → 'unknown'
  */
-export const getModelStreamCapability = (source: 'openai' | 'deepgram' | 'custom', model: string): StreamCapability => {
+export const getModelStreamCapability = (
+  source: 'openai' | 'deepgram' | 'custom' | 'whisper-local',
+  model: string
+): StreamCapability => {
+  // The offline whisper.cpp server exposes a single file endpoint (/inference)
+  // and no WebSocket, so streaming is never an option for it.
+  if (source === 'whisper-local') {
+    return 'unsupported';
+  }
+
   if (source === 'custom') {
     return 'unknown';
   }
@@ -67,6 +76,10 @@ export const getModelStreamCapability = (source: 'openai' | 'deepgram' | 'custom
  * - openai with a custom base_url → unknown (custom endpoint behaviour varies)
  */
 export const getStreamCapability = (config: SpeechToTextConfig): StreamCapability => {
+  if (config.provider === 'whisper-local') {
+    return 'unsupported';
+  }
+
   if (config.provider === 'deepgram') {
     return getModelStreamCapability('deepgram', config.deepgram?.model ?? '');
   }
@@ -83,6 +96,9 @@ export const getStreamCapability = (config: SpeechToTextConfig): StreamCapabilit
 
 /** Derive a stable string key for the active provider sub-config. */
 const streamMemoryEntry = (config: SpeechToTextConfig): string => {
+  if (config.provider === 'whisper-local') {
+    return `whisper-local||${config.whisperLocal?.modelPath ?? ''}`;
+  }
   if (config.provider === 'deepgram') {
     return `deepgram||${config.deepgram?.model ?? ''}`;
   }

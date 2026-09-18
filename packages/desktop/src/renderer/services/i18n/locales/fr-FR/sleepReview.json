@@ -1,0 +1,64 @@
+{
+  "title": "Revue de sommeil",
+  "description": "Relisez les sessions passées, préparez une petite modification d'un fichier de compétence ou de mémoire, puis acceptez-la ou revenez en arrière.",
+  "tabs": {
+    "review": "Revue",
+    "proposals": "Propositions",
+    "heldOut": "Prompts réservés"
+  },
+  "review": {
+    "sessions": "Sessions",
+    "sessionsHint": "Les transcriptions sont masquées avant de quitter cet ordinateur.",
+    "selectSessions": "Choisissez les sessions à analyser",
+    "previewTranscript": "Voir la transcription masquée",
+    "redacted": "{{count}} secrets supprimés",
+    "target": "Fichier à améliorer",
+    "selectTarget": "Choisissez un fichier de compétence ou de mémoire",
+    "workspace": "Espace de travail",
+    "selectWorkspace": "Choisissez un espace de travail",
+    "noWorkspace": "Aucun espace de travail",
+    "model": "Modèle",
+    "selectModel": "Choisissez un modèle",
+    "localOnly": "Local uniquement",
+    "localOnlyHint": "Refuser tout fournisseur qui ne tourne pas sur cet ordinateur.",
+    "run": "Lancer la revue",
+    "running": "Revue en cours…",
+    "staged": "Proposition préparée"
+  },
+  "proposals": {
+    "empty": "Aucune proposition pour l'instant.",
+    "created": "Créée le",
+    "model": "Modèle",
+    "target": "Fichier",
+    "details": "Détails",
+    "rationale": "Justification",
+    "risk": "Risque",
+    "rollback": "Retour en arrière",
+    "heldOutChecks": "Vérifications réservées",
+    "diff": "Différences",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "rollbackAction": "Revenir en arrière",
+    "replay": "Rejouer les prompts réservés",
+    "before": "Avant",
+    "after": "Après",
+    "noReplay": "Aucun prompt réservé à rejouer."
+  },
+  "status": {
+    "staged": "Préparée",
+    "accepted": "Acceptée",
+    "rejected": "Refusée",
+    "rolledBack": "Annulée",
+    "failed": "Échec"
+  },
+  "heldOut": {
+    "hint": "Prompts tenus à l'écart du brouillon, rejoués avant et après la modification.",
+    "prompt": "Prompt",
+    "expected": "Attendu (facultatif)",
+    "add": "Ajouter un prompt",
+    "remove": "Supprimer",
+    "save": "Enregistrer",
+    "saved": "Prompts réservés enregistrés",
+    "empty": "Aucun prompt réservé pour l'instant."
+  }
+}

@@ -783,5 +783,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "Plan ausklappen",
     "collapse": "Plan einklappen"
+  },
+  "voice": {
+    "readAloud": "Vorlesen",
+    "stopReading": "Vorlesen beenden"
+  },
+  "hud": {
+    "tokensPerSecond": "Tokens/Sek.",
+    "tokensPerSecondUnit": "Tok/s",
+    "contextFill": "Kontext",
+    "engineMemory": "Engine-Speicher",
+    "estimatedHint": "Näherungswert – aus der Antwortlänge abgeleitet, nicht von der Engine gemeldet.",
+    "measuredHint": "Aus dem Decode-Zähler der Engine gemessen.",
+    "awaitingSample": "Wird gemessen…"
+  },
+  "semanticSearch": {
+    "modeLabel": "Suchmodus",
+    "modeKeyword": "Stichwort",
+    "modeSemantic": "Semantisch",
+    "placeholder": "Beschreibe, wonach du suchst ...",
+    "idle": "Beschreibe, woran du dich erinnerst – ähnliche Nachrichten erscheinen hier",
+    "empty": "Keine ähnlichen Nachrichten gefunden",
+    "disabledHint": "Die semantische Suche ist aus. Aktiviere sie unter Einstellungen › Lokale Modelle.",
+    "notIndexed": "Noch nichts indexiert. Erstelle den Index unter Einstellungen › Lokale Modelle.",
+    "failed": "Semantische Suche fehlgeschlagen",
+    "score": "{{score}} % Übereinstimmung"
   }
 }

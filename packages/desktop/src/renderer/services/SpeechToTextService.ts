@@ -4,8 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ipcBridge } from '@/common';
 import { getBaseUrl } from '@/common/adapter/httpBridge';
 import type { SpeechToTextResult } from '@/common/types/provider/speech';
+import { getClientBusinessSetting } from '@/renderer/services/clientBusinessSettings';
+import { convertBlobToWav } from '@/renderer/services/audio/wavEncoder';
 
 /** Dispatched on window whenever the speech-to-text config is saved. */
 export const SPEECH_TO_TEXT_CONFIG_CHANGED_EVENT = 'aionui:speech-to-text-config-changed';
@@ -76,8 +79,64 @@ const parseErrorResponse = (response: XMLHttpRequest): Error => {
   return new Error(`STT_REQUEST_FAILED:${response.status} ${response.statusText}`);
 };
 
+/** Multipart field the whisper.cpp server reads the audio from (`/inference`). */
+export const WHISPER_LOCAL_INFERENCE_PATH = '/inference';
+
+/**
+ * Transcribe through a locally running `whisper-server`.
+ *
+ * The contract comes from whisper.cpp's `examples/server/README.md`: a
+ * multipart POST to `/inference` with the audio in the `file` field plus
+ * `temperature` / `response_format`, answering `{ "text": "..." }` for
+ * `response_format=json`. The server only accepts WAV, so the MediaRecorder
+ * blob is re-encoded to 16 kHz mono first.
+ */
+export async function transcribeWithLocalWhisper(
+  blob: Blob,
+  { baseUrl, language }: { baseUrl: string; language?: string }
+): Promise<SpeechToTextResult> {
+  const wav = await convertBlobToWav(blob);
+
+  const formData = new FormData();
+  formData.append('file', wav, 'speech-input.wav');
+  formData.append('temperature', '0.0');
+  formData.append('response_format', 'json');
+
+  const response = await fetch(`${baseUrl.replace(/\/$/, '')}${WHISPER_LOCAL_INFERENCE_PATH}`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`STT_REQUEST_FAILED:${response.status} ${response.statusText}`);
+  }
+
+  const payload = (await response.json()) as { text?: string };
+  return {
+    // whisper.cpp prefixes segments with a space; the send box should not.
+    text: (payload.text ?? '').trim(),
+    model: 'whisper-local',
+    provider: 'whisper-local',
+    language,
+  };
+}
+
 export async function transcribeAudioBlob(blob: Blob, languageHint?: string): Promise<SpeechToTextResult> {
   ensureAudioSize(blob);
+
+  // The local provider never reaches the backend: it talks straight to the
+  // whisper-server this app spawned, so it stays usable with no network.
+  const config = await getClientBusinessSetting('tools.speechToText').catch((): undefined => undefined);
+  if (config?.provider === 'whisper-local') {
+    const status = await ipcBridge.speechToText.local.status.invoke();
+    if (!status.success || !status.data?.running || !status.data.baseUrl) {
+      throw new Error('STT_WHISPER_LOCAL_NOT_RUNNING');
+    }
+    return transcribeWithLocalWhisper(blob, {
+      baseUrl: status.data.baseUrl,
+      language: languageHint || config.whisperLocal?.language,
+    });
+  }
 
   const mimeType = blob.type || 'audio/webm';
   const file_name = createAudioFileName(mimeType);

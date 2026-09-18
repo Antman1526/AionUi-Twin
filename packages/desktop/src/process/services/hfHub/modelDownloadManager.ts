@@ -4,12 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ipcBridge } from '@/common';
 import type { HfDownloadProgress } from '@/common/adapter/ipcBridge';
 import { uuid } from '@/common/utils';
 import { getDefaultLocalModelDirectories } from '@process/services/localModels/defaultModelDirectories';
+import { createSizeGuard, resolveMaxBytes, verifyDigest } from './downloadIntegrity';
 import { getHfModelDetails } from './hfModelHubService';
 
 const HF_RESOLVE_URL = 'https://huggingface.co';
@@ -57,21 +59,48 @@ export function cancelModelDownload(downloadId: string): boolean {
   return true;
 }
 
-/** Helper to stream a single file from Hugging Face with progress callbacks */
-async function streamFileFromHf({
+function removePartialFile(partPath: string): void {
+  if (fs.existsSync(partPath)) {
+    try {
+      fs.unlinkSync(partPath);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Stream a single file from Hugging Face with progress callbacks, verifying
+ * its integrity as it goes:
+ *  - a byte cap (derived from `content-length` when present, else a generous
+ *    finite default) is enforced on every chunk, so a misbehaving/hostile
+ *    endpoint is cut off mid-stream instead of writing an unbounded file;
+ *  - a running sha256 digest is checked against `expectedSha256` (when
+ *    known) once the stream ends.
+ * The file is written to `<destinationPath>.part` and only renamed into
+ * place once both checks pass; on any failure the partial file is removed so
+ * a truncated/tampered download can never be discovered and loaded.
+ */
+export async function streamFileFromHf({
   modelId,
   fileName,
   destinationPath,
   signal,
   onChunk,
+  expectedSha256,
+  maxBytesOverride,
+  baseUrl = HF_RESOLVE_URL,
 }: {
   modelId: string;
   fileName: string;
   destinationPath: string;
   signal: AbortSignal;
   onChunk: (bytesRead: number, totalExpectedBytes?: number) => void;
-}): Promise<void> {
-  const fileUrl = `${HF_RESOLVE_URL}/${modelId}/resolve/main/${encodeURIComponent(fileName)}?download=true`;
+  expectedSha256?: string;
+  maxBytesOverride?: number;
+  baseUrl?: string;
+}): Promise<{ verified: boolean }> {
+  const fileUrl = `${baseUrl}/${modelId}/resolve/main/${encodeURIComponent(fileName)}?download=true`;
   const response = await fetch(fileUrl, {
     headers: { 'User-Agent': 'WE-App/2.2.2' },
     signal,
@@ -88,7 +117,10 @@ async function streamFileFromHf({
     throw new Error('Response body is null');
   }
 
-  const fileStream = fs.createWriteStream(destinationPath);
+  const partPath = `${destinationPath}.part`;
+  const sizeGuard = createSizeGuard(resolveMaxBytes(expectedBytes, maxBytesOverride));
+  const hash = crypto.createHash('sha256');
+  const fileStream = fs.createWriteStream(partPath);
   const reader = response.body.getReader();
 
   try {
@@ -96,6 +128,11 @@ async function streamFileFromHf({
       const { done, value } = await reader.read();
       if (done) break;
       if (value) {
+        // Enforce the cap before doing anything else with the chunk so a
+        // hostile/broken stream is cut off immediately, not after it has
+        // already been buffered to disk.
+        sizeGuard.accept(value.byteLength);
+        hash.update(value);
         fileStream.write(Buffer.from(value));
         onChunk(value.byteLength, expectedBytes);
       }
@@ -105,15 +142,20 @@ async function streamFileFromHf({
       fileStream.end(() => resolve());
       fileStream.on('error', reject);
     });
+
+    const actualHex = hash.digest('hex');
+    verifyDigest(actualHex, expectedSha256);
+
+    fs.renameSync(partPath, destinationPath);
+    return { verified: expectedSha256 !== undefined };
   } catch (err) {
     fileStream.destroy();
-    if (fs.existsSync(destinationPath)) {
-      try {
-        fs.unlinkSync(destinationPath);
-      } catch {
-        /* ignore */
-      }
+    try {
+      await reader.cancel();
+    } catch {
+      /* ignore */
     }
+    removePartialFile(partPath);
     throw err;
   }
 }
@@ -210,15 +252,17 @@ export async function startModelDownload({
           details.files.length > 0 ? details.files : [{ name: 'config.json', path: 'config.json', sizeBytes: 0 }];
         progress.totalBytes = filesToDownload.reduce((sum, f) => sum + (f.sizeBytes || 0), 0);
 
+        let allVerified = true;
         for (const file of filesToDownload) {
           if (abortController.signal.aborted) break;
           const filePath = path.join(targetDir, file.name);
 
-          await streamFileFromHf({
+          const result = await streamFileFromHf({
             modelId,
             fileName: file.name,
             destinationPath: filePath,
             signal: abortController.signal,
+            expectedSha256: file.sha256,
             onChunk: (bytesRead) => {
               progress.downloadedBytes += bytesRead;
               if (progress.totalBytes > 0) {
@@ -227,14 +271,28 @@ export async function startModelDownload({
               updateSpeed();
             },
           });
+          if (!result.verified) allVerified = false;
         }
+        progress.verified = allVerified;
       } else {
-        // Single file download (e.g. GGUF or specific file)
-        await streamFileFromHf({
+        // Single file download (e.g. GGUF or specific file) — look up the
+        // expected LFS sha256 (when the repository exposes one) so the
+        // stream can be verified as it downloads.
+        let expectedSha256: string | undefined;
+        try {
+          const details = await getHfModelDetails(modelId);
+          const match = details.files.find((f) => f.name === resolvedFileName || f.path === resolvedFileName);
+          expectedSha256 = match?.sha256;
+        } catch {
+          // Metadata lookup failing is not fatal — proceed unverified.
+        }
+
+        const result = await streamFileFromHf({
           modelId,
           fileName: resolvedFileName,
           destinationPath: targetPath,
           signal: abortController.signal,
+          expectedSha256,
           onChunk: (bytesRead, expectedBytes) => {
             if (expectedBytes && progress.totalBytes === 0) {
               progress.totalBytes = expectedBytes;
@@ -246,6 +304,7 @@ export async function startModelDownload({
             updateSpeed();
           },
         });
+        progress.verified = result.verified;
       }
 
       if (!abortController.signal.aborted) {

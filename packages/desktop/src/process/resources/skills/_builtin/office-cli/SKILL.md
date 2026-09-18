@@ -11,13 +11,33 @@ AI-friendly CLI for .docx, .xlsx, .pptx. Single binary, no dependencies, no Offi
 
 If `officecli` is not installed:
 
+**Ask the user before installing.** This downloads and runs a script from the internet, so never do it
+silently as a side effect of another task.
+
+Do not pipe a remote script straight into a shell. Download it from a pinned, immutable commit, check
+its checksum, and only then run it — so a change to the upstream branch cannot alter what executes here.
+
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/iOfficeAI/OfficeCLI/main/install.sh | bash
-
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/iOfficeAI/OfficeCLI/main/install.ps1 | iex
+REF=95664ad0a1f853e8b9a73538e65bfda6df8166cf
+EXPECTED=2a0fdae06f4a018ea8d8516c69bfa5eeeb53406aacb5fa16fd07a9e572991bb6
+curl -fsSL "https://raw.githubusercontent.com/iOfficeAI/OfficeCLI/$REF/install.sh" -o /tmp/officecli-install.sh
+echo "$EXPECTED  /tmp/officecli-install.sh" | shasum -a 256 -c - && bash /tmp/officecli-install.sh
+rm -f /tmp/officecli-install.sh
 ```
+
+```powershell
+# Windows (PowerShell)
+$Ref = '5de2068c692d27caae06e94ec624f638321a6cd8'
+$Expected = 'ef24f389b27bc5a85142b1d414f3d25047aa62c5188d9b9789940435b22b6c45'
+$Script = Join-Path $env:TEMP 'officecli-install.ps1'
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/iOfficeAI/OfficeCLI/$Ref/install.ps1" -OutFile $Script
+if ((Get-FileHash $Script -Algorithm SHA256).Hash -ieq $Expected) { & $Script } else { Write-Error 'Checksum mismatch — not running installer' }
+Remove-Item $Script -ErrorAction SilentlyContinue
+```
+
+If the checksum check fails, stop and tell the user — do not run the script anyway, and do not fall back
+to the unpinned `main` URL.
 
 Verify with `officecli --version`. If still not found after install, open a new terminal.
 

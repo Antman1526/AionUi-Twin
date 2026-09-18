@@ -782,5 +782,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "Expand plan",
     "collapse": "Collapse plan"
+  },
+  "voice": {
+    "readAloud": "Read aloud",
+    "stopReading": "Stop reading"
+  },
+  "hud": {
+    "tokensPerSecond": "Tokens/sec",
+    "tokensPerSecondUnit": "tok/s",
+    "contextFill": "Context",
+    "engineMemory": "Engine memory",
+    "estimatedHint": "Approximate — derived from reply length, not reported by the engine.",
+    "measuredHint": "Measured from the engine's decode counter.",
+    "awaitingSample": "Measuring…"
+  },
+  "semanticSearch": {
+    "modeLabel": "Search mode",
+    "modeKeyword": "Keyword",
+    "modeSemantic": "Semantic",
+    "placeholder": "Describe what you are looking for...",
+    "idle": "Describe what you remember and similar messages will surface",
+    "empty": "No similar messages found",
+    "disabledHint": "Semantic search is off. Turn it on in Settings › Local Models.",
+    "notIndexed": "Nothing indexed yet. Build the index in Settings › Local Models.",
+    "failed": "Semantic search failed",
+    "score": "{{score}}% match"
   }
 }

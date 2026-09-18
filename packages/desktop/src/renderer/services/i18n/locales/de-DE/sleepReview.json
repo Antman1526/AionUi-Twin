@@ -1,0 +1,64 @@
+{
+  "title": "Schlafanalyse",
+  "description": "Frühere Sitzungen durchsehen, eine kleine Änderung an einer Skill- oder Speicherdatei vorbereiten und sie dann übernehmen oder zurücknehmen.",
+  "tabs": {
+    "review": "Analyse",
+    "proposals": "Vorschläge",
+    "heldOut": "Zurückgehaltene Prompts"
+  },
+  "review": {
+    "sessions": "Sitzungen",
+    "sessionsHint": "Mitschriften werden maskiert, bevor sie diesen Rechner verlassen.",
+    "selectSessions": "Sitzungen zum Auswerten wählen",
+    "previewTranscript": "Maskierte Mitschrift ansehen",
+    "redacted": "{{count}} Geheimnisse entfernt",
+    "target": "Zu verbessernde Datei",
+    "selectTarget": "Skill- oder Speicherdatei wählen",
+    "workspace": "Arbeitsbereich",
+    "selectWorkspace": "Arbeitsbereich wählen",
+    "noWorkspace": "Kein Arbeitsbereich",
+    "model": "Modell",
+    "selectModel": "Modell wählen",
+    "localOnly": "Nur lokal",
+    "localOnlyHint": "Jeden Anbieter ablehnen, der nicht auf diesem Rechner läuft.",
+    "run": "Analyse starten",
+    "running": "Analyse läuft…",
+    "staged": "Vorschlag vorbereitet"
+  },
+  "proposals": {
+    "empty": "Noch keine Vorschläge.",
+    "created": "Erstellt",
+    "model": "Modell",
+    "target": "Datei",
+    "details": "Details",
+    "rationale": "Begründung",
+    "risk": "Risiko",
+    "rollback": "Rücknahme",
+    "heldOutChecks": "Zurückgehaltene Prüfungen",
+    "diff": "Unterschiede",
+    "accept": "Übernehmen",
+    "reject": "Ablehnen",
+    "rollbackAction": "Zurücknehmen",
+    "replay": "Zurückgehaltene Prompts erneut ausführen",
+    "before": "Vorher",
+    "after": "Nachher",
+    "noReplay": "Keine zurückgehaltenen Prompts zum Wiederholen."
+  },
+  "status": {
+    "staged": "Vorbereitet",
+    "accepted": "Übernommen",
+    "rejected": "Abgelehnt",
+    "rolledBack": "Zurückgenommen",
+    "failed": "Fehlgeschlagen"
+  },
+  "heldOut": {
+    "hint": "Prompts, die nicht in den Entwurf einfließen und vor und nach der Änderung wiederholt werden.",
+    "prompt": "Prompt",
+    "expected": "Erwartet (optional)",
+    "add": "Prompt hinzufügen",
+    "remove": "Entfernen",
+    "save": "Speichern",
+    "saved": "Zurückgehaltene Prompts gespeichert",
+    "empty": "Noch keine zurückgehaltenen Prompts."
+  }
+}

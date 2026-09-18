@@ -6,6 +6,7 @@
 
 import { ipcBridge } from '@/common';
 import type { IMessageSearchItem } from '@/common/types/team/database';
+import type { SemanticSearchHit } from '@/common/adapter/ipcBridge';
 import AionModal from '@/renderer/components/base/AionModal';
 import { AionSearchInput } from '@/renderer/components/base';
 import { formatDateTime } from '@/renderer/services/i18n/format';
@@ -15,7 +16,7 @@ import ThemedLogo from '@/renderer/components/agent/ThemedLogo';
 import { resolveConversationLeadingMark } from '@/renderer/pages/conversation/utils/conversationAssistantIdentity';
 import { blockMobileInputFocus, blurActiveElement } from '@/renderer/utils/ui/focus';
 import { isPrimaryApplicationShortcut } from '@/renderer/utils/ui/keyboardShortcuts';
-import { Empty, Spin, Typography } from '@arco-design/web-react';
+import { Empty, Radio, Spin, Tag, Typography } from '@arco-design/web-react';
 import { Close, MessageOne, Robot, Search } from '@icon-park/react';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,6 +28,9 @@ import './ConversationSearchPopover.css';
 const PAGE_SIZE = 20;
 const MAX_RECENT_SEARCHES = 8;
 const RECENT_SEARCH_STORAGE_KEY = 'conversation.historySearch.recentKeywords';
+const SEMANTIC_LIMIT = 20;
+type SearchMode = 'keyword' | 'semantic';
+
 const SNIPPET_MAX_LENGTH = 110;
 const SNIPPET_PREFIX_CONTEXT_LENGTH = 34;
 const SNIPPET_SUFFIX_CONTEXT_LENGTH = 58;
@@ -150,6 +154,10 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
+  const [mode, setMode] = useState<SearchMode>('keyword');
+  const [semanticItems, setSemanticItems] = useState<SemanticSearchHit[]>([]);
+  const [semanticLoading, setSemanticLoading] = useState(false);
+  const [semanticNotice, setSemanticNotice] = useState<'disabled' | 'unindexed' | 'failed' | null>(null);
 
   useEffect(() => {
     try {
@@ -175,7 +183,7 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
 
   const runSearch = useCallback(
     async (pageToLoad: number, append: boolean) => {
-      if (!debouncedKeyword) {
+      if (mode !== 'keyword' || !debouncedKeyword) {
         setItems([]);
         setPage(0);
         setHasMore(false);
@@ -210,12 +218,62 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
         setLoadingMore(false);
       }
     },
-    [debouncedKeyword]
+    [debouncedKeyword, mode]
   );
 
   useEffect(() => {
     void runSearch(0, false);
   }, [runSearch]);
+
+  /**
+   * Semantic mode runs alongside the keyword index rather than replacing it:
+   * the two use different backends and only one is queried at a time.
+   */
+  const runSemanticSearch = useCallback(async () => {
+    if (mode !== 'semantic' || !debouncedKeyword) {
+      setSemanticItems([]);
+      setSemanticNotice(null);
+      return;
+    }
+
+    setSemanticLoading(true);
+    try {
+      const stats = await ipcBridge.semanticSearch.getStats.invoke();
+      if (!stats.success || !stats.data?.enabled) {
+        setSemanticItems([]);
+        setSemanticNotice('disabled');
+        return;
+      }
+      if ((stats.data.rows ?? 0) === 0) {
+        setSemanticItems([]);
+        setSemanticNotice('unindexed');
+        return;
+      }
+
+      const result = await ipcBridge.semanticSearch.query.invoke({
+        text: debouncedKeyword,
+        limit: SEMANTIC_LIMIT,
+        scope: { kind: 'conversations' },
+      });
+      if (!result.success) {
+        setSemanticItems([]);
+        setSemanticNotice('failed');
+        return;
+      }
+      setSemanticItems(result.data ?? []);
+      setSemanticNotice(null);
+    } catch (error) {
+      console.error('[ConversationSearchPopover] Semantic search failed:', error);
+      setSemanticItems([]);
+      setSemanticNotice('failed');
+    } finally {
+      setSemanticLoading(false);
+    }
+  }, [debouncedKeyword, mode]);
+
+  useEffect(() => {
+    void runSemanticSearch();
+  }, [runSemanticSearch]);
 
   useEffect(() => {
     if (!debouncedKeyword) return;
@@ -249,6 +307,9 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     setHasMore(false);
     setLoading(false);
     setLoadingMore(false);
+    setSemanticItems([]);
+    setSemanticLoading(false);
+    setSemanticNotice(null);
   }, []);
 
   const handleLoadMore = useCallback(() => {
@@ -259,8 +320,8 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     void runSearch(page + 1, true);
   }, [debouncedKeyword, hasMore, loading, loadingMore, page, runSearch, visible]);
 
-  const handleResultClick = useCallback(
-    async (item: IMessageSearchItem) => {
+  const navigateToMessage = useCallback(
+    async (conversationId: string, messageId: string) => {
       blockMobileInputFocus();
       blurActiveElement();
 
@@ -271,9 +332,9 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
       onConversationSelect?.();
 
       await Promise.resolve(
-        navigate(`/conversation/${item.conversation.id}`, {
+        navigate(`/conversation/${conversationId}`, {
           state: {
-            targetMessageId: item.message_id,
+            targetMessageId: messageId,
             fromConversationSearch: true,
           },
         })
@@ -281,6 +342,11 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
       onSessionClick?.();
     },
     [navigate, onConversationSelect, onSessionClick, resetSearchState]
+  );
+
+  const handleResultClick = useCallback(
+    (item: IMessageSearchItem) => navigateToMessage(item.conversation.id, item.message_id),
+    [navigateToMessage]
   );
 
   const handleClose = useCallback(() => {
@@ -295,6 +361,8 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     setHasMore(false);
     setLoading(false);
     setLoadingMore(false);
+    setSemanticItems([]);
+    setSemanticNotice(null);
   }, []);
 
   const handleOpen = useCallback(() => {
@@ -426,8 +494,82 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
     );
   }, [debouncedKeyword, handleLoadMore, handleResultClick, items, loading, loadingMore, recentKeywords, t]);
 
-  const hasSearchResults = items.length > 0;
-  const useCompactHeight = !debouncedKeyword || (!loading && !hasSearchResults);
+  const semanticContent = useMemo(() => {
+    if (!debouncedKeyword) {
+      return (
+        <div className='conversation-search-modal__state'>
+          <div className='conversation-search-modal__state-content'>
+            <span className='text-13px'>{t('conversation.semanticSearch.idle')}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (semanticLoading) {
+      return (
+        <div className='h-120px flex items-center justify-center'>
+          <Spin size={20} />
+        </div>
+      );
+    }
+
+    if (semanticNotice) {
+      const noticeKey =
+        semanticNotice === 'disabled'
+          ? 'conversation.semanticSearch.disabledHint'
+          : semanticNotice === 'unindexed'
+            ? 'conversation.semanticSearch.notIndexed'
+            : 'conversation.semanticSearch.failed';
+      return (
+        <div className='conversation-search-modal__state'>
+          <div className='conversation-search-modal__state-content'>
+            <span className='text-13px text-t-secondary'>{t(noticeKey)}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (semanticItems.length === 0) {
+      return (
+        <div className='conversation-search-modal__state'>
+          <Empty className='py-2px' description={t('conversation.semanticSearch.empty')} />
+        </div>
+      );
+    }
+
+    return (
+      <div className='h-full min-h-0 overflow-y-auto overflow-x-hidden pe-4px'>
+        <div className='conversation-search-modal__results flex flex-col'>
+          {semanticItems.map((hit) => (
+            <button
+              key={`${hit.conversationId}-${hit.messageId}-${hit.score}`}
+              type='button'
+              className='conversation-search-modal__result w-full text-start cursor-pointer transition-all duration-150 focus:outline-none'
+              onClick={() => {
+                void navigateToMessage(hit.conversationId, hit.messageId);
+              }}
+            >
+              <div className='flex items-start justify-between gap-8px mb-6px'>
+                <div className='conversation-search-modal__result-title text-15px font-600 text-t-primary truncate'>
+                  {hit.conversationTitle || t('conversation.historySearch.untitled')}
+                </div>
+                <Tag size='small' className='shrink-0'>
+                  {t('conversation.semanticSearch.score', { score: Math.round(hit.score * 100) })}
+                </Tag>
+              </div>
+              <div className='conversation-search-modal__snippet text-13px leading-22px text-t-primary/92 break-words'>
+                {hit.snippet}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }, [debouncedKeyword, navigateToMessage, semanticItems, semanticLoading, semanticNotice, t]);
+
+  const isSemantic = mode === 'semantic';
+  const hasSearchResults = isSemantic ? semanticItems.length > 0 : items.length > 0;
+  const useCompactHeight = !debouncedKeyword || ((isSemantic ? !semanticLoading : !loading) && !hasSearchResults);
   const triggerClassName = fullWidth
     ? 'conversation-search-trigger-full h-34px w-full p-0 bg-transparent border-none outline-none flex items-center justify-start gap-8px ps-10px pe-8px rd-0.5rem cursor-pointer shrink-0 transition-all group text-t-primary focus:outline-none focus-visible:outline-none'
     : 'h-34px w-34px p-0 bg-transparent rd-0.5rem flex items-center justify-center cursor-pointer shrink-0 transition-all border border-solid border-transparent text-t-secondary hover:text-t-primary';
@@ -528,18 +670,33 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
             </button>
           </div>
 
-          <div className='mb-14px conversation-search-modal__input-wrap'>
+          <div className='mb-10px conversation-search-modal__input-wrap'>
             <AionSearchInput
               className='w-full'
               autoFocus={visible}
               value={keyword}
-              placeholder={t('conversation.historySearch.placeholder')}
+              placeholder={t(
+                isSemantic ? 'conversation.semanticSearch.placeholder' : 'conversation.historySearch.placeholder'
+              )}
               onChange={setKeyword}
               onClear={handleClearKeyword}
             />
           </div>
 
-          <div className='flex-1 min-h-0'>{resultContent}</div>
+          <div className='mb-10px'>
+            <Radio.Group
+              type='button'
+              size='small'
+              value={mode}
+              onChange={(next: SearchMode) => setMode(next)}
+              aria-label={t('conversation.semanticSearch.modeLabel')}
+            >
+              <Radio value='keyword'>{t('conversation.semanticSearch.modeKeyword')}</Radio>
+              <Radio value='semantic'>{t('conversation.semanticSearch.modeSemantic')}</Radio>
+            </Radio.Group>
+          </div>
+
+          <div className='flex-1 min-h-0'>{isSemantic ? semanticContent : resultContent}</div>
         </div>
       </AionModal>
     </>

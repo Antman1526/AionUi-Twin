@@ -1219,6 +1219,33 @@ const migration_v26: IMigration = {
 };
 
 /**
+ * Migration v26 -> v27: Add message_embeddings table for local semantic search
+ * Stores one row per embedded text chunk; `vector` holds the raw Float32Array
+ * bytes of the embedding produced by the configured local embedding model.
+ */
+const migration_v27: IMigration = {
+  version: 27,
+  name: 'Add message_embeddings table',
+  up: (db) => {
+    db.exec(`CREATE TABLE IF NOT EXISTS message_embeddings (
+    row_id TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL,
+    model TEXT NOT NULL,
+    dims INTEGER NOT NULL,
+    vector BLOB NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_message_embeddings_conversation ON message_embeddings(conversation_id)');
+    console.log('[Migration v27] Added message_embeddings table');
+  },
+  down: (db) => {
+    db.exec('DROP INDEX IF EXISTS idx_message_embeddings_conversation');
+    db.exec('DROP TABLE IF EXISTS message_embeddings');
+    console.log('[Migration v27] Rolled back: Removed message_embeddings table');
+  },
+};
+
+/**
  * All migrations in order
  */
 // prettier-ignore
@@ -1227,7 +1254,7 @@ export const ALL_MIGRATIONS: IMigration[] = [
   migration_v7, migration_v8, migration_v9, migration_v10, migration_v11, migration_v12,
   migration_v13, migration_v14, migration_v15, migration_v16, migration_v17, migration_v18,
   migration_v19, migration_v20, migration_v21, migration_v22, migration_v23, migration_v24,
-  migration_v25, migration_v26,
+  migration_v25, migration_v26, migration_v27,
 ];
 
 /**

@@ -19,7 +19,7 @@ vi.mock('@/renderer/assets/logos/tools/nanobot.svg', () => ({ default: 'nanobot.
 vi.mock('@/renderer/assets/logos/tools/coding/qoder.png', () => ({ default: 'qoder.png' }));
 vi.mock('@/renderer/assets/logos/tools/coding/cursor.png', () => ({ default: 'cursor.png' }));
 
-import { getAgentLogo, resolveAgentLogo } from '../../src/renderer/utils/model/agentLogo';
+import { getAgentLogo, resolveAgentLogo } from '@renderer/utils/model/agentLogo';
 
 describe('agentLogo', () => {
   describe('getAgentLogo', () => {

@@ -2,14 +2,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  normalizeModelDirectories,
-  resolveModelDirectories,
-} from '../../../../../src/common/utils/localModelProviders';
-import {
-  getDefaultLocalModelDirectories,
-  MODEL_DIRS_ENV,
-} from '../../../../../src/process/services/localModels/defaultModelDirectories';
+import { normalizeModelDirectories, resolveModelDirectories } from '@/common/utils/localModelProviders';
+import { getDefaultLocalModelDirectories, MODEL_DIRS_ENV } from '@process/services/localModels/defaultModelDirectories';
 
 describe('normalizeModelDirectories', () => {
   it('trims, drops empty entries, and de-duplicates while preserving order', () => {

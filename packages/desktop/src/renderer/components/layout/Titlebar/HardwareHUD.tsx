@@ -9,6 +9,7 @@ import { Popover, Progress } from '@arco-design/web-react';
 import { Cpu } from '@icon-park/react';
 import { ipcBridge } from '@/common';
 import useSWR from 'swr';
+import { InferenceBadge, InferenceDetails, useInferenceMetrics } from './inferenceMetrics';
 
 const formatGb = (bytes: number): string => {
   return (bytes / (1024 * 1024 * 1024)).toFixed(1);
@@ -23,6 +24,10 @@ export const HardwareHUD: React.FC = () => {
     },
     { refreshInterval: 4000 }
   );
+
+  // Inference figures only make sense for a local engine — the hook stays idle
+  // (and stops polling) for cloud-only / idle setups.
+  const inference = useInferenceMetrics(Boolean(metricsRes?.activeLlama));
 
   if (!metricsRes) return null;
 
@@ -59,6 +64,7 @@ export const HardwareHUD: React.FC = () => {
               PID: {metricsRes.activeLlama.pid} (
               {metricsRes.activeLlama.modelPath.endsWith('.gguf') ? 'Metal GPU Offload' : 'Apple Silicon MLX Metal'})
             </div>
+            <InferenceDetails state={inference} />
           </div>
         ) : (
           <div className='mt-4px text-11px text-t-secondary italic'>Local model engine idle.</div>
@@ -74,6 +80,7 @@ export const HardwareHUD: React.FC = () => {
         <span className='text-11px font-mono text-t-secondary'>
           {usedGb}/{totalGb} GB
         </span>
+        {metricsRes.activeLlama ? <InferenceBadge state={inference} /> : null}
         <div className='w-28px'>
           <Progress
             percent={percent}

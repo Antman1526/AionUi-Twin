@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   LOCAL_MODEL_SCAN_MAX_DEPTH,
   scanLocalModelDirectories,
-} from '../../../../../src/process/services/localModels/LocalModelDiscoveryService';
+} from '@process/services/localModels/LocalModelDiscoveryService';
 
 describe('LocalModelDiscoveryService', () => {
   const tempRoots: string[] = [];

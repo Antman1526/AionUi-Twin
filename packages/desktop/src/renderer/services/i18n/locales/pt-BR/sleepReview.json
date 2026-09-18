@@ -1,0 +1,64 @@
+{
+  "title": "Revisão do sono",
+  "description": "Revise sessões anteriores, prepare uma pequena alteração em um arquivo de habilidade ou memória e depois aceite ou desfaça.",
+  "tabs": {
+    "review": "Revisão",
+    "proposals": "Propostas",
+    "heldOut": "Prompts reservados"
+  },
+  "review": {
+    "sessions": "Sessões",
+    "sessionsHint": "As transcrições são mascaradas antes de sair deste computador.",
+    "selectSessions": "Escolha as sessões a analisar",
+    "previewTranscript": "Ver transcrição mascarada",
+    "redacted": "{{count}} segredos removidos",
+    "target": "Arquivo a melhorar",
+    "selectTarget": "Escolha um arquivo de habilidade ou memória",
+    "workspace": "Espaço de trabalho",
+    "selectWorkspace": "Escolha um espaço de trabalho",
+    "noWorkspace": "Sem espaço de trabalho",
+    "model": "Modelo",
+    "selectModel": "Escolha um modelo",
+    "localOnly": "Somente local",
+    "localOnlyHint": "Recusar qualquer provedor que não esteja rodando neste computador.",
+    "run": "Executar revisão",
+    "running": "Revisando…",
+    "staged": "Proposta preparada"
+  },
+  "proposals": {
+    "empty": "Nenhuma proposta ainda.",
+    "created": "Criada em",
+    "model": "Modelo",
+    "target": "Arquivo",
+    "details": "Detalhes",
+    "rationale": "Justificativa",
+    "risk": "Risco",
+    "rollback": "Como desfazer",
+    "heldOutChecks": "Verificações reservadas",
+    "diff": "Diferenças",
+    "accept": "Aceitar",
+    "reject": "Recusar",
+    "rollbackAction": "Desfazer",
+    "replay": "Repetir prompts reservados",
+    "before": "Antes",
+    "after": "Depois",
+    "noReplay": "Nenhum prompt reservado para repetir."
+  },
+  "status": {
+    "staged": "Preparada",
+    "accepted": "Aceita",
+    "rejected": "Recusada",
+    "rolledBack": "Desfeita",
+    "failed": "Falhou"
+  },
+  "heldOut": {
+    "hint": "Prompts que ficam fora do rascunho e são repetidos antes e depois da alteração.",
+    "prompt": "Prompt",
+    "expected": "Esperado (opcional)",
+    "add": "Adicionar prompt",
+    "remove": "Remover",
+    "save": "Salvar",
+    "saved": "Prompts reservados salvos",
+    "empty": "Nenhum prompt reservado ainda."
+  }
+}

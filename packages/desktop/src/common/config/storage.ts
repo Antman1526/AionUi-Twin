@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { SpeechToTextConfig } from '@/common/types/provider/speech';
+import type { SpeechToTextConfig, TextToSpeechConfig } from '@/common/types/provider/speech';
 import type { Theme } from '@/common/theme/types';
 import { buildStorage } from '@/common/platform/storage';
 
@@ -21,8 +21,23 @@ export interface LocalModelRuntimeOptions {
   reasoning?: 'auto' | 'off' | 'on';
 }
 
+/**
+ * Where the local semantic-search indexer gets its embeddings.
+ *
+ * `localModel` spawns a dedicated `llama-server --embedding` for a GGUF file
+ * inside the configured local-model directories; `provider` reuses an already
+ * running loopback OpenAI-compatible server (Ollama, LM Studio, ...).
+ */
+export type SemanticSearchSource =
+  | { kind: 'localModel'; modelPath: string }
+  | { kind: 'provider'; baseUrl: string; model: string };
+
 export interface IConfigStorageRefer {
   language: string;
+  /** Whether the local semantic search index is enabled. Off by default. */
+  'semanticSearch.enabled'?: boolean;
+  /** Embedding backend used to build and query the semantic index. */
+  'semanticSearch.source'?: SemanticSearchSource;
   /** User-configured directories scanned for local GGUF/STT/TTS model files. Empty/unset → built-in defaults. */
   'localModel.directories'?: string[];
   /** Per-model llama.cpp runtime overrides, keyed by absolute model path. Missing values use safe defaults. */
@@ -44,6 +59,11 @@ export interface IConfigStorageRefer {
   'ui.fontWeight.chat'?: string;
   'ui.fontWeight.markdown'?: string;
   'ui.fontWeight.code'?: string;
+  /**
+   * Whether the user opted in to crash reporting. Absent means opted out —
+   * telemetry never starts until this is explicitly true (and Ghost Mode is off).
+   */
+  'telemetry.enabled'?: boolean;
   /** Last-known main window size and position, restored on next launch */
   'window.bounds'?: { x?: number; y?: number; width: number; height: number };
   /** 桌面模式下是否自动启用 WebUI / Auto-enable WebUI in desktop mode */
@@ -121,6 +141,8 @@ export interface ILegacyConfigStorageRefer extends IConfigStorageRefer {
     switch?: boolean;
   };
   'tools.speechToText'?: SpeechToTextConfig;
+  /** Offline read-aloud settings (platform speechSynthesis; no network). */
+  'tools.textToSpeech'?: TextToSpeechConfig;
   'model.config'?: unknown;
 }
 

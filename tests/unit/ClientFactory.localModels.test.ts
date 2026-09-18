@@ -5,8 +5,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { ClientFactory } from '../../src/common/api/ClientFactory';
-import type { TProviderWithModel } from '../../src/common/config/storage';
+import { ClientFactory } from '@/common/api/ClientFactory';
+import type { TProviderWithModel } from '@/common/config/storage';
 
 const { mockChatCreate, mockOpenAIConstructor } = vi.hoisted(() => ({
   mockChatCreate: vi.fn(),

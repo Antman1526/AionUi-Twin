@@ -52,6 +52,7 @@ export const formatMessageTime = (timestamp: number): string => {
   return time;
 };
 import MessageCronBadge from './MessageCronBadge';
+import MessageSpeakButton from './MessageSpeak';
 import { resolveAgentLogo, useAgentLogos } from '@/renderer/utils/model/agentLogo';
 import TeammateMessageAvatar from './TeammateMessageAvatar';
 import { useTeammateColor } from '@/renderer/pages/team/identity/TeamIdentityContext';
@@ -227,6 +228,16 @@ const MessageText: React.FC<{
     </Tooltip>
   ) : null;
 
+  // Read-aloud entry point: assistant replies only (a user never needs their
+  // own message read back). Speaks the whole turn, like the copy button.
+  const speakButton = !isUserMessage ? (
+    <MessageSpeakButton
+      messageKey={message.msg_id ?? message.id}
+      text={turnTexts?.length ? turnTexts.join('\n\n') : renderedText}
+      isLastMessage={isLastMessage}
+    />
+  ) : null;
+
   const cronMeta = message.content.cronMeta;
   const displaySenderName = senderName === 'team_system' ? t('team.systemNotice.sender') : senderName;
   const fallbackBackendLogo = senderAgentType ? resolveAgentLogo(logos, { backend: senderAgentType }) : null;
@@ -361,6 +372,7 @@ const MessageText: React.FC<{
             })}
           >
             {copyButton}
+            {speakButton}
             {forkButton}
             {message.created_at && (
               <span className='text-12px text-t-secondary opacity-0 group-hover:opacity-100 transition-opacity select-none'>

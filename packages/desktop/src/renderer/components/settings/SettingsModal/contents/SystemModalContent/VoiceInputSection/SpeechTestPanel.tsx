@@ -62,6 +62,10 @@ const SpeechTestPanel: React.FC<SpeechTestPanelProps> = ({ config, source }) => 
   }, [isRecording, recordingDurationMs, stopRecording]);
 
   const validate = useCallback((): string | null => {
+    if (source === 'whisper-local') {
+      // No credentials to check — the local server just needs a loaded model.
+      return config.whisperLocal?.modelPath ? null : t('settings.voice.localNeedModel');
+    }
     if (source === 'custom') {
       if (!isValidHttpUrl(config.openai?.base_url ?? '')) {
         return t('settings.speechToTextBaseUrlInvalid');

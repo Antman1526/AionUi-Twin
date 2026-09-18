@@ -1,0 +1,64 @@
+{
+  "title": "睡眠回顧",
+  "description": "回顧過往對話，為技能或記憶檔案暫存一項小修改，然後決定採用或還原。",
+  "tabs": {
+    "review": "回顧",
+    "proposals": "提案",
+    "heldOut": "保留提示詞"
+  },
+  "review": {
+    "sessions": "對話",
+    "sessionsHint": "逐字稿在離開本機前會先去識別化。",
+    "selectSessions": "選擇要學習的對話",
+    "previewTranscript": "預覽去識別化逐字稿",
+    "redacted": "已移除 {{count}} 處機密資訊",
+    "target": "要改進的檔案",
+    "selectTarget": "選擇技能或記憶檔案",
+    "workspace": "工作區",
+    "selectWorkspace": "選擇工作區",
+    "noWorkspace": "不使用工作區",
+    "model": "模型",
+    "selectModel": "選擇模型",
+    "localOnly": "僅限本機",
+    "localOnlyHint": "拒絕任何未在本機執行的服務供應商。",
+    "run": "開始回顧",
+    "running": "回顧中…",
+    "staged": "提案已暫存"
+  },
+  "proposals": {
+    "empty": "尚無提案。",
+    "created": "建立時間",
+    "model": "模型",
+    "target": "檔案",
+    "details": "詳細資料",
+    "rationale": "理由",
+    "risk": "風險",
+    "rollback": "還原方式",
+    "heldOutChecks": "保留驗證",
+    "diff": "差異",
+    "accept": "採用",
+    "reject": "拒絕",
+    "rollbackAction": "還原",
+    "replay": "重跑保留提示詞",
+    "before": "修改前",
+    "after": "修改後",
+    "noReplay": "沒有可重跑的保留提示詞。"
+  },
+  "status": {
+    "staged": "已暫存",
+    "accepted": "已採用",
+    "rejected": "已拒絕",
+    "rolledBack": "已還原",
+    "failed": "失敗"
+  },
+  "heldOut": {
+    "hint": "不參與草擬的提示詞，會在修改前後各重跑一次。",
+    "prompt": "提示詞",
+    "expected": "預期結果（選填）",
+    "add": "新增提示詞",
+    "remove": "移除",
+    "save": "儲存",
+    "saved": "保留提示詞已儲存",
+    "empty": "尚無保留提示詞。"
+  }
+}

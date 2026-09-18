@@ -15,7 +15,7 @@ const stopInvokeMock = vi.fn();
 const statusOnMock = vi.fn();
 const statusUnsubMock = vi.fn();
 
-vi.mock('../../src/common', () => ({
+vi.mock('@/common', () => ({
   ipcBridge: {
     wordPreview: {
       start: {
@@ -45,13 +45,13 @@ vi.mock('@arco-design/web-react', () => ({
   ),
 }));
 
-vi.mock('../../src/renderer/components/media/WebviewHost', () => ({
+vi.mock('@renderer/components/media/WebviewHost', () => ({
   default: ({ url, className }: { url: string; className?: string }) => (
     <div data-testid='webview-host' data-url={url} className={className} />
   ),
 }));
 
-import OfficeDocPreview from '../../src/renderer/pages/conversation/Preview/components/viewers/OfficeDocViewer';
+import OfficeDocPreview from '@renderer/pages/conversation/Preview/components/viewers/OfficeDocViewer';
 
 describe('OfficeDocViewer', () => {
   beforeEach(() => {

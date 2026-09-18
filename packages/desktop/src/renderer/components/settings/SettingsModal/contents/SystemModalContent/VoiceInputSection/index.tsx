@@ -12,6 +12,8 @@ import { getModelStreamCapability } from '@/renderer/services/speech/speechStrea
 import { Divider, Form, Input, Switch } from '@arco-design/web-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import LocalWhisperPanel from './LocalWhisperPanel';
+import ReadAloudPanel from './ReadAloudPanel';
 import SpeechTestPanel from './SpeechTestPanel';
 import {
   DEEPGRAM_SPEECH_MODEL_PRESETS,
@@ -136,7 +138,13 @@ const VoiceInputSection: React.FC = () => {
 
   const isDeepgram = source === 'deepgram';
   const isCustom = source === 'custom';
-  const activeLanguage = (isDeepgram ? config.deepgram?.language : config.openai?.language) ?? '';
+  const isLocalWhisper = source === 'whisper-local';
+  const activeLanguage =
+    (isLocalWhisper
+      ? config.whisperLocal?.language
+      : isDeepgram
+        ? config.deepgram?.language
+        : config.openai?.language) ?? '';
   const activeModel = (isDeepgram ? config.deepgram?.model : config.openai?.model) ?? '';
   const activeApiKey = (isDeepgram ? config.deepgram?.api_key : config.openai?.api_key) ?? '';
   const modelPresets = isDeepgram ? DEEPGRAM_SPEECH_MODEL_PRESETS : OPENAI_SPEECH_MODEL_PRESETS;
@@ -156,6 +164,13 @@ const VoiceInputSection: React.FC = () => {
 
   const handleLanguageChange = useCallback(
     (value: string) => {
+      if (isLocalWhisper) {
+        updateConfig((current) => ({
+          ...current,
+          whisperLocal: { ...current.whisperLocal, language: value },
+        }));
+        return;
+      }
       if (isDeepgram) {
         handleDeepgramChange('language', value);
         return;
@@ -175,7 +190,7 @@ const VoiceInputSection: React.FC = () => {
           }) as SpeechToTextConfig
       );
     },
-    [handleDeepgramChange, isDeepgram, updateConfig]
+    [handleDeepgramChange, isDeepgram, isLocalWhisper, updateConfig]
   );
 
   const handleApiKeyChange = useCallback(
@@ -190,93 +205,106 @@ const VoiceInputSection: React.FC = () => {
   );
 
   return (
-    <div className='px-[12px] md:px-[32px] py-[24px] bg-2 rd-12px md:rd-16px border border-border-2'>
-      <div className='flex items-center justify-between gap-12px mb-8px'>
-        <div className='flex flex-col gap-4px'>
-          <span className='text-14px text-t-primary'>{t('settings.speechToText')}</span>
-          <span className='text-13px text-t-secondary'>{t('settings.speechToTextDescription')}</span>
+    <>
+      <div className='px-[12px] md:px-[32px] py-[24px] bg-2 rd-12px md:rd-16px border border-border-2'>
+        <div className='flex items-center justify-between gap-12px mb-8px'>
+          <div className='flex flex-col gap-4px'>
+            <span className='text-14px text-t-primary'>{t('settings.speechToText')}</span>
+            <span className='text-13px text-t-secondary'>{t('settings.speechToTextDescription')}</span>
+          </div>
+          <Switch
+            checked={config.enabled}
+            onChange={(checked) => updateConfig((current) => ({ ...current, enabled: checked }))}
+          />
         </div>
-        <Switch
-          checked={config.enabled}
-          onChange={(checked) => updateConfig((current) => ({ ...current, enabled: checked }))}
-        />
-      </div>
 
-      {config.enabled && (
-        <>
-          <Divider className='mt-0px mb-20px' />
+        {config.enabled && (
+          <>
+            <Divider className='mt-0px mb-20px' />
 
-          <Form layout='horizontal' labelAlign='left' className='space-y-12px'>
-            <Form.Item label={t('settings.speechToTextSource')}>
-              <AionSelect value={source} onChange={handleSourceChange}>
-                <AionSelect.Option value='openai'>{t('settings.speechToTextSourceOpenAI')}</AionSelect.Option>
-                <AionSelect.Option value='deepgram'>{t('settings.speechToTextSourceDeepgram')}</AionSelect.Option>
-                <AionSelect.Option value='custom'>{t('settings.speechToTextSourceCustom')}</AionSelect.Option>
-              </AionSelect>
-            </Form.Item>
-
-            {isCustom && (
-              <Form.Item
-                label={<FieldLabel labelKey='settings.speechToTextBaseUrl' requirement='required' />}
-                validateStatus={isBaseUrlInvalid ? 'error' : undefined}
-                help={isBaseUrlInvalid ? t('settings.speechToTextBaseUrlInvalid') : undefined}
-              >
-                <Input
-                  value={customBaseUrl}
-                  placeholder={t('settings.speechToTextBaseUrlPlaceholder')}
-                  onChange={(value) => handleOpenAIChange('base_url', value)}
-                />
+            <Form layout='horizontal' labelAlign='left' className='space-y-12px'>
+              <Form.Item label={t('settings.speechToTextSource')}>
+                <AionSelect value={source} onChange={handleSourceChange}>
+                  <AionSelect.Option value='openai'>{t('settings.speechToTextSourceOpenAI')}</AionSelect.Option>
+                  <AionSelect.Option value='deepgram'>{t('settings.speechToTextSourceDeepgram')}</AionSelect.Option>
+                  <AionSelect.Option value='custom'>{t('settings.speechToTextSourceCustom')}</AionSelect.Option>
+                  <AionSelect.Option value='whisper-local'>{t('settings.voice.sourceLocal')}</AionSelect.Option>
+                </AionSelect>
               </Form.Item>
-            )}
 
-            <Form.Item
-              label={
-                <FieldLabel labelKey='settings.speechToTextApiKey' requirement={isCustom ? 'optional' : 'required'} />
-              }
-            >
-              <Input.Password value={activeApiKey} visibilityToggle onChange={handleApiKeyChange} />
-            </Form.Item>
+              {isCustom && (
+                <Form.Item
+                  label={<FieldLabel labelKey='settings.speechToTextBaseUrl' requirement='required' />}
+                  validateStatus={isBaseUrlInvalid ? 'error' : undefined}
+                  help={isBaseUrlInvalid ? t('settings.speechToTextBaseUrlInvalid') : undefined}
+                >
+                  <Input
+                    value={customBaseUrl}
+                    placeholder={t('settings.speechToTextBaseUrlPlaceholder')}
+                    onChange={(value) => handleOpenAIChange('base_url', value)}
+                  />
+                </Form.Item>
+              )}
 
-            <Form.Item label={t('settings.speechToTextModel')}>
-              <AionSelect
-                value={activeModel || undefined}
-                onChange={handleModelChange}
-                allowCreate={isCustom}
-                showSearch={isCustom}
-                placeholder={isCustom ? t('settings.speechToTextModelPlaceholder') : undefined}
-              >
-                {buildModelOptions(modelPresets, activeModel).map((model) => {
-                  const capability = getModelStreamCapability(source, model);
-                  const badgeText =
-                    capability === 'supported'
-                      ? t('settings.speechToTextStreamingBadge')
-                      : capability === 'unsupported'
-                        ? t('settings.speechToTextWholeBadge')
-                        : null;
-                  return (
-                    <AionSelect.Option key={model} value={model}>
-                      {model}
-                      {badgeText !== null && <span className='text-12px text-t-tertiary ms-8px'>{badgeText}</span>}
+              {!isLocalWhisper && (
+                <Form.Item
+                  label={
+                    <FieldLabel
+                      labelKey='settings.speechToTextApiKey'
+                      requirement={isCustom ? 'optional' : 'required'}
+                    />
+                  }
+                >
+                  <Input.Password value={activeApiKey} visibilityToggle onChange={handleApiKeyChange} />
+                </Form.Item>
+              )}
+
+              {!isLocalWhisper && (
+                <Form.Item label={t('settings.speechToTextModel')}>
+                  <AionSelect
+                    value={activeModel || undefined}
+                    onChange={handleModelChange}
+                    allowCreate={isCustom}
+                    showSearch={isCustom}
+                    placeholder={isCustom ? t('settings.speechToTextModelPlaceholder') : undefined}
+                  >
+                    {buildModelOptions(modelPresets, activeModel).map((model) => {
+                      const capability = getModelStreamCapability(source, model);
+                      const badgeText =
+                        capability === 'supported'
+                          ? t('settings.speechToTextStreamingBadge')
+                          : capability === 'unsupported'
+                            ? t('settings.speechToTextWholeBadge')
+                            : null;
+                      return (
+                        <AionSelect.Option key={model} value={model}>
+                          {model}
+                          {badgeText !== null && <span className='text-12px text-t-tertiary ms-8px'>{badgeText}</span>}
+                        </AionSelect.Option>
+                      );
+                    })}
+                  </AionSelect>
+                </Form.Item>
+              )}
+
+              <Form.Item label={t('settings.speechToTextLanguage')}>
+                <AionSelect value={activeLanguage} onChange={handleLanguageChange}>
+                  {SPEECH_LANGUAGE_OPTIONS.map((option) => (
+                    <AionSelect.Option key={option.value || 'auto'} value={option.value}>
+                      {option.label ?? t('settings.speechToTextLanguageAuto')}
                     </AionSelect.Option>
-                  );
-                })}
-              </AionSelect>
-            </Form.Item>
-
-            <Form.Item label={t('settings.speechToTextLanguage')}>
-              <AionSelect value={activeLanguage} onChange={handleLanguageChange}>
-                {SPEECH_LANGUAGE_OPTIONS.map((option) => (
-                  <AionSelect.Option key={option.value || 'auto'} value={option.value}>
-                    {option.label ?? t('settings.speechToTextLanguageAuto')}
-                  </AionSelect.Option>
-                ))}
-              </AionSelect>
-            </Form.Item>
-          </Form>
-          <SpeechTestPanel config={config} source={source} />
-        </>
-      )}
-    </div>
+                  ))}
+                </AionSelect>
+              </Form.Item>
+            </Form>
+            {isLocalWhisper && <LocalWhisperPanel config={config} onChange={updateConfig} />}
+            <SpeechTestPanel config={config} source={source} />
+          </>
+        )}
+      </div>
+      {/* Read aloud is independent of voice input: it works with no provider configured. */}
+      <ReadAloudPanel />
+    </>
   );
 };
 

@@ -26,6 +26,7 @@ import type {
   TConversationRuntimeSummary,
   TProviderWithModel,
   LocalModelRuntimeOptions,
+  SemanticSearchSource,
 } from '../config/storage';
 import type {
   Assistant,
@@ -1133,6 +1134,23 @@ export type LocalModelStartRequest = {
   options?: LocalModelRuntimeOptions;
 };
 
+/**
+ * Emitted whenever the managed local runtime transitions: `running` right
+ * after a successful start, `stopped` on a user-requested stop, and
+ * `crashed` when the child process exits unexpectedly (carries a bounded
+ * stderr tail so the settings panel can surface why it died).
+ */
+export type LocalModelRuntimeEvent = {
+  status: 'running' | 'stopped' | 'crashed';
+  modelPath: string;
+  name?: string;
+  port?: number;
+  baseUrl?: string;
+  exitCode?: number | null;
+  signal?: string | null;
+  stderrTail?: string;
+};
+
 export type LocalModelKind = 'llm' | 'stt' | 'tts';
 export type LocalModelFormat = 'gguf' | 'bin' | 'onnx' | 'mlx';
 export type LocalModelRuntime = 'llama.cpp' | 'whisper.cpp' | 'piper' | 'mlx';
@@ -1149,6 +1167,27 @@ export type LocalModelAsset = {
 export type LocalModelScanResult = {
   roots: { path: string; exists: boolean }[];
   models: LocalModelAsset[];
+};
+
+/**
+ * Live decode metrics sampled from the running managed local model server.
+ * Everything except `sampledAt` is optional: llama.cpp only publishes `/slots`
+ * (and only when not started with `--no-slots`), and MLX servers publish
+ * nothing at all, so absent fields mean "not measurable", never zero.
+ */
+export type LocalModelRuntimeMetrics = {
+  /** Wall-clock time the sample was taken, in ms since epoch. */
+  sampledAt: number;
+  /** `n_ctx` of the server — the context window, not the used context. */
+  contextSize?: number;
+  /** Cumulative `next_token.n_decoded` across slots. Resets between generations. */
+  decodedTokens?: number;
+  /** True while at least one slot is decoding. */
+  isProcessing?: boolean;
+  /** Resident set size of the server process, in bytes. */
+  rssBytes?: number;
+  port?: number;
+  pid?: number;
 };
 
 /**
@@ -1179,6 +1218,172 @@ export const localModel = {
     IBridgeResponse<LocalModelRuntimeOptions>,
     { modelPath: string; options: LocalModelRuntimeOptions }
   >('local-model.set-runtime-options'),
+  /** Sample live decode metrics (context size, decoded tokens, RSS) from the managed server. */
+  getRuntimeMetrics: bridge.buildProvider<IBridgeResponse<LocalModelRuntimeMetrics>, void>(
+    'local-model.runtime-metrics'
+  ),
+  /** Fired on every managed-runtime state transition (running/stopped/crashed). */
+  runtimeChanged: bridge.buildEmitter<LocalModelRuntimeEvent>('local-model.runtime-changed'),
+};
+
+// ---------------------------------------------------------------------------
+// Offline Speech-to-Text (whisper.cpp `whisper-server`)
+// ---------------------------------------------------------------------------
+
+/** Whether a `whisper-server` binary is installed, and where it was found. */
+export type WhisperExecutableStatus = {
+  installed: boolean;
+  executablePath?: string;
+  /** `process.platform` of the host, so the UI can print the right install hint. */
+  platform: string;
+};
+
+/**
+ * Runtime status of the single managed `whisper-server`.
+ * `running: false` with no other fields means no model is currently served.
+ */
+export type WhisperLocalStatus = {
+  running: boolean;
+  baseUrl?: string;
+  modelPath?: string;
+  port?: number;
+};
+
+/** A catalog model, plus whether it is already on disk. */
+export type WhisperLocalModel = {
+  id: string;
+  fileName: string;
+  label: string;
+  sizeBytes: number;
+  downloaded: boolean;
+  /** Absolute path once downloaded. */
+  path?: string;
+};
+
+export type WhisperDownloadProgress = {
+  id: string;
+  fileName: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  percent: number;
+  status: 'downloading' | 'completed' | 'failed';
+  error?: string;
+  targetPath?: string;
+};
+
+/**
+ * Fully offline transcription backend. The renderer posts 16 kHz mono WAV
+ * straight to the local `whisper-server` `/inference` endpoint using the
+ * `baseUrl` reported by `local.status`.
+ */
+export const speechToText = {
+  local: {
+    /** Current managed `whisper-server` status. */
+    status: bridge.buildProvider<IBridgeResponse<WhisperLocalStatus>, void>('stt.local.status'),
+    /** Launch (or swap to) a `whisper-server` for the given ggml model path. */
+    start: bridge.buildProvider<IBridgeResponse<WhisperLocalStatus>, { modelPath: string }>('stt.local.start'),
+    /** Stop the managed `whisper-server`. */
+    stop: bridge.buildProvider<IBridgeResponse<WhisperLocalStatus>, void>('stt.local.stop'),
+    /** Catalog entries annotated with on-disk availability. */
+    listModels: bridge.buildProvider<IBridgeResponse<WhisperLocalModel[]>, void>('stt.local.list-models'),
+    /** Download one catalog entry; progress arrives on `downloadProgress`. */
+    downloadModel: bridge.buildProvider<IBridgeResponse<{ path: string }>, { id: string }>('stt.local.download-model'),
+    downloadProgress: bridge.buildEmitter<WhisperDownloadProgress>('stt.local.download-progress'),
+    /** Whether `whisper-server` is installed on this machine. */
+    getExecutableStatus: bridge.buildProvider<IBridgeResponse<WhisperExecutableStatus>, void>(
+      'stt.local.executable-status'
+    ),
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Local semantic search
+// ---------------------------------------------------------------------------
+
+/** Which slice of the embedding index a semantic query should consider. */
+export type SemanticSearchScope =
+  | { kind: 'all' }
+  | { kind: 'conversations' }
+  | { kind: 'conversation'; conversationId: string }
+  | { kind: 'workspace'; workspacePath: string };
+
+export type SemanticSearchHit = {
+  conversationId: string;
+  messageId: string;
+  /** Cosine similarity in [-1, 1]; higher is closer. */
+  score: number;
+  snippet: string;
+  conversationTitle: string;
+};
+
+export type SemanticSearchSettings = {
+  enabled: boolean;
+  source: SemanticSearchSource | null;
+};
+
+export type SemanticSearchStats = {
+  enabled: boolean;
+  /** Embedding server is up and answering. */
+  running: boolean;
+  /** Total embedded chunks. */
+  rows: number;
+  /** Distinct conversations (and workspaces) with at least one row. */
+  conversations: number;
+  /** Rows that came from workspace files rather than chat messages. */
+  workspaceRows: number;
+  model: string | null;
+  dims: number | null;
+  updatedAt: number | null;
+};
+
+/** Embedding-capable model discovered in the local model directories. */
+export type SemanticEmbeddingCandidate = {
+  path: string;
+  name: string;
+  sizeBytes: number;
+};
+
+export type SemanticIndexProgress = {
+  phase: 'idle' | 'conversations' | 'workspace' | 'done' | 'error';
+  processed: number;
+  total: number;
+  label?: string;
+  error?: string;
+};
+
+export const semanticSearch = {
+  /** Current enable flag and embedding source. */
+  getSettings: bridge.buildProvider<IBridgeResponse<SemanticSearchSettings>, void>('semantic-search.get-settings'),
+  /** Persist the enable flag and/or embedding source; returns the merged settings. */
+  setSettings: bridge.buildProvider<IBridgeResponse<SemanticSearchSettings>, Partial<SemanticSearchSettings>>(
+    'semantic-search.set-settings'
+  ),
+  /** Index size, embedding model and runtime state. */
+  getStats: bridge.buildProvider<IBridgeResponse<SemanticSearchStats>, void>('semantic-search.stats'),
+  /** Local model files whose name marks them as embedding models. */
+  listEmbeddingModels: bridge.buildProvider<IBridgeResponse<SemanticEmbeddingCandidate[]>, void>(
+    'semantic-search.list-embedding-models'
+  ),
+  /** Re-embed every conversation. Progress arrives on {@link semanticSearch.progress}. */
+  rebuild: bridge.buildProvider<IBridgeResponse<{ indexed: number; skipped: number; cancelled: boolean }>, void>(
+    'semantic-search.rebuild'
+  ),
+  /** Index the text files of one conversation workspace. */
+  indexWorkspace: bridge.buildProvider<
+    IBridgeResponse<{ indexed: number; skipped: number; cancelled: boolean }>,
+    { workspacePath: string }
+  >('semantic-search.index-workspace'),
+  /** Cancel an in-flight rebuild / workspace index. */
+  cancel: bridge.buildProvider<IBridgeResponse<void>, void>('semantic-search.cancel'),
+  /** Delete every embedding row and stop the embedding server. */
+  clear: bridge.buildProvider<IBridgeResponse<void>, void>('semantic-search.clear'),
+  /** Nearest-neighbour search over the embedding index. */
+  query: bridge.buildProvider<
+    IBridgeResponse<SemanticSearchHit[]>,
+    { text: string; limit?: number; scope?: SemanticSearchScope }
+  >('semantic-search.query'),
+  /** Indexing progress stream. */
+  progress: bridge.buildEmitter<SemanticIndexProgress>('semantic-search.progress'),
 };
 
 // ---------------------------------------------------------------------------
@@ -1240,6 +1445,8 @@ export interface HfModelFile {
   path: string;
   sizeBytes: number;
   quantization?: string;
+  /** sha256 content hash, only present for LFS-backed files (see downloadIntegrity.ts). */
+  sha256?: string;
 }
 
 export interface HfModelDetail extends HfModelSummary {
@@ -1259,6 +1466,12 @@ export interface HfDownloadProgress {
   status: 'pending' | 'downloading' | 'completed' | 'failed' | 'cancelled';
   error?: string;
   targetPath?: string;
+  /**
+   * Set once the download completes: true when the sha256 digest was checked
+   * against a known LFS content hash and matched, false when no expected hash
+   * was available (not a failure — just unverifiable). Undefined while in progress.
+   */
+  verified?: boolean;
 }
 
 export const hfHub = {
@@ -2695,4 +2908,123 @@ export const sidebar = {
   deleteArchivedProject: httpDelete<import('@/common/types/sidebar').ArchiveDeleteResult, { project_id: string }>(
     (p) => `/api/sidebar/archived/project/${encodeURIComponent(p.project_id)}`
   ),
+};
+
+// ---------------------------------------------------------------------------
+// Model Arena — run one prompt against two models side by side
+// ---------------------------------------------------------------------------
+
+/** Which column of the arena an event belongs to. */
+export type ArenaSide = 'left' | 'right';
+
+/** Per-side timing and throughput figures, reported once that side finishes. */
+export type ArenaSideStats = {
+  /** Milliseconds to the first byte of the answer. */
+  ttfbMs: number;
+  /** Milliseconds from request start to the last byte. */
+  totalMs: number;
+  outputTokens: number;
+  tokensPerSecond: number;
+  /**
+   * True when `outputTokens` was derived from the answer length rather than an
+   * upstream `usage` block. The UI must mark such figures as approximate.
+   */
+  estimated?: boolean;
+};
+
+/** One arena progress frame. Exactly one terminal frame (`done`) arrives per side. */
+export type ArenaStreamEvent = {
+  runId: string;
+  side: ArenaSide;
+  delta?: string;
+  done?: boolean;
+  error?: string;
+  stats?: ArenaSideStats;
+};
+
+export type ArenaRunRequest = {
+  left: TProviderWithModel;
+  right: TProviderWithModel;
+  prompt: string;
+  systemPrompt?: string;
+};
+
+/**
+ * Side-by-side model comparison. `runId` is generated by the process layer and
+ * returned to the caller — it is never supplied by the renderer.
+ */
+export const arena = {
+  run: bridge.buildProvider<IBridgeResponse<{ runId: string }>, ArenaRunRequest>('arena.run'),
+  cancel: bridge.buildProvider<IBridgeResponse<boolean>, { runId: string }>('arena.cancel'),
+  stream: bridge.buildEmitter<ArenaStreamEvent>('arena.stream'),
+};
+
+// ---------------------------------------------------------------------------
+// Sleep Review — native SkillOpt sleep cycle
+// ---------------------------------------------------------------------------
+
+/**
+ * Staged, reviewable edits to skill and memory files.
+ *
+ * The process layer redacts every transcript before it crosses this bridge, and
+ * re-validates every `targetPath` against the allow-list on run, preview,
+ * accept and rollback — a path stored in a proposal is never trusted.
+ */
+export const sleepReview = {
+  /** Conversations offered as review material. */
+  listConversations: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewConversation[]>,
+    void
+  >('sleep-review.list-conversations'),
+  /** Redacted transcript of one conversation, plus how many secrets were removed. */
+  previewTranscript: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewTranscriptPreview>,
+    { conversationId: string }
+  >('sleep-review.preview-transcript'),
+  /** Files a review may edit: user skills plus one workspace's memory files. */
+  listTargets: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewTarget[]>,
+    { workspace?: string }
+  >('sleep-review.list-targets'),
+  /** Draft one proposal and stage it. Nothing is written to the target file. */
+  run: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewProposal>,
+    import('@/common/types/sleepReview').SleepReviewRunRequest
+  >('sleep-review.run'),
+  listProposals: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewProposal[]>,
+    void
+  >('sleep-review.list-proposals'),
+  /** Unified diff of a staged proposal against the current target file. */
+  previewProposal: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewDiff>,
+    { proposalId: string }
+  >('sleep-review.preview-proposal'),
+  /** Back up the target, then apply the edit. Fails on baseline drift. */
+  accept: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewProposal>,
+    { proposalId: string }
+  >('sleep-review.accept'),
+  reject: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewProposal>,
+    { proposalId: string }
+  >('sleep-review.reject'),
+  /** Restore the backup taken when the proposal was accepted. */
+  rollback: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').SleepReviewProposal>,
+    { proposalId: string }
+  >('sleep-review.rollback'),
+  /** Replay every held-out prompt against the pre-edit and post-edit target. */
+  runHeldOut: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').HeldOutComparison[]>,
+    { proposalId: string; provider: TProviderWithModel; localOnly: boolean }
+  >('sleep-review.run-held-out'),
+  listHeldOut: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').HeldOutPrompt[]>,
+    { workspace?: string }
+  >('sleep-review.list-held-out'),
+  saveHeldOut: bridge.buildProvider<
+    IBridgeResponse<import('@/common/types/sleepReview').HeldOutPrompt[]>,
+    { workspace?: string; prompts: import('@/common/types/sleepReview').HeldOutPrompt[] }
+  >('sleep-review.save-held-out'),
 };

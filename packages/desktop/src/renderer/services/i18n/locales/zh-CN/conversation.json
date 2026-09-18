@@ -782,5 +782,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "展开计划",
     "collapse": "收起计划"
+  },
+  "voice": {
+    "readAloud": "朗读",
+    "stopReading": "停止朗读"
+  },
+  "hud": {
+    "tokensPerSecond": "每秒 Token 数",
+    "tokensPerSecondUnit": "tok/s",
+    "contextFill": "上下文",
+    "engineMemory": "引擎内存",
+    "estimatedHint": "近似值——根据回复长度推算，并非引擎上报的数据。",
+    "measuredHint": "来自引擎解码计数器的实测值。",
+    "awaitingSample": "测量中…"
+  },
+  "semanticSearch": {
+    "modeLabel": "搜索模式",
+    "modeKeyword": "关键词",
+    "modeSemantic": "语义",
+    "placeholder": "描述你想找的内容……",
+    "idle": "描述你记得的内容，相似的消息会自动出现",
+    "empty": "没有找到相似的消息",
+    "disabledHint": "语义搜索已关闭。请在「设置 › 本地模型」中开启。",
+    "notIndexed": "尚未建立索引。请在「设置 › 本地模型」中构建索引。",
+    "failed": "语义搜索失败",
+    "score": "匹配度 {{score}}%"
   }
 }

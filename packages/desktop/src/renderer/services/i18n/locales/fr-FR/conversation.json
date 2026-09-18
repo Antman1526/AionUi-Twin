@@ -782,5 +782,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "Développer le plan",
     "collapse": "Réduire le plan"
+  },
+  "voice": {
+    "readAloud": "Lire à voix haute",
+    "stopReading": "Arrêter la lecture"
+  },
+  "hud": {
+    "tokensPerSecond": "Jetons/s",
+    "tokensPerSecondUnit": "jet/s",
+    "contextFill": "Contexte",
+    "engineMemory": "Mémoire du moteur",
+    "estimatedHint": "Approximatif — calculé à partir de la longueur de la réponse, non fourni par le moteur.",
+    "measuredHint": "Mesuré via le compteur de décodage du moteur.",
+    "awaitingSample": "Mesure en cours…"
+  },
+  "semanticSearch": {
+    "modeLabel": "Mode de recherche",
+    "modeKeyword": "Mot-clé",
+    "modeSemantic": "Sémantique",
+    "placeholder": "Décrivez ce que vous cherchez...",
+    "idle": "Décrivez ce dont vous vous souvenez, les messages proches apparaîtront",
+    "empty": "Aucun message similaire trouvé",
+    "disabledHint": "La recherche sémantique est désactivée. Activez-la dans Paramètres › Modèles locaux.",
+    "notIndexed": "Rien n’est encore indexé. Créez l’index dans Paramètres › Modèles locaux.",
+    "failed": "Échec de la recherche sémantique",
+    "score": "{{score}} % de correspondance"
   }
 }

@@ -10,6 +10,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { getOrCreateAnalyticsId } from './process/utils/analyticsId';
+import { resolveSentryInitOptions } from './common/utils/telemetryConsent';
 import { readAutoUpdateDiagnostics } from './process/services/autoUpdateDiagnostics';
 import { collectBackendInstallDiagnostics } from './process/startup/backendInstallDiagnostics';
 import { classifyBackendStartupFailure } from './process/startup/backendStartupFailure';
@@ -113,11 +114,41 @@ function isBackendStartupSecondaryEvent(event: { tags?: Record<string, unknown> 
   );
 }
 
+/**
+ * Consent gate. Crash reporting is opt-in, so this starts false and is only
+ * flipped on by {@link setTelemetryEnabled} once the user's stored choice (and
+ * Ghost Mode state) has been read.
+ */
+let telemetryConsented = false;
+
+/**
+ * Turn crash reporting on or off at runtime.
+ *
+ * `Sentry.init` is called with `enabled: false`, which keeps the client fully
+ * inert (integrations are never set up, so no release-health session starts).
+ * Flipping the live client's `enabled` option is the SDK's own pattern for this.
+ */
+export function setTelemetryEnabled(enabled: boolean): void {
+  telemetryConsented = enabled;
+  const options = Sentry.getClient()?.getOptions();
+  if (!options) return;
+  options.enabled = enabled;
+  if (enabled) {
+    // Only start a release-health session once the user has actually consented.
+    Sentry.startSession();
+  }
+}
+
 export function initSentry(): void {
   Sentry.init({
-    dsn: process.env.SENTRY_DSN,
+    ...resolveSentryInitOptions({ dsn: process.env.SENTRY_DSN }),
     environment: app.isPackaged ? 'production' : 'development',
     beforeSend(event) {
+      // Belt and braces: even if the client were enabled without consent,
+      // nothing leaves the machine.
+      if (!telemetryConsented) {
+        return null;
+      }
       const haystacks = collectEventSearchText(event);
       if (GPU_CRASH_DROP_PATTERNS.some((re) => haystacks.some((h) => re.test(h)))) {
         return null;

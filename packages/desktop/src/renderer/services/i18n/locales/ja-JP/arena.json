@@ -1,0 +1,28 @@
+{
+  "title": "モデルアリーナ",
+  "description": "同じプロンプトを 2 つのモデルに同時に送り、回答・速度・スループットを比較します。",
+  "selectLeft": "モデル A を選択",
+  "selectRight": "モデル B を選択",
+  "promptPlaceholder": "両方のモデルに送るプロンプト",
+  "systemPromptPlaceholder": "システムプロンプト（任意）",
+  "run": "実行",
+  "cancel": "キャンセル",
+  "cancelled": "キャンセルしました",
+  "copyComparison": "比較結果をコピー",
+  "copied": "比較結果をクリップボードにコピーしました",
+  "left": "モデル A",
+  "right": "モデル B",
+  "noModelSelected": "モデルが未選択です",
+  "waiting": "応答を待っています…",
+  "empty": "まだ応答がありません。",
+  "history": "実行履歴",
+  "stats": {
+    "ttfb": "初回応答",
+    "total": "合計",
+    "tokens": "トークン",
+    "throughput": "スループット",
+    "tokensPerSecondUnit": "tok/s",
+    "estimatedHint": "推定値",
+    "pending": "統計はまだありません"
+  }
+}

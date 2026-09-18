@@ -1,0 +1,64 @@
+{
+  "title": "睡眠复盘",
+  "description": "回顾历史会话，为技能或记忆文件暂存一处小改动，然后决定采纳或回滚。",
+  "tabs": {
+    "review": "复盘",
+    "proposals": "提案",
+    "heldOut": "留出提示词"
+  },
+  "review": {
+    "sessions": "会话",
+    "sessionsHint": "记录在离开本机前会先做脱敏处理。",
+    "selectSessions": "选择要学习的会话",
+    "previewTranscript": "预览脱敏记录",
+    "redacted": "已移除 {{count}} 处敏感信息",
+    "target": "待改进的文件",
+    "selectTarget": "选择技能或记忆文件",
+    "workspace": "工作区",
+    "selectWorkspace": "选择工作区",
+    "noWorkspace": "不使用工作区",
+    "model": "模型",
+    "selectModel": "选择模型",
+    "localOnly": "仅本地",
+    "localOnlyHint": "拒绝任何不在本机运行的服务商。",
+    "run": "开始复盘",
+    "running": "复盘中…",
+    "staged": "提案已暂存"
+  },
+  "proposals": {
+    "empty": "暂无提案。",
+    "created": "创建时间",
+    "model": "模型",
+    "target": "文件",
+    "details": "详情",
+    "rationale": "理由",
+    "risk": "风险",
+    "rollback": "回滚方式",
+    "heldOutChecks": "留出校验",
+    "diff": "差异",
+    "accept": "采纳",
+    "reject": "拒绝",
+    "rollbackAction": "回滚",
+    "replay": "重放留出提示词",
+    "before": "修改前",
+    "after": "修改后",
+    "noReplay": "没有可重放的留出提示词。"
+  },
+  "status": {
+    "staged": "已暂存",
+    "accepted": "已采纳",
+    "rejected": "已拒绝",
+    "rolledBack": "已回滚",
+    "failed": "失败"
+  },
+  "heldOut": {
+    "hint": "不参与起草的提示词，会在改动前后各重放一次。",
+    "prompt": "提示词",
+    "expected": "期望结果（可选）",
+    "add": "添加提示词",
+    "remove": "删除",
+    "save": "保存",
+    "saved": "留出提示词已保存",
+    "empty": "暂无留出提示词。"
+  }
+}

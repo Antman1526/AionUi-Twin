@@ -784,5 +784,30 @@
     "progress": "{{completed}}/{{total}}",
     "expand": "Planı genişlet",
     "collapse": "Planı daralt"
+  },
+  "voice": {
+    "readAloud": "Sesli oku",
+    "stopReading": "Okumayı durdur"
+  },
+  "hud": {
+    "tokensPerSecond": "Saniyedeki token",
+    "tokensPerSecondUnit": "tok/sn",
+    "contextFill": "Bağlam",
+    "engineMemory": "Motor belleği",
+    "estimatedHint": "Yaklaşık — yanıt uzunluğundan türetildi, motor tarafından bildirilmedi.",
+    "measuredHint": "Motorun kod çözme sayacından ölçüldü.",
+    "awaitingSample": "Ölçülüyor…"
+  },
+  "semanticSearch": {
+    "modeLabel": "Arama modu",
+    "modeKeyword": "Anahtar kelime",
+    "modeSemantic": "Anlamsal",
+    "placeholder": "Aradığınız şeyi tarif edin...",
+    "idle": "Hatırladıklarınızı yazın, benzer mesajlar listelensin",
+    "empty": "Benzer mesaj bulunamadı",
+    "disabledHint": "Anlamsal arama kapalı. Ayarlar › Yerel Modeller bölümünden açın.",
+    "notIndexed": "Henüz dizin yok. Ayarlar › Yerel Modeller bölümünden oluşturun.",
+    "failed": "Anlamsal arama başarısız oldu",
+    "score": "%{{score}} eşleşme"
   }
 }

@@ -30,6 +30,7 @@ import DevSettings from './DevSettings';
 import BrowserDataSection from './BrowserDataSection';
 import DirInputItem from './DirInputItem';
 import PreferenceRow from './PreferenceRow';
+import PrivacySection from './PrivacySection';
 import VoiceInputSection from './VoiceInputSection';
 
 /**
@@ -507,6 +508,7 @@ const SystemModalContent: React.FC = () => {
                   {item.component}
                 </PreferenceRow>
               ))}
+              <PrivacySection />
             </div>
             {/* Notification settings with collapsible sub-options */}
             <Collapse
