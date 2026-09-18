@@ -5,10 +5,11 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, statSync } from 'node:fs';
+import { accessSync, constants as fsConstants, existsSync, statSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
+import { ipcBridge } from '@/common';
 import type { IProvider } from '@/common/config/storage';
 import { uuid } from '@/common/utils';
 import { getEnhancedEnv } from '@process/utils/shellEnv';
@@ -88,7 +89,18 @@ export type ManagedServerHandle = {
   modelPath: string;
 };
 
-type ManagedSession = ManagedServerHandle & { process: ChildProcess };
+type ManagedSession = ManagedServerHandle & {
+  process: ChildProcess;
+  /**
+   * Set by {@link stopManagedLlamaServer} right before it kills this
+   * session's child process, so the persistent `exit` listener attached
+   * after a successful start can tell a user-requested stop apart from a
+   * crash. Scoped per-session (rather than a single module-level flag) so an
+   * old session being torn down while a new one is starting can't race the
+   * new session's flag.
+   */
+  expectedStop: boolean;
+};
 
 let currentSession: ManagedSession | null = null;
 
@@ -238,14 +250,54 @@ function isPathInsideRoots(modelPath: string, allowedRoots: readonly string[]): 
   });
 }
 
-export function resolveExecutable(candidates: readonly string[]): string | null {
-  // First pass: prefer concrete file paths that actually exist on disk (e.g. venvs, brew binaries)
+/**
+ * Dependencies used by {@link resolveExecutable} to probe a candidate path.
+ * Overridable so the candidate-selection logic can be unit tested without
+ * touching the real filesystem.
+ */
+export type ExecutableProbeDeps = {
+  exists: (candidatePath: string) => boolean;
+  isExecutable: (candidatePath: string) => boolean;
+};
+
+function defaultIsExecutable(candidatePath: string): boolean {
+  try {
+    const stats = statSync(candidatePath);
+    if (!stats.isFile()) return false;
+    // Windows has no POSIX execute bit to check; existence + being a regular
+    // file is as far as this check can meaningfully go there.
+    if (process.platform === 'win32') return true;
+    accessSync(candidatePath, fsConstants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const defaultExecutableProbeDeps: ExecutableProbeDeps = {
+  exists: existsSync,
+  isExecutable: defaultIsExecutable,
+};
+
+/**
+ * Pick the first usable executable from `candidates`.
+ *
+ * First pass: prefer concrete file paths (e.g. venvs, brew binaries) that
+ * exist AND pass an execute-permission check — a candidate that exists but
+ * is not executable is skipped rather than handed to `spawn`. Second pass:
+ * fall back to bare command names to let `spawn` resolve them from the
+ * enhanced PATH (these cannot be probed ahead of time).
+ */
+export function resolveExecutable(
+  candidates: readonly string[],
+  deps: Partial<ExecutableProbeDeps> = {}
+): string | null {
+  const { exists, isExecutable } = { ...defaultExecutableProbeDeps, ...deps };
   for (const candidate of candidates) {
-    if (candidate.includes(path.sep) && existsSync(candidate)) {
+    if (candidate.includes(path.sep) && exists(candidate) && isExecutable(candidate)) {
       return candidate;
     }
   }
-  // Second pass: fallback to bare command names to let spawn resolve from enhanced PATH
   for (const candidate of candidates) {
     if (!candidate.includes(path.sep)) {
       return candidate;
@@ -261,10 +313,13 @@ function withCapturedStderr(message: string, stderrTail: string, cause?: Error):
 }
 
 /**
- * Stop the currently managed llama-server, if any.
+ * Stop the currently managed llama-server, if any. Marks the stop as
+ * user-requested so the `exit` listener reports `stopped` rather than
+ * `crashed` to the renderer.
  */
 export function stopManagedLlamaServer(): void {
   if (currentSession) {
+    currentSession.expectedStop = true;
     try {
       currentSession.process.kill();
     } catch {
@@ -279,7 +334,7 @@ export function stopManagedLlamaServer(): void {
  */
 export function getManagedServerStatus(): ManagedServerHandle | null {
   if (!currentSession) return null;
-  const { process: _process, ...handle } = currentSession;
+  const { process: _process, expectedStop: _expectedStop, ...handle } = currentSession;
   return handle;
 }
 
@@ -366,18 +421,16 @@ export async function startManagedLlamaServer({
     pid: child.pid ?? -1,
     alias,
     modelPath,
+    expectedStop: false,
   };
   currentSession = session;
-
-  child.on('exit', () => {
-    if (currentSession === session) currentSession = null;
-  });
 
   let rejectStartup: (error: Error) => void = () => {};
   const onStartupError = (err: Error): void => {
     rejectStartup(withCapturedStderr(`Failed to launch llama-server: ${err.message}`, stderrTail, err));
   };
   const onStartupExit = (code: number | null, signal: NodeJS.Signals | null): void => {
+    if (currentSession === session) currentSession = null;
     const reason = signal ? `signal ${signal}` : `code ${code ?? 'unknown'}`;
     rejectStartup(withCapturedStderr(`llama-server exited before becoming healthy (${reason})`, stderrTail));
   };
@@ -400,6 +453,29 @@ export async function startManagedLlamaServer({
     throw withCapturedStderr(String(err), stderrTail);
   }
 
-  const { process: _process, ...handle } = session;
+  // Only now — after the server is confirmed healthy — attach the
+  // long-lived exit listener that reports crashes to the renderer. Any exit
+  // before this point is startup failure, already surfaced via the rejected
+  // promise above.
+  child.on('exit', (code, signal) => {
+    if (currentSession === session) currentSession = null;
+    const status = session.expectedStop ? 'stopped' : 'crashed';
+    ipcBridge.localModel.runtimeChanged.emit({
+      status,
+      modelPath: session.modelPath,
+      exitCode: code,
+      signal,
+      ...(status === 'crashed' ? { stderrTail: stderrTail.trim() } : {}),
+    });
+  });
+
+  const { process: _process, expectedStop: _expectedStop, ...handle } = session;
+  ipcBridge.localModel.runtimeChanged.emit({
+    status: 'running',
+    modelPath: handle.modelPath,
+    name: handle.alias,
+    port: handle.port,
+    baseUrl: handle.baseUrl,
+  });
   return handle;
 }

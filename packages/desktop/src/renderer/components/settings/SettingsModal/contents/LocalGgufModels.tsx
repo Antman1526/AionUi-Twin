@@ -5,14 +5,30 @@
  */
 
 import { ipcBridge } from '@/common';
+import type { LocalModelRuntimeEvent } from '@/common/adapter/ipcBridge';
 import type { LocalModelRuntimeOptions } from '@/common/config/storage';
 import { Alert, Button, Input, InputNumber, Message, Radio, Select, Tag, Tooltip } from '@arco-design/web-react';
-import { Close, Download, FolderOpen, Info, Play, Plus, Power, Refresh, Search, SettingTwo } from '@icon-park/react';
-import React, { useMemo, useState } from 'react';
+import {
+  Close,
+  Copy,
+  Down,
+  Download,
+  FolderOpen,
+  Info,
+  Play,
+  Plus,
+  Power,
+  Refresh,
+  Search,
+  SettingTwo,
+  Up,
+} from '@icon-park/react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import HfModelHubModal from './HfModelHubModal';
+import SemanticSearchSettings from './semanticSearch/SemanticSearchSettings';
 
 /** Human-readable byte size (binary units). */
 const formatBytes = (bytes: number): string => {
@@ -44,6 +60,13 @@ const getTimeoutMode = (options: LocalModelRuntimeOptions): 'auto' | '300000' | 
   return 'custom';
 };
 
+type CrashInfo = {
+  modelPath: string;
+  exitCode?: number | null;
+  signal?: string | null;
+  stderrTail?: string;
+};
+
 const LocalGgufModels: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -52,6 +75,8 @@ const LocalGgufModels: React.FC = () => {
   const [busyPath, setBusyPath] = useState<string | null>(null);
   const [expandedOptionsPath, setExpandedOptionsPath] = useState<string | null>(null);
   const [hfModalVisible, setHfModalVisible] = useState(false);
+  const [crashInfo, setCrashInfo] = useState<CrashInfo | null>(null);
+  const [crashDetailsOpen, setCrashDetailsOpen] = useState(false);
 
   const { data: metrics } = useSWR('system-metrics.get', () =>
     ipcBridge.systemMetrics.getMetrics.invoke().then((r) => r.data)
@@ -75,6 +100,28 @@ const LocalGgufModels: React.FC = () => {
   const { data: runtimeOptions, mutate: mutateRuntimeOptions } = useSWR('local-model.runtime-options', () =>
     ipcBridge.localModel.getRuntimeOptions.invoke().then((res) => res.data ?? {})
   );
+
+  // A crashed/stopped managed server never gets a chance to update its own
+  // status via a response — this is the only signal the panel gets, so it
+  // both revalidates the status query and (on a crash) surfaces a persistent
+  // alert with the captured stderr tail.
+  useEffect(() => {
+    const unsub = ipcBridge.localModel.runtimeChanged.on((evt: LocalModelRuntimeEvent) => {
+      void mutateStatus();
+      if (evt.status === 'crashed') {
+        setCrashInfo({
+          modelPath: evt.modelPath,
+          exitCode: evt.exitCode,
+          signal: evt.signal,
+          stderrTail: evt.stderrTail,
+        });
+        setCrashDetailsOpen(false);
+      } else if (evt.status === 'stopped' || evt.status === 'running') {
+        setCrashInfo(null);
+      }
+    });
+    return () => unsub();
+  }, [mutateStatus]);
 
   const llmModels = (scan?.models ?? []).filter((model) => model.kind === 'llm');
   const missingRoots = (scan?.roots ?? []).filter((root) => !root.exists);
@@ -185,6 +232,7 @@ const LocalGgufModels: React.FC = () => {
       const options = runtimeOptions?.[modelPath];
       const res = await ipcBridge.localModel.start.invoke({ modelPath, options });
       if (res.success && res.data) {
+        setCrashInfo(null);
         message.success?.(t('settings.localGguf.loadedMessage', { name }));
         refreshProviders();
         await handleUseInChat(res.data);
@@ -204,6 +252,7 @@ const LocalGgufModels: React.FC = () => {
       const options = runtimeOptions?.[modelPath];
       const res = await ipcBridge.localModel.start.invoke({ modelPath, options });
       if (res.success) {
+        setCrashInfo(null);
         message.success?.(t('settings.localGguf.loadedMessage', { name }));
         refreshProviders();
       } else {
@@ -224,6 +273,20 @@ const LocalGgufModels: React.FC = () => {
       refreshProviders();
     } finally {
       setBusyPath(null);
+    }
+  };
+
+  const formatExitReason = (info: CrashInfo): string => {
+    if (info.signal) return t('settings.localGguf.exitReasonSignal', { signal: info.signal });
+    return t('settings.localGguf.exitReasonCode', { code: info.exitCode ?? 'unknown' });
+  };
+
+  const handleCopyCrashLog = async (info: CrashInfo): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(info.stderrTail || '');
+      message.success?.(t('settings.localGguf.crashCopied'));
+    } catch {
+      /* clipboard access can be denied in some contexts — silently ignore */
     }
   };
 
@@ -369,6 +432,55 @@ const LocalGgufModels: React.FC = () => {
         </div>
       </div>
       <div className='text-12px text-t-secondary mb-12px'>{t('settings.localGguf.description')}</div>
+
+      {crashInfo ? (
+        <Alert
+          type='error'
+          closable
+          onClose={() => setCrashInfo(null)}
+          className='mb-12px'
+          title={t('settings.localGguf.crashAlertTitle')}
+          content={
+            <div className='flex flex-col gap-6px'>
+              <div>
+                {t('settings.localGguf.crashAlertMessage', {
+                  name: crashInfo.modelPath.split('/').pop() ?? crashInfo.modelPath,
+                  reason: formatExitReason(crashInfo),
+                })}
+              </div>
+              {crashInfo.stderrTail ? (
+                <div className='flex flex-col gap-6px'>
+                  <div className='flex items-center gap-8px'>
+                    <Button
+                      size='mini'
+                      type='text'
+                      icon={crashDetailsOpen ? <Up theme='outline' size='12' /> : <Down theme='outline' size='12' />}
+                      onClick={() => setCrashDetailsOpen((prev) => !prev)}
+                    >
+                      {crashDetailsOpen
+                        ? t('settings.localGguf.crashHideDetails')
+                        : t('settings.localGguf.crashShowDetails')}
+                    </Button>
+                    <Button
+                      size='mini'
+                      type='text'
+                      icon={<Copy theme='outline' size='12' />}
+                      onClick={() => void handleCopyCrashLog(crashInfo)}
+                    >
+                      {t('settings.localGguf.crashCopyLog')}
+                    </Button>
+                  </div>
+                  {crashDetailsOpen ? (
+                    <pre className='text-11px font-mono whitespace-pre-wrap max-h-160px overflow-y-auto p-8px rounded-4px bg-fill-2'>
+                      {crashInfo.stderrTail}
+                    </pre>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          }
+        />
+      ) : null}
 
       <div className='flex items-center justify-between mb-6px'>
         <span className='text-12px font-medium text-t-primary'>{t('settings.localGguf.foldersTitle')}</span>
@@ -568,6 +680,7 @@ const LocalGgufModels: React.FC = () => {
           )}
         </>
       ) : null}
+      <SemanticSearchSettings />
       <HfModelHubModal
         visible={hfModalVisible}
         onCancel={() => setHfModalVisible(false)}

@@ -6,7 +6,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Input, Modal, Progress, Radio, Spin, Tag, Message } from '@arco-design/web-react';
-import { Download, Search, Close, Check, Cpu } from '@icon-park/react';
+import { Download, Search, Close, Check, Cpu, CheckOne, Info } from '@icon-park/react';
+import { useTranslation } from 'react-i18next';
 import { ipcBridge } from '@/common';
 import type { HfDownloadProgress, HfModelDetail, HfModelKind, HfModelSummary } from '@/common/adapter/ipcBridge';
 
@@ -17,6 +18,7 @@ interface HfModelHubModalProps {
 }
 
 export const HfModelHubModal: React.FC<HfModelHubModalProps> = ({ visible, onCancel, onModelDownloaded }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [modelType, setModelType] = useState<HfModelKind>('all');
   const [loading, setLoading] = useState(false);
@@ -155,6 +157,17 @@ export const HfModelHubModal: React.FC<HfModelHubModalProps> = ({ visible, onCan
                       ({(dl.speedBytesPerSec / 1024 / 1024).toFixed(1)} MB/s)
                     </span>
                   )}
+                  {dl.status === 'completed' ? (
+                    dl.verified ? (
+                      <Tag size='small' color='green' icon={<CheckOne theme='outline' size='11' />}>
+                        {t('settings.localGguf.hfVerified')}
+                      </Tag>
+                    ) : (
+                      <Tag size='small' color='gray' icon={<Info theme='outline' size='11' />}>
+                        {t('settings.localGguf.hfNotVerified')}
+                      </Tag>
+                    )
+                  ) : null}
                 </div>
                 <div className='flex items-center gap-8px shrink-0'>
                   <div className='w-80px'>

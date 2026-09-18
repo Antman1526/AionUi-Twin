@@ -5,6 +5,7 @@
  */
 
 import type { HfModelDetail, HfModelFile, HfModelKind, HfModelSummary } from '@/common/adapter/ipcBridge';
+import { parseExpectedSha256 } from './downloadIntegrity';
 
 const HF_BASE_URL = 'https://huggingface.co';
 
@@ -132,8 +133,12 @@ export async function getHfModelDetails(modelId: string): Promise<HfModelDetail>
   const isGguf = raw.tags?.includes('gguf') || raw.id.toLowerCase().includes('gguf');
   const modelType: HfModelKind = isMlx ? 'mlx' : isGguf ? 'gguf' : 'other';
 
-  // Build a lookup map of file sizes from repository tree
+  // Build lookup maps of file sizes and (when LFS-backed) sha256 content
+  // hashes from the repository tree. The tree's own top-level `oid` is a git
+  // blob sha1, not a content hash, and is intentionally not used here — see
+  // parseExpectedSha256.
   const sizeMap = new Map<string, number>();
+  const shaMap = new Map<string, string>();
   if (treeResponse && treeResponse.ok) {
     try {
       const treeData = (await treeResponse.json()) as Array<{ path?: string; size?: number }>;
@@ -141,6 +146,10 @@ export async function getHfModelDetails(modelId: string): Promise<HfModelDetail>
         for (const item of treeData) {
           if (item.path && typeof item.size === 'number') {
             sizeMap.set(item.path, item.size);
+          }
+          if (item.path) {
+            const sha256 = parseExpectedSha256(item);
+            if (sha256) shaMap.set(item.path, sha256);
           }
         }
       }
@@ -155,6 +164,7 @@ export async function getHfModelDetails(modelId: string): Promise<HfModelDetail>
     for (const sib of raw.siblings) {
       const fileName = sib.rfilename;
       const sizeBytes = sizeMap.get(fileName) ?? 0;
+      const sha256 = shaMap.get(fileName);
 
       // For GGUF, we look for .gguf files
       if (modelType === 'gguf' && fileName.toLowerCase().endsWith('.gguf')) {
@@ -163,6 +173,7 @@ export async function getHfModelDetails(modelId: string): Promise<HfModelDetail>
           path: fileName,
           sizeBytes,
           quantization: extractQuantization(fileName),
+          sha256,
         });
       } else if (modelType === 'mlx') {
         // For MLX, include weights, configs, and tokenizers
@@ -177,6 +188,7 @@ export async function getHfModelDetails(modelId: string): Promise<HfModelDetail>
             name: fileName,
             path: fileName,
             sizeBytes,
+            sha256,
           });
         }
       }

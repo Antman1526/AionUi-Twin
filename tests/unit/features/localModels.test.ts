@@ -222,6 +222,8 @@ describe('resolveExecutable', () => {
       const concreteBin = path.join(tmpDir, 'bin', 'mlx_lm.server');
       await fs.mkdir(path.dirname(concreteBin), { recursive: true });
       await fs.writeFile(concreteBin, '#!/bin/sh\necho "test"');
+      // resolveExecutable now requires the execute bit — a real binary has it.
+      await fs.chmod(concreteBin, 0o755);
 
       // Given a list where bare command is first or non-existent paths exist
       const candidates = ['mlx_lm.server', '/non/existent/path/mlx_lm.server', concreteBin];
